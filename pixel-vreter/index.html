@@ -1,0 +1,1442 @@
+<title>Pixel Vreter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+/* Layout: one centered arcade cabinet column: marquee, glowing CRT screen, control strip */
+:root{
+  --bg:#07040f; --panel:#120a24; --ink:#ece6ff; --dim:#9a8cc8;
+  --pink:#ff2a6d; --cyan:#05d9e8; --yellow:#fff200; --violet:#7b5cff;
+  --display:"Press Start 2P", ui-monospace, "Courier New", monospace;
+  --body:"VT323", ui-monospace, "Courier New", monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{
+  background:radial-gradient(ellipse at 50% 0%, #1b0b3a 0%, var(--bg) 60%) fixed, var(--bg);
+  color:var(--ink); font-family:var(--body); font-size:20px; line-height:1.2;
+  padding-inline:16px; box-sizing:border-box;
+}
+.cab{display:flex; flex-direction:column; align-items:center; gap:12px; padding-block:14px; max-width:640px; margin:0 auto}
+h1{
+  margin:0; font-family:var(--display); font-weight:400; font-size:clamp(18px,5vw,28px); letter-spacing:.08em;
+  color:var(--yellow); text-align:center; text-wrap:balance;
+  text-shadow:0 0 6px var(--yellow), 0 0 18px var(--pink), 3px 3px 0 var(--pink);
+}
+.tag{margin:0; color:var(--dim); font-size:18px; letter-spacing:.06em; text-align:center}
+.screen{
+  position:relative; aspect-ratio:224/288; max-width:100%;
+  width:min(100%, calc((100dvh - 200px) * 224 / 288)); min-width:min(100%, 260px);
+  background:#000; border:2px solid var(--violet); border-radius:6px;
+  box-shadow:0 0 14px var(--violet), inset 0 0 20px rgba(123,92,255,.35);
+  overflow:hidden; touch-action:none;
+}
+.screen canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+#scr{image-rendering:pixelated; image-rendering:crisp-edges}
+#glow{filter:blur(5px) brightness(1.7) saturate(1.5); mix-blend-mode:screen; opacity:.85; pointer-events:none}
+.keys{margin:0; color:var(--dim); font-size:18px; text-align:center; max-width:60ch}
+.keys b{color:var(--ink); font-weight:400}
+/* screen + power-up cards: cards below the screen on small screens; on wide ones the maze stays
+   in the middle with cards on both sides */
+.play{display:flex; flex-direction:column; align-items:center; gap:12px; width:100%}
+.play .screen{order:-1}
+.powers{display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:6px; width:100%}
+@media (min-width:1000px){
+  .cab{max-width:none}
+  .play{display:grid; grid-template-columns:1fr auto 1fr; column-gap:16px; align-items:start}
+  .play .screen{grid-column:2; width:min(calc(100vw - 560px), calc((100dvh - 200px) * 224 / 288))}
+  .play .screen{order:0}
+  .powers{display:flex; flex-direction:column; width:240px}
+  #powersL{grid-column:1; justify-self:end}
+  #powersR{grid-column:3; justify-self:start}
+}
+/* one card per power-up: icon, name, what it does, which key, and whether it's ready */
+.pcard{
+  display:grid; grid-template-columns:34px 1fr; column-gap:8px; align-items:start;
+  padding:6px 8px; background:var(--panel); border:2px solid #3a2a5c; border-radius:8px;
+  touch-action:manipulation; user-select:none; transition:box-shadow .2s, border-color .2s;
+}
+.pcard[data-act]{cursor:pointer}
+.pi{grid-row:span 6; font-size:26px; line-height:34px; text-align:center}
+.pn{font-family:var(--display); font-size:10px; color:var(--yellow); margin-top:2px}
+.pw{font-size:15px; line-height:1; margin:2px 0}
+.pk{font-family:var(--display); font-size:7px; color:var(--cyan); line-height:1.4}
+.pbar{height:3px; margin:3px 0 2px; background:#2a1d48; border-radius:2px; overflow:hidden}
+.pbar i{display:block; height:100%; width:0; background:var(--cyan)}
+.ps{font-family:var(--display); font-size:7px; color:var(--dim)}
+.pg{font-size:14px; line-height:1; margin-top:3px; color:#ff9cd0}
+.pcard.locked{opacity:.45}
+.pcard.locked .pi{filter:grayscale(1)}
+.pcard.ready{border-color:var(--cyan); box-shadow:0 0 10px rgba(5,217,232,.6)}
+.pcard.ready .ps{color:#00ff9f}
+.pcard.active{border-color:var(--yellow); box-shadow:0 0 14px var(--yellow)}
+.pcard.active .ps{color:var(--yellow)}
+/* test button: unlocks every power-up right away, without adding points */
+.test{
+  font-family:var(--display); font-size:10px; letter-spacing:.06em; color:var(--dim);
+  background:transparent; border:1px dashed var(--dim); border-radius:6px; padding:8px 12px; cursor:pointer;
+}
+.test:hover{color:var(--ink); border-color:var(--ink)}
+</style>
+
+<div class="cab">
+  <h1>PIXEL VRETER</h1>
+  <p class="tag">1 SPELER · 3 LEVENS · EXTRA LEVEN BIJ 10000 · HOE MEER PUNTEN, HOE MEER POWER-UPS</p>
+  <div class="play">
+    <div class="powers" id="powersL" aria-label="Power-ups"></div>
+    <div class="screen" id="screen">
+      <canvas id="scr"></canvas>
+      <canvas id="glow"></canvas>
+    </div>
+    <div class="powers" id="powersR" aria-label="Meer power-ups"></div>
+  </div>
+  <button class="test" id="testBtn">🧪 TEST: ALLE POWER-UPS</button>
+  <p class="keys"><b>Pijltjes / WASD</b> bewegen · <b>Enter</b> start · <b>←/→</b> op het startscherm: speler kiezen · <b>P</b> pauze · <b>M</b> geluid · de <b>power-ups</b> staan bij de kaartjes · op je telefoon: <b>swipen</b> = bewegen, op een kaartje <b>tikken</b> = power-up gebruiken</p>
+</div>
+
+<script>
+(() => {
+'use strict';
+const MAZE1 = [
+"############################",
+"#............##............#",
+"#.####.#####.##.#####.####.#",
+"#o####.#####.##.#####.####o#",
+"#.####.#####.##.#####.####.#",
+"#..........................#",
+"#.####.##.########.##.####.#",
+"#.####.##.########.##.####.#",
+"#......##....##....##......#",
+"######.##### ## #####.######",
+"     #.##### ## #####.#     ",
+"     #.##          ##.#     ",
+"     #.## ###--### ##.#     ",
+"######.## #      # ##.######",
+"      .   #      #   .      ",
+"######.## #      # ##.######",
+"     #.## ######## ##.#     ",
+"     #.##          ##.#     ",
+"     #.## ######## ##.#     ",
+"######.## ######## ##.######",
+"#............##............#",
+"#.####.#####.##.#####.####.#",
+"#.####.#####.##.#####.####.#",
+"#o..##.......  .......##..o#",
+"###.##.##.########.##.##.###",
+"###.##.##.########.##.##.###",
+"#......##....##....##......#",
+"#.##########.##.##########.#",
+"#.##########.##.##########.#",
+"#..........................#",
+"############################"];
+// level 2 gets its own layout; the middle (ghost house, tunnel) stays the same
+const MAZE2 = [
+"############################",
+"#.........########.........#",
+"#.#######.########.#######.#",
+"#o#######.########.#######o#",
+"#............##............#",
+"###.#####.##.##.##.#####.###",
+"###.#####.##.##.##.#####.###",
+"###.#####.##.##.##.#####.###",
+"###..........##..........###",
+"######.##### ## #####.######",
+"     #.##### ## #####.#     ",
+"     #.##          ##.#     ",
+"     #.## ###--### ##.#     ",
+"######.## #      # ##.######",
+"      .   #      #   .      ",
+"######.## #      # ##.######",
+"     #.## ######## ##.#     ",
+"     #.##          ##.#     ",
+"     #.## ######## ##.#     ",
+"######.## ######## ##.######",
+"#............##............#",
+"#.##.####.##.##.##.####.##.#",
+"#.##.####.##.##.##.####.##.#",
+"#o...........  ...........o#",
+"###.##.##.########.##.##.###",
+"###.##.##.########.##.##.###",
+"#..........................#",
+"#.####.#####.##.#####.####.#",
+"#.####.#####.##.#####.####.#",
+"#..........................#",
+"############################"];
+const mazeFor = lv => lv === 2 ? MAZE2 : MAZE1;
+let MAP = MAZE1;
+const T = 8, COLS = 28, ROWS = 31, OY = 24, W = 224, H = 288, BASE = 1.3;
+
+const scr = document.getElementById('scr'), glow = document.getElementById('glow');
+const buf = document.createElement('canvas'); buf.width = W; buf.height = H;
+const g = buf.getContext('2d');
+scr.width = W * 4; scr.height = H * 4;
+const sx = scr.getContext('2d'); sx.imageSmoothingEnabled = false;
+glow.width = W; glow.height = H;
+const gx = glow.getContext('2d');
+
+const FONT = '8px "Press Start 2P", monospace';
+const WALLS = ['#3d5afe', '#b026ff', '#00ff9f', '#ff2a6d', '#05d9e8', '#ff9100', '#fff200'];
+const C = { pac:'#fff200', dot:'#ffc8ec', door:'#ff71ce', fright:'#2b4bff', face:'#ffd6a5',
+            white:'#ffffff', power:'#05f7ff', ice:'#aeefff', shield:'#ffd23f', ink:'#ece6ff', cyan:'#05d9e8', red:'#ff073a', pupil:'#2b2bff' };
+
+// power pellet sprite: 8x8 pixel lightning bolt, rows of [x, y, width]
+const BOLT = [[4,0,3],[3,1,3],[2,2,3],[1,3,6],[3,4,3],[3,5,2],[2,6,2],[2,7,1]];
+
+const DIRS = { up:[0,-1], left:[-1,0], down:[0,1], right:[1,0] };
+const ORDER = ['up', 'left', 'down', 'right'];
+const OPP = { up:'down', down:'up', left:'right', right:'left' };
+
+/* ---------- maze ---------- */
+let grid, dotsLeft, dotsEaten, totalDots;
+function resetMaze() {
+  MAP = mazeFor(level);
+  grid = MAP.map(r => r.split(''));
+  dotsLeft = 0; dotsEaten = 0;
+  for (const r of grid) for (const ch of r) if (ch === '.' || ch === 'o') dotsLeft++;
+  totalDots = dotsLeft;
+}
+function tileAt(c, r) {
+  if (r < 0 || r >= ROWS) return '#';
+  if (c < 0 || c >= COLS) return r === 14 ? ' ' : '#';
+  return grid[r][c];
+}
+const open = (c, r) => { const t = tileAt(c, r); return t !== '#' && t !== '-'; };
+const tx = e => Math.floor(e.x / T), ty = e => Math.floor(e.y / T);
+const atCenter = e => (e.x - 4) % 8 === 0 && (e.y - 4) % 8 === 0;
+function wrap(e) { if (e.x < -8) e.x += 240; else if (e.x >= 232) e.x -= 240; }
+
+const wallCache = {};
+function wallLayer(color) {
+  const key = color + (MAP === MAZE2 ? 2 : 1);
+  if (wallCache[key]) return wallCache[key];
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  const isW = (cc, rr) => { const t = MAP[rr] === undefined ? '#' : (cc < 0 || cc >= COLS ? (rr === 14 ? ' ' : '#') : MAP[rr][cc]); return t === '#' || t === '-'; };
+  const hl = (a, b, y) => x.fillRect(a, y + OY, b - a + 1, 1);
+  const vl = (xx, a, b) => x.fillRect(xx, a + OY, 1, b - a + 1);
+  const I = 3;
+  for (let r = 0; r < ROWS; r++) for (let cc = 0; cc < COLS; cc++) {
+    const t = MAP[r][cc];
+    const x0 = cc * T, y0 = r * T;
+    if (t === '-') { x.fillStyle = C.door; x.fillRect(x0, y0 + 3 + OY, 8, 2); continue; }
+    if (t !== '#') continue;
+    x.fillStyle = color;
+    const up = !isW(cc, r - 1), dn = !isW(cc, r + 1), lf = !isW(cc - 1, r), rt = !isW(cc + 1, r);
+    const xs = lf ? x0 + I + 1 : x0, xe = rt ? x0 + 7 - I - 1 : x0 + 7;
+    const ys = up ? y0 + I + 1 : y0, ye = dn ? y0 + 7 - I - 1 : y0 + 7;
+    if (up) hl(xs, xe, y0 + I);
+    if (dn) hl(xs, xe, y0 + 7 - I);
+    if (lf) vl(x0 + I, ys, ye);
+    if (rt) vl(x0 + 7 - I, ys, ye);
+    if (!up && !lf && !isW(cc - 1, r - 1)) { vl(x0 + I, y0, y0 + I); hl(x0, x0 + I, y0 + I); }
+    if (!up && !rt && !isW(cc + 1, r - 1)) { vl(x0 + 7 - I, y0, y0 + I); hl(x0 + 7 - I, x0 + 7, y0 + I); }
+    if (!dn && !lf && !isW(cc - 1, r + 1)) { vl(x0 + I, y0 + 7 - I, y0 + 7); hl(x0, x0 + I, y0 + 7 - I); }
+    if (!dn && !rt && !isW(cc + 1, r + 1)) { vl(x0 + 7 - I, y0 + 7 - I, y0 + 7); hl(x0 + 7 - I, x0 + 7, y0 + 7 - I); }
+  }
+  return wallCache[key] = c;
+}
+
+/* ---------- sprites ---------- */
+const spriteCache = {};
+// player: cartoon Arjen Lubach head, 15x15, always facing front.
+// H hair, B brows, S skin, s shadow, N nose, X stubble, E eye white
+const HEAD = [
+"....HHHHHHH....",
+"..HHHHHHHHHHH..",
+".HHHHHHHHHHHHH.",
+".HHSSSSSSSSSHH.",
+".HSBBBSSSBBBSH.",
+"sSSEEESSSEEESSs",
+"sSSEEESNSEEESSs",
+".SSSSSSNSSSSSS.",
+".SSSSSNNSSSSSS.",
+".SSSSSSSSSSSSS.",
+"..SSSSSSSSSSS..",
+"..SSSSSSSSSSS..",
+"...SXSSSSSXS...",
+"....XXSSSXX....",
+".....XXXXX.....",
+];
+// mouth overlays per openness: closed grin, half open, wide chomp (M dark, T teeth)
+const MOUTHS = [
+  { 9: ".SSMSSSSSSSMSS.", 10: "..SSMMMMMMMSS.." },
+  { 9: ".SSMMMMMMMMMSS.", 10: "..SMTTTTTTTMS..", 11: "..SSMMMMMMMSS.." },
+  { 9: ".SSMMMMMMMMMSS.", 10: "..SMTTTTTTTMS..", 11: "..SMMMMMMMMMS..", 12: "...SMMMMMMMS..." },
+];
+const HEAD_COL = { S:'#f2c29b', s:'#d99b74', N:'#d99b74', B:'#4a3018', X:'#c08a68', E:'#ffffff', M:'#5a1020', T:'#ffffff' };
+function lubachSprite(dir, mouth, color = C.pac) {
+  const key = 'l' + dir + mouth.toFixed(2) + color;
+  if (spriteCache[key]) return spriteCache[key];
+  const c = document.createElement('canvas'); c.width = c.height = 15;
+  const x = c.getContext('2d');
+  const m = MOUTHS[mouth <= 0 ? 0 : mouth < 0.6 ? 1 : 2];
+  // hair is brown normally, glows in the power colour while energized
+  const cols = { ...HEAD_COL, H: color === C.pac ? '#7a5530' : color };
+  for (let py = 0; py < 15; py++) {
+    const row = m[py] || HEAD[py];
+    for (let px = 0; px < 15; px++) {
+      const ch = row[px];
+      if (ch === '.') continue;
+      x.fillStyle = cols[ch]; x.fillRect(px, py, 1, 1);
+    }
+  }
+  // pupils look where he's heading
+  const [ox, oy] = { right:[2,0], left:[0,0], up:[1,-1], down:[1,1] }[dir] || [1,0];
+  x.fillStyle = '#1a1a2e';
+  for (const ex of [3, 9]) {
+    if (oy) x.fillRect(ex + ox, oy < 0 ? 5 : 6, 1, 1);
+    else x.fillRect(ex + ox, 5, 1, 2);
+  }
+  return spriteCache[key] = c;
+}
+function pacmanSprite(dir, mouth, color = C.pac) {
+  const key = 'p' + dir + mouth.toFixed(2) + color;
+  if (spriteCache[key]) return spriteCache[key];
+  const c = document.createElement('canvas'); c.width = c.height = 13;
+  const x = c.getContext('2d'); x.fillStyle = color;
+  const ang = { right:0, down:Math.PI / 2, left:Math.PI, up:-Math.PI / 2 }[dir];
+  for (let py = 0; py < 13; py++) for (let px = 0; px < 13; px++) {
+    const dx = px - 6, dy = py - 6;
+    if (dx * dx + dy * dy > 42.5) continue;
+    if (mouth > 0 && (dx || dy)) {
+      let a = Math.atan2(dy, dx) - ang; a = Math.atan2(Math.sin(a), Math.cos(a));
+      if (Math.abs(a) < mouth) continue;
+    }
+    x.fillRect(px, py, 1, 1);
+  }
+  return spriteCache[key] = c;
+}
+
+// Minecraft-style dirt block, 15x15: speckled dirt, square eyes and mouth.
+// Green grass on top; it glows in the power colour while energized.
+function dirtSprite(dir, mouth, color = C.pac) {
+  const key = 'd' + dir + mouth.toFixed(2) + color;
+  if (spriteCache[key]) return spriteCache[key];
+  const c = document.createElement('canvas'); c.width = c.height = 15;
+  const x = c.getContext('2d');
+  for (let py = 0; py < 15; py++) for (let px = 0; px < 15; px++) {
+    let h = Math.imul(px + 11, 374761393) ^ Math.imul(py + 7, 668265263);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    const r = ((h ^ (h >>> 16)) >>> 0) % 100 / 100;
+    x.fillStyle = r < 0.18 ? '#5d3f2a' : r < 0.32 ? '#b38458' : r < 0.42 ? '#6f6f6f' : '#8a5f3e';
+    x.fillRect(px, py, 1, 1);
+  }
+  // grass top with uneven drips down the side, like the Minecraft grass block
+  const power = color !== C.pac;
+  const GRASS_DRIP = [3,2,3,4,2,3,2,2,4,3,2,3,4,2,3];
+  for (let px = 0; px < 15; px++) for (let py = 0; py < GRASS_DRIP[px]; py++) {
+    const shade = (px * 5 + py * 3) % 7;
+    x.fillStyle = power ? (shade < 2 ? '#ffffff' : color)
+                        : (shade < 2 ? '#7cbd4a' : shade < 4 ? '#4a7f2c' : '#5d9b3a');
+    x.fillRect(px, py, 1, 1);
+  }
+  // eyes look where the block is heading
+  const [ox, oy] = { right:[1,0], left:[-1,0], up:[0,-1], down:[0,1] }[dir] || [0,0];
+  x.fillStyle = '#111';
+  x.fillRect(3 + ox, 5 + oy, 2, 2); x.fillRect(10 + ox, 5 + oy, 2, 2);
+  // mouth: thin line when closed, wider box when chomping
+  const open = mouth <= 0 ? 0 : mouth < 0.6 ? 1 : 2;
+  x.fillStyle = '#1e120a';
+  if (open === 0) x.fillRect(4, 10, 7, 1);
+  else if (open === 1) x.fillRect(4, 9, 7, 3);
+  else { x.fillRect(3, 9, 9, 4); x.fillStyle = '#c0392b'; x.fillRect(5, 11, 5, 1); }
+  return spriteCache[key] = c;
+}
+
+// Steve's head: the classic 8x8 face drawn at 2x (16x16).
+// H hair, S skin, W eye white, P iris, N nose, M mouth
+const STEVE = ["HHHHHHHH", "HHHHHHHH", "HSSSSSSH", "SSSSSSSS", "SWPSSPWS", "SSSNNSSS", "SSMSSMSS", "SSMMMMSS"];
+const STEVE_COL = { S:['#b58263', '#a8765a'], W:['#ffffff', '#ffffff'], P:['#523d89', '#523d89'], N:['#8a4c3d', '#8a4c3d'], M:['#6a3f2f', '#5e372a'] };
+function steveSprite(dir, mouth, color = C.pac) { return playerHeadSprite('s', STEVE, false, mouth, color); }
+// Herobrine: Steve with blank, glowing white eyes
+const HEROBRINE = ["HHHHHHHH", "HHHHHHHH", "HSSSSSSH", "SSSSSSSS", "SWWSSWWS", "SSSNNSSS", "SSMSSMSS", "SSMMMMSS"];
+function herobrineSprite(dir, mouth, color = C.pac) { return playerHeadSprite('h', HEROBRINE, true, mouth, color); }
+function playerHeadSprite(id, face, glowEyes, mouth, color) {
+  const key = id + mouth.toFixed(2) + color;
+  if (spriteCache[key]) return spriteCache[key];
+  const c = document.createElement('canvas'); c.width = c.height = 16;
+  const x = c.getContext('2d');
+  // hair is dark brown normally, glows in the power colour while energized
+  const hair = color === C.pac ? ['#2f1f0f', '#3d2a14'] : [color, '#ffffff'];
+  for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+    const ch = face[py >> 1][px >> 1], shade = phash(px, py) < 0.3 ? 1 : 0;
+    x.fillStyle = ch === 'H' ? hair[phash(px, py) < 0.15 ? 1 : 0] : STEVE_COL[ch][shade];
+    x.fillRect(px, py, 1, 1);
+  }
+  // chomping: the mouth opens downward into the chin
+  const open = mouth <= 0 ? 0 : mouth < 0.6 ? 1 : 2;
+  if (open) {
+    x.fillStyle = '#2a120a'; x.fillRect(4, 13, 8, open === 1 ? 2 : 3);
+    if (open === 2) { x.fillStyle = '#ffffff'; x.fillRect(5, 13, 6, 1); }
+  }
+  if (glowEyes) { // soft white halo around the eyes
+    x.fillStyle = 'rgba(255,255,255,0.3)';
+    x.fillRect(1, 7, 6, 1); x.fillRect(9, 7, 6, 1); x.fillRect(1, 10, 6, 1); x.fillRect(9, 10, 6, 1);
+  }
+  return spriteCache[key] = c;
+}
+
+// Creeper head: 8x8 face at 2x. Energized = charged creeper (blue lightning stripes).
+const CREEPER_FACE = ["GGGGGGGG", "GGGGGGGG", "GKKGGKKG", "GKKGGKKG", "GGGKKGGG", "GGKKKKGG", "GGKKKKGG", "GGKGGKGG"];
+const CREEPER_GREENS = ['#5fb04a', '#4c9a3a', '#7cc95e', '#3b7d2b', '#a3dc85'];
+function creeperSprite(dir, mouth, color = C.pac) {
+  const key = 'c' + dir + mouth.toFixed(2) + color;
+  if (spriteCache[key]) return spriteCache[key];
+  const c = document.createElement('canvas'); c.width = c.height = 16;
+  const x = c.getContext('2d');
+  const open = mouth <= 0 ? 0 : mouth < 0.6 ? 1 : 2;
+  for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+    let ch = CREEPER_FACE[py >> 1][px >> 1];
+    // chomping: the mouth grows wider and deeper
+    if (open && py >= 8 && px >= 4 - open && px < 12 + open && py < 14 + open) ch = 'K';
+    if (ch === 'K') x.fillStyle = '#111111';
+    else { const h = phash(px + 40, py + 40); x.fillStyle = CREEPER_GREENS[h < 0.45 ? 0 : h < 0.65 ? 1 : h < 0.82 ? 2 : h < 0.95 ? 3 : 4]; }
+    x.fillRect(px, py, 1, 1);
+  }
+  if (color !== C.pac) { // charged: diagonal energy stripes
+    x.fillStyle = color; x.globalAlpha = 0.55;
+    for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) if ((px + py) % 6 === 0 || (px - py + 16) % 9 === 0) x.fillRect(px, py, 1, 1);
+    x.globalAlpha = 1;
+  }
+  return spriteCache[key] = c;
+}
+
+// Playable characters, picked on the title screen. To add one: write a
+// sprite(dir, mouth, color) function returning a size x size canvas
+// (mouth: 0 = closed .. 0.9 = wide open; color = C.pac normally, the power colour when energized)
+// and add an entry here. spinDeath: true spins the head away instead of the Pac-Man fold.
+const CHARACTERS = [
+  { name:'PAC-MAN', size:13, sprite:pacmanSprite, spinDeath:false },
+  { name:'LUBACH',  size:15, sprite:lubachSprite, spinDeath:true },
+  { name:'DIRT',    size:15, sprite:dirtSprite,   spinDeath:true, theme:'minecraft' },
+  { name:'STEVE',   size:16, sprite:steveSprite,  spinDeath:true, theme:'minecraft' },
+  { name:'HEROBRINE', size:16, sprite:herobrineSprite, spinDeath:true, theme:'minecraft' },
+  // as the creeper, the ghosts are player heads instead of mobs, and you blow up when caught
+  { name:'CREEPER', size:16, sprite:creeperSprite, spinDeath:true, theme:'minecraft', explodes:true,
+    mobs:{ blinky:'steve', pinky:'alex', inky:'herobrine', clyde:'blondie' } },
+];
+const CHAR_KEY = 'neon-chomp-char';
+let charIdx = 0;
+try { charIdx = Math.min(CHARACTERS.length - 1, parseInt(localStorage.getItem(CHAR_KEY), 10) || 0); } catch (e) {}
+function hero() { return CHARACTERS[charIdx]; }
+const isMC = () => hero().theme === 'minecraft';
+const explodes = () => isMC() && (hero().explodes || mobFor(killer) === 'creeper');
+function pickChar(step) {
+  charIdx = (charIdx + step + CHARACTERS.length) % CHARACTERS.length;
+  try { localStorage.setItem(CHAR_KEY, String(charIdx)); } catch (e) {}
+  sfx.waka();
+}
+function drawHero(img, x, y) { const h = img.width >> 1; g.drawImage(img, x - h, y - h); }
+const GHOST_BODY = [
+".....####.....",
+"...########...",
+"..##########..",
+".############.",
+".############.",
+".############.",
+"##############",
+"##############",
+"##############",
+"##############",
+"##############",
+"##############"];
+const FEET = [["##.###..###.##", "#...##..##...#"], ["####.####.####", ".##...##...##."]];
+function ghostBody(color, f) {
+  const key = 'g' + color + f;
+  if (spriteCache[key]) return spriteCache[key];
+  const c = document.createElement('canvas'); c.width = c.height = 14;
+  const x = c.getContext('2d'); x.fillStyle = color;
+  GHOST_BODY.concat(FEET[f]).forEach((row, y) => { for (let i = 0; i < 14; i++) if (row[i] === '#') x.fillRect(i, y, 1, 1); });
+  return spriteCache[key] = c;
+}
+const EYE = [".##.", "####", "####", "####", ".##."];
+const EYE_OFF = { left:[-1,0], right:[1,0], up:[0,-1], down:[0,1] };
+const PUPIL = { left:[0,1], right:[2,1], up:[1,0], down:[1,3] };
+function drawAura(cx, cy) {
+  // pulsing pixel ring around the chomper while powered up
+  const r = 8.5 + ((frame >> 3) & 1);
+  g.fillStyle = C.door;
+  for (let dy = -11; dy <= 11; dy++) for (let dx = -11; dx <= 11; dx++) {
+    const d = Math.hypot(dx, dy);
+    if (d > r - 0.6 && d <= r + 0.4 && ((dx + dy + (frame >> 2)) & 1)) g.fillRect(cx + dx, cy + dy, 1, 1);
+  }
+}
+function drawEyes(gh) {
+  const bx = gh.x - 7, by = gh.y - 7 + OY, [ox, oy] = EYE_OFF[gh.dir], [px, py] = PUPIL[gh.dir];
+  for (const ex of [2, 8]) {
+    g.fillStyle = C.white;
+    EYE.forEach((row, y) => { for (let i = 0; i < 4; i++) if (row[i] === '#') g.fillRect(bx + ex + ox + i, by + 3 + oy + y, 1, 1); });
+    g.fillStyle = C.pupil;
+    g.fillRect(bx + ex + ox + px, by + 3 + oy + py, 2, 2);
+  }
+}
+function drawFrightFace(gh, color) {
+  const bx = gh.x - 7, by = gh.y - 7 + OY;
+  g.fillStyle = color;
+  g.fillRect(bx + 4, by + 5, 2, 2); g.fillRect(bx + 8, by + 5, 2, 2);
+  for (let i = 2; i <= 11; i++) g.fillRect(bx + i, by + 9 + (((i + 1) >> 1) & 1), 1, 1);
+}
+
+/* ---------- minecraft theme ---------- */
+// pixel hash 0..1, stable per position so textures never flicker
+function phash(a, b) {
+  let h = Math.imul(a + 11, 374761393) ^ Math.imul(b + 7, 668265263);
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) % 1000 / 1000;
+}
+// one world per level, cycling. pal: [base, dark, light, accent]; ore: [colour, chance per block]
+const WORLDS = [
+  { floor:'#0c140a', pal:['#8a5f3e', '#5d3f2a', '#b38458', '#6f6f6f'], grass:true },
+  { floor:'#160505', pal:['#6f2a2a', '#4f1b1b', '#8f3b3b', '#a24a3b'], ore:[['#ffd27a', 0.05]],
+    mobs:{ blinky:'blaze', pinky:'piglin', inky:'wither', clyde:'magma' } },
+  { floor:'#06040c', pal:['#dbdea0', '#c2c58a', '#eef0bc', '#b9b97f'],
+    mobs:{ blinky:'enderman', pinky:'shulker', inky:'endermite', clyde:'dragon' } },
+];
+const worldFor = lv => WORLDS[(lv - 1) % WORLDS.length];
+function mcWallLayer(world, flash) {
+  const key = 'mc' + WORLDS.indexOf(world) + (MAP === MAZE2 ? 2 : 1) + flash;
+  if (wallCache[key]) return wallCache[key];
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  const isW = (cc, rr) => { const t = MAP[rr] === undefined ? '#' : (cc < 0 || cc >= COLS ? (rr === 14 ? ' ' : '#') : MAP[rr][cc]); return t === '#'; };
+  for (let r = 0; r < ROWS; r++) for (let cc = 0; cc < COLS; cc++) {
+    const t = MAP[r][cc], x0 = cc * T, y0 = r * T + OY;
+    if (t === '-') { // oak fence as the ghost-house door
+      x.fillStyle = '#9c6b30'; x.fillRect(x0, y0 + 2, 8, 1); x.fillRect(x0, y0 + 5, 8, 1);
+      x.fillStyle = '#6b4a22'; x.fillRect(x0 + 1, y0 + 1, 2, 6); x.fillRect(x0 + 5, y0 + 1, 2, 6);
+      continue;
+    }
+    if (t !== '#') continue;
+    let ore = null;
+    if (world.ore) { let acc = 0, h = phash(cc * 31, r * 17); for (const [col, ch] of world.ore) { acc += ch; if (h < acc) { ore = col; break; } } }
+    for (let py = 0; py < 8; py++) for (let px = 0; px < 8; px++) {
+      const h = phash(x0 + px, y0 + py);
+      let col = world.pal[h < 0.55 ? 0 : h < 0.73 ? 1 : h < 0.88 ? 2 : 3];
+      if (ore && px > 0 && px < 7 && py > 0 && py < 7 && phash(px * 7 + cc, py * 3 + r) < 0.28) col = ore;
+      x.fillStyle = col; x.fillRect(x0 + px, y0 + py, 1, 1);
+    }
+    const up = !isW(cc, r - 1), dn = !isW(cc, r + 1), lf = !isW(cc - 1, r), rt = !isW(cc + 1, r);
+    if (world.grass && up) {
+      for (let px = 0; px < 8; px++) {
+        const drip = 2 + (phash(x0 + px, r) < 0.4 ? 1 : 0);
+        for (let py = 0; py < drip; py++) {
+          const h = phash(x0 + px + 99, y0 + py);
+          x.fillStyle = h < 0.3 ? '#7cbd4a' : h < 0.6 ? '#4a7f2c' : '#5d9b3a'; x.fillRect(x0 + px, y0 + py, 1, 1);
+        }
+      }
+    }
+    // bevel on exposed sides so blocks read as 3D
+    x.fillStyle = 'rgba(255,255,255,0.16)';
+    if (up && !world.grass) x.fillRect(x0, y0, 8, 1);
+    if (lf) x.fillRect(x0, y0, 1, 8);
+    x.fillStyle = 'rgba(0,0,0,0.35)';
+    if (dn) x.fillRect(x0, y0 + 7, 8, 1);
+    if (rt) x.fillRect(x0 + 7, y0, 1, 8);
+    if (flash) { x.fillStyle = 'rgba(255,255,255,0.6)'; x.fillRect(x0, y0, 8, 8); }
+  }
+  return wallCache[key] = c;
+}
+
+// mobs replace the ghosts: 14x14, front facing, last two rows are the walk frames
+const MOBS = {
+  creeper: { pal:{ g:'#5fb04a', G:'#3b7d2b', l:'#9be27a', k:'#111111' }, rows:[
+    "...gGglgGgl...", "...glGgggGg...", "...gkkggkkg...", "...gkkggkkg...", "...gggkkggg...", "...ggkkkkgg...",
+    "...ggkggkgg...", "...gGggglGg...", "....gGlggG....", "....ggGglg....", "....lgggGg....", "....gGgglg...."],
+    feet:[["...gGg..gGg...", "...ggg..ggg..."], ["....gGggGg....", "....gg..gg...."]] },
+  zombie: { pal:{ h:'#2f5428', s:'#5a9e4b', k:'#1d1d2a', m:'#2b4f24', t:'#2fa3a8', T:'#217f84', p:'#3b3a8f', P:'#2a2970' }, rows:[
+    "...hhhhhhhh...", "...hhhhhhhh...", "...ssssssss...", "...skksskks...", "...ssssssss...", "...sssmssss...",
+    "...ssmmmmss...", "...ssssssss...", "..sttttttts...", "..stTttttTs...", "..s.tttttt.s..", "....pppppp...."],
+    feet:[["....pp..pp....", "....PP..PP...."], ["...pp....pp...", "...PP....PP..."]] },
+  skeleton: { pal:{ w:'#d8d8d8', W:'#a8a8a8', k:'#2a2a2a' }, rows:[
+    "...wwwwwwww...", "...wWwwwwWw...", "...wwwwwwww...", "...wkkwwkkw...", "...wwwkkwww...", "...wwwwwwww...",
+    "...wkwkwkww...", "...wwwwwwww...", "....wWwwWw....", "..w.kwkwkw.w..", "..w.wWwwWw.w..", "..W..wwww..W.."],
+    feet:[[".....w..w.....", ".....W..W....."], ["....w....w....", "....W....W...."]] },
+  spider: { pal:{ b:'#3a302a', B:'#241d18', r:'#e0201c', l:'#5a4c42' }, rows:[
+    "..............", "..............", "..............", "....bbbbbb....", "l..bBbbbbBb..l", ".l.brrbbrrb.l.",
+    "..lbbbbbbbbl..", "lllbrbbbbrblll", "...bbbbbbbb...", "..lbBbbbbBbl..", ".l.bbbbbbbb.l.", "l...bbbbbb...l"],
+    feet:[[".l..........l.", "l............l"], ["l............l", ".l..........l."]] },
+  // nether mobs
+  blaze: { pal:{ y:'#f6c33a', Y:'#d98a1c', o:'#ffef8a', k:'#3a1a00', r:'#e8a020' }, rows:[
+    "...yyYyyYyy...", "...yoyyyyoy...", "...ykkyykky...", "...yyyyyyyy...", "...yYkkkkYy...", "...yyyyyyyy...", ".r..YyyyyY..r.", ".r..........r.", "...r..rr..r...", "...r..rr..r...", ".r....rr....r.", ".r....rr....r."],
+    feet:[["...r......r...", ".............."], ["..............", "...r......r..."]] },
+  piglin: { pal:{ p:'#e8a0a0', P:'#c77a7a', g:'#6aa84f', k:'#222222', s:'#d88a8a', t:'#ffffff', b:'#6b4a2b', B:'#4a3018', a:'#f0c040' }, rows:[
+    "..pppppppppp..", "..pgpppppgpp..", "..pkkppppkkp..", "..pppssssppp..", "..ppskssskpp..", "..ptsssssstp..", "..pppppppgpp..", "...bbbbbbbb...", "..pbbabbbbbp..", "..p.bbbbbb.p..", "....bbbbbb....", "....BBBBBB...."],
+    feet:[["....pp..pp....", "....PP..PP...."], ["...pp....pp...", "...PP....PP..."]] },
+  magma: { pal:{ d:'#3a0a0a', r:'#8a1c0a', o:'#ff8a1c', y:'#ffd23a' }, rows:[
+    "..............", "..dddddddddd..", "..doooddoood..", "..dyydddyydd..", "..dyydddyydd..", "..oooooooooo..", "..dddddddddd..", "..ddooddoodd..", "..dddddddddd..", "..rrrrrrrrrr..", "..dddddddddd..", "..doodddoodd.."],
+    feet:[["..dddddddddd..", ".............."], ["..dddddddddd..", "..dddddddddd.."]] },
+  // end mobs
+  enderman: { pal:{ k:'#2e2838', p:'#e079fa', P:'#cc00fa', q:'#b04ad8' }, rows:[
+    "....kkkkkk....", ".q..kkkkkk....", "....pPkkPp....", "....kkkkkk....", ".....kkkk.....", "...k.kkkk.k...", "...k.kkkk.k.q.", "...k.kkkk.k...", "...k......k...", ".....k..k.....", "..q..k..k.....", ".....k..k....."],
+    feet:[[".....k..k.....", ".....k..k....."], ["....k....k....", "....k....k...."]] },
+  shulker: { pal:{ s:'#9a6aa0', S:'#6e4a78', l:'#b98bc0', h:'#e8e0a0', k:'#222222' }, rows:[
+    "..............", "..ssssssssss..", "..slsslsslss..", "..SSSSSSSSSS..", "..hhhhhhhhhh..", "..hkkhhhhkkh..", "..hhhhhhhhhh..", "..SSSSSSSSSS..", "..ssssssssss..", "..slssslsssl..", "..ssssssssss..", "..SSSSSSSSSS.."],
+    feet:[["..............", ".............."], ["..............", ".............."]] },
+  endermite: { pal:{ m:'#5a4470', M:'#7a58a0', p:'#c060e0', e:'#ff9cff' }, rows:[
+    "..............", "..............", "..............", "..............", "..............", "..............", "....mMmMmM....", "..mMmMmMmMmm..", ".emMmMmMmMmMm.", ".mmmmmmmmmmmm.", "..p.p.p.p.p...", ".............."],
+    feet:[["..............", ".............."], ["...p.p.p.p.p..", ".............."]] },
+  dragon: { pal:{ k:'#2e2838', K:'#4a4458', p:'#e079fa', w:'#cccccc' }, rows:[
+    "...w......w...", "...K......K...", "...KkkkkkkK...", "..kkkkkkkkkk..", "..kppkkkkppk..", "..kkkkkkkkkk..", "..KkkkkkkkkK..", "...kkkkkkkk...", "...kKkkkkKk...", "...kkkkkkkk...", "...wkwkkwkw...", "...kkkkkkkk..."],
+    feet:[["...wkwkkwkw...", "...kkkkkkkk..."], ["..............", "...kkkkkkkk..."]] },
+};
+MOBS.wither = { pal:{ w:'#4a4a4a', W:'#2c2c2c', k:'#000000' }, rows:MOBS.skeleton.rows, feet:MOBS.skeleton.feet };
+const MOB_OF = { blinky:'creeper', pinky:'zombie', inky:'skeleton', clyde:'spider' };
+// hero override (creeper: player heads) > world override (nether mobs) > overworld mobs
+const mobFor = name => (hero().mobs || worldFor(level).mobs || MOB_OF)[name] || EXTRA_GHOSTS.find(e => e.name === name).mob;
+// player heads: 8x8 faces drawn at 2x; H hair, S skin, W white, P iris, N nose, M mouth
+const HEADS = {
+  steve:     { face:STEVE, pal:{ H:'#2f1f0f', S:'#b58263', W:'#ffffff', P:'#523d89', N:'#8a4c3d', M:'#6a3f2f' } },
+  alex:      { face:["HHHHHHHH", "HHHHHHHH", "HSSSSSHH", "SSSSSSSH", "SWPSSPWH", "SSSSSSSS", "SSSMMSSS", "SSSSSSSS"],
+               pal:{ H:'#d9772a', S:'#f2c8a0', W:'#ffffff', P:'#3f7a3a', M:'#c27c6a' } },
+  herobrine: { face:["HHHHHHHH", "HHHHHHHH", "HSSSSSSH", "SSSSSSSS", "SWWSSWWS", "SSSNNSSS", "SSMSSMSS", "SSMMMMSS"],
+               pal:{ H:'#2f1f0f', S:'#b58263', W:'#ffffff', N:'#8a4c3d', M:'#6a3f2f' } },
+  blondie:   { face:["HHHHHHHH", "HHHHHHHH", "HHSSSSHH", "HSSSSSSH", "SWPSSPWS", "SSSNNSSS", "SSSSSSSS", "SSMMMMSS"],
+               pal:{ H:'#e8c94a', S:'#c99470', W:'#ffffff', P:'#3a6fd8', N:'#a5705a', M:'#7a4a3a' } },
+};
+// mono: draw the whole silhouette in one colour (frightened / flashing)
+function mobSprite(name, f, mono) {
+  const key = 'm' + name + f + (mono || '');
+  if (spriteCache[key]) return spriteCache[key];
+  if (HEADS[name]) { // 16x17 head that bobs a pixel while it floats along
+    const hd = HEADS[name], c = document.createElement('canvas'); c.width = 16; c.height = 17;
+    const x = c.getContext('2d');
+    for (let py = 0; py < 16; py++) for (let px = 0; px < 16; px++) {
+      x.fillStyle = mono || hd.pal[hd.face[py >> 1][px >> 1]]; x.fillRect(px, py + f, 1, 1);
+    }
+    if (!mono && name === 'herobrine') { x.fillStyle = 'rgba(255,255,255,0.35)'; x.fillRect(1, 7 + f, 14, 4); } // eye glow
+    return spriteCache[key] = c;
+  }
+  const m = MOBS[name], c = document.createElement('canvas'); c.width = c.height = 14;
+  const x = c.getContext('2d');
+  m.rows.concat(m.feet[f]).forEach((row, y) => { for (let i = 0; i < 14; i++) { const ch = row[i]; if (ch === '.') continue; x.fillStyle = mono || m.pal[ch]; x.fillRect(i, y, 1, 1); } });
+  return spriteCache[key] = c;
+}
+// diamond replaces the lightning bolt, XP orbs replace the dots
+const DIAMOND = ["..dddd..", ".dCwwCd.", "dCwCCCCd", "dCCCCCCd", ".dCCCCd.", "..dCCd..", "...dd...", "........"];
+const DIAMOND_PAL = { d:'#1a9e94', C:'#4ee8db', w:'#e8fffc' };
+
+const FRUIT_PAL = { r:'#ff2a6d', w:'#ffffff', g:'#00ff9f', y:'#fff200', o:'#ff9100', b:'#c77dff', l:'#7dffcf', c:'#05d9e8' };
+const FRUITS = [
+  { pts:100, px:["......ggg.",".....g..g.","....g...g.","...g....g.",".rrr...g..","rwrrr.rrr.","rrrrrrwrrr","rrrrrrrrrr",".rrr.rrrr.","......rr.."] },
+  { pts:300, px:["...gggg...","..gggggg..",".rrrggrrr.","rryrrrryrr","rrrryrrrrr","ryrrrrryrr",".rrryrrrr.","..rrrrry..","...rryr...","....rr...."] },
+  { pts:500, px:["....g.....","...ggg....","..oooooo..",".oooooooo.","oowooooooo","oooooooooo","oooooooooo",".oooooooo.","..oooooo..","...oooo..."] },
+  { pts:700, px:["....b.....","....b.....",".rrrbrrr..","rrrrrrrrr.","rwrrrrrrrr","rwrrrrrrrr","rrrrrrrrrr","rrrrrrrrrr",".rrrrrrrr.","..rr..rr.."] },
+  { pts:1000, px:["....b.....","...gggg...","..glglgl..",".lglglglg.","glglglglgl","lglglglglg","glglglglgl",".lglglglg.","..glglgl..","...gggg..."] },
+  { pts:2000, px:["....yy....","....yy....","...yyyy...","yyyyyyyyyy",".yyyyyyyy.","..yyyyyy..","..yyyyyy..",".yyy..yyy.",".yy....yy.","y........y"] },
+  { pts:3000, px:["....yy....","...yyyy...","..ywyyyy..","..ywyyyy..",".yywyyyyy.",".yyyyyyyy.","yyyyyyyyyy","yyyyyyyyyy","....cc....","....cc...."] },
+  { pts:5000, px:["..cccccc..",".cc....cc.",".cccccccc.","....ww....","....ww....","....wwww..","....ww....","....www...","....ww....","....ww...."] }];
+const FRUIT_BY_LEVEL = [0, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6];
+// minecraft food replaces the fruit (same order and points); p = enchanted sparkle
+const MC_FOOD = [
+  ["....b.....","....bgg...",".rrrbrrr..","rrwrrrrrr.","rwrrrrrrrr","rrrrrrrrrr","rrrrrrrrRr",".rrrrrrRr.","..rrRRrr..","...r..r..."], // apple
+  ["..........","...cccc...",".cckccccc.","ccccccckcc","cckcccccc.","cccccccccc",".ccckccccc","cccccckcc.",".cccccc...",".........."], // cookie
+  [".......gg.","......gg.g","......og..",".....ooO..","....ooO...","...oOo....","..ooO.....",".oOo......",".oo.......","o........."], // carrot
+  ["..........","..........","...tttt...",".ttTttTtt.","tttTttTttt","tttttttttt","TttttttttT",".TTTTTTTT.","..........",".........."], // bread
+  ["..........","..........","MMMMMMMMMM","lmmmmmmmml",".msmmmsmm.","..mmmmmm..","...msmm...","....mm....","..........",".........."], // melon
+  ["..........","..........",".WWrWWWrW.","WWWWWrWWWW","WrWWWWWWrW","WWWWWWWWWW","cWcWWcWWcc","cccccccccc","cccccccccc","TTTTTTTTTT"], // cake
+  ["....b.....","....bgg...",".yyybyyy..","yywyyyyyy.","ywyyyyyyyy","yyyyyyyyyy","yyyyyyyyYy",".yyyyyyYy.","..yyYYyy..","...y..y..."], // gold
+  ["....b.....","....bgg.p.",".yyybyyy..","yypyyyyyy.","ywyyyyyyyy","yyyyyypyyy","yyyyyyyyYy",".yypyyyYy.","..yyYYyy..","...y..y..."], // ench
+];
+const MC_FOOD_PAL = { r:'#d8261c', R:'#8e1410', w:'#ffffff', b:'#5a3a1a', g:'#4caf38', o:'#f08a1c', O:'#b55a0c', t:'#c8923e', T:'#8a5a22', c:'#c68a4a', k:'#4a2a12', m:'#e8403a', M:'#3b8a2e', l:'#8fd16f', s:'#1a1a1a', W:'#f4ead8', y:'#ffd83a', Y:'#c8961c', p:'#c77dff' };
+const fruitFor = lv => FRUIT_BY_LEVEL[lv - 1] ?? 7;
+function drawFruit(i, cx, cy) {
+  const mc = isMC(), rows = mc ? MC_FOOD[i] : FRUITS[i].px, pal = mc ? MC_FOOD_PAL : FRUIT_PAL;
+  const sparkle = (frame >> 3) & 1;
+  rows.forEach((row, y) => { for (let k = 0; k < 10; k++) {
+    let ch = row[k];
+    if (ch === '.') continue;
+    if (ch === 'p' && !sparkle) ch = 'y';
+    g.fillStyle = pal[ch]; g.fillRect(cx - 5 + k, cy - 5 + y, 1, 1);
+  } });
+}
+
+/* ---------- audio ---------- */
+let ac = null, master, sirenOsc, sirenGain, muted = false, wakaFlip = false, chewNodes = [], chewUntil = 0;
+function audioInit() {
+  if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+  try {
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    master = ac.createGain(); master.gain.value = muted ? 0 : 0.5; master.connect(ac.destination);
+    sirenOsc = ac.createOscillator(); sirenOsc.type = 'triangle';
+    sirenGain = ac.createGain(); sirenGain.gain.value = 0;
+    sirenOsc.connect(sirenGain).connect(master); sirenOsc.start();
+  } catch (e) { ac = null; }
+}
+function beep(f0, f1, dur, type = 'square', vol = 0.1, when = 0) {
+  if (!ac) return;
+  const t = ac.currentTime + when, o = ac.createOscillator(), gn = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t);
+  if (f1) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  gn.gain.setValueAtTime(vol, t); gn.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(gn).connect(master); o.start(t); o.stop(t + dur + 0.02);
+  return o;
+}
+function crunch(dur, vol = 0.15, when = 0) {
+  if (!ac) return;
+  const t = ac.currentTime + when, n = Math.ceil(ac.sampleRate * dur);
+  const buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const src = ac.createBufferSource(), bp = ac.createBiquadFilter(), gn = ac.createGain();
+  src.buffer = buf; bp.type = 'bandpass'; bp.frequency.value = 1200; bp.Q.value = 0.8;
+  gn.gain.value = vol;
+  src.connect(bp).connect(gn).connect(master); src.start(t);
+  return src;
+}
+function noise(dur, vol, when, type, f0, f1, fadeIn = false) {
+  if (!ac) return;
+  const t = ac.currentTime + when, n = Math.ceil(ac.sampleRate * dur);
+  const b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (fadeIn ? i / n : Math.pow(1 - i / n, 1.5));
+  const src = ac.createBufferSource(), fl = ac.createBiquadFilter(), gn = ac.createGain();
+  src.buffer = b; fl.type = type; fl.frequency.setValueAtTime(f0, t); fl.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  gn.gain.value = vol;
+  src.connect(fl).connect(gn).connect(master); src.start(t);
+  return src;
+}
+// Minecraft-flavoured variants, used while the minecraft theme is on
+const mcSfx = {
+  waka() { const f = 1300 + Math.random() * 900; beep(f, 0, 0.09, 'sine', 0.07); beep(f * 2, 0, 0.05, 'sine', 0.025); },
+  power() { // level-up chime
+    [392, 523, 659, 784].forEach((f, i) => beep(f, 0, 0.25, 'triangle', 0.1, i * 0.08));
+    beep(1047, 0, 0.6, 'sine', 0.09, 0.32); beep(1568, 0, 0.5, 'sine', 0.03, 0.32);
+  },
+  fruit() { beep(900, 300, 0.06, 'sine', 0.14); beep(1200, 500, 0.05, 'sine', 0.06, 0.03); }, // item pick-up pop
+  death() { beep(330, 170, 0.2, 'sawtooth', 0.1); beep(220, 120, 0.2, 'square', 0.06); }, // oof
+  clear() {
+    [392, 523, 659, 784, 1047].forEach((f, i) => beep(f, 0, 0.25, 'triangle', 0.1, i * 0.09));
+    beep(1319, 0, 0.8, 'sine', 0.09, 0.45);
+  },
+};
+const sfx = {
+  waka() { if (isMC()) return mcSfx.waka(); wakaFlip = !wakaFlip; wakaFlip ? beep(520, 260, 0.08, 'square', 0.06) : beep(260, 520, 0.08, 'square', 0.06); },
+  power() {
+    if (isMC()) return mcSfx.power();
+    // bouncy 8-bit power-up: three rising hops, then a high finish
+    const notes = [523, 659, 587, 740, 659, 831, 740, 932, 1047, 1319, 1568];
+    notes.forEach((f, i) => {
+      const last = i === notes.length - 1;
+      beep(f, last ? f * 1.06 : 0, last ? 0.22 : 0.06, 'square', 0.06, i * 0.05);
+      beep(f / 2, 0, last ? 0.22 : 0.06, 'triangle', 0.08, i * 0.05);
+    });
+  },
+  powerDown() { [784, 587, 440, 294].forEach((f, i) => beep(f, f * 0.9, 0.1, 'square', 0.06, i * 0.09)); },
+  ghost() {
+    if (!ac) return;
+    // ~3s of chewing: nom-nom bites, a gulp, then the eyes zip away
+    for (const n of chewNodes) { try { n.stop(); } catch (e) {} }
+    chewNodes = [];
+    for (let i = 0; i < 11; i++) {
+      const w = i * 0.2 + (i % 2) * 0.03, f = i % 2 ? 360 : 440;
+      chewNodes.push(beep(f, 90, 0.08, 'square', 0.08, w), crunch(0.06, 0.16, w));
+    }
+    if (isMC()) chewNodes.push(beep(130, 75, 0.45, 'sawtooth', 0.1, 2.15), beep(95, 55, 0.45, 'square', 0.06, 2.15)); // burp
+    else chewNodes.push(beep(320, 110, 0.2, 'sine', 0.15, 2.25));
+    chewNodes.push(beep(200, 1400, 0.3, 'sawtooth', 0.06, 2.65));
+    chewUntil = ac.currentTime + 3;
+  },
+  fruit() { if (isMC()) return mcSfx.fruit(); [880, 1175, 1568].forEach((f, i) => beep(f, 0, 0.09, 'square', 0.08, i * 0.07)); },
+  life() { for (let i = 0; i < 6; i++) beep(1200, 0, 0.08, 'square', 0.07, i * 0.12); },
+  death() {
+    if (isMC()) return mcSfx.death();
+    for (let i = 0; i < 8; i++) beep(760 - i * 70, 380 - i * 35, 0.12, 'square', 0.09, 0.3 + i * 0.12);
+    beep(140, 60, 0.1, 'square', 0.1, 1.35); beep(140, 60, 0.1, 'square', 0.1, 1.5);
+  },
+  jingle() {
+    const notes = [523, 659, 784, 1047, 784, 659, 523, 659, 784, 988, 784, 659, 587, 740, 880, 1175];
+    notes.forEach((f, i) => beep(f, 0, 0.11, 'square', 0.07, i * 0.13));
+    [131, 131, 196, 196, 147, 147, 220, 220].forEach((f, i) => beep(f, 0, 0.24, 'triangle', 0.12, i * 0.26));
+  },
+  creeper() { // sssss... BOOM
+    noise(0.5, 0.18, 0, 'highpass', 2500, 5000, true);
+    noise(1.4, 0.6, 0.5, 'lowpass', 900, 60);
+    beep(90, 30, 0.9, 'sine', 0.35, 0.5);
+  },
+  clear() { if (isMC()) return mcSfx.clear(); [784, 988, 1175, 1568].forEach((f, i) => beep(f, 0, 0.12, 'square', 0.07, i * 0.1)); },
+  jump() { beep(300, 900, 0.18, 'square', 0.07); },
+  land() { beep(180, 90, 0.06, 'triangle', 0.1); },
+  unlock() { [523, 784, 1047, 1568].forEach((f, i) => beep(f, f * 1.5, 0.1, 'square', 0.07, i * 0.09)); },
+  freeze() { // icy tinkle falling down, with a frosty hiss
+    [2093, 1760, 1568, 1319, 1047].forEach((f, i) => beep(f, f * 1.02, 0.14, 'triangle', 0.07, i * 0.05));
+    noise(0.45, 0.06, 0, 'highpass', 5000, 9000);
+  },
+  punch() { noise(0.12, 0.25, 0, 'lowpass', 1800, 200); beep(220, 60, 0.15, 'square', 0.1); beep(1400, 2400, 0.08, 'square', 0.04, 0.05); }, // thwack + ding
+  swing() { noise(0.15, 0.08, 0, 'bandpass', 600, 2400); }, // whoosh
+  shield() { beep(1568, 392, 0.3, 'square', 0.07); beep(784, 196, 0.35, 'triangle', 0.12); } // metal clang
+};
+function siren() {
+  if (!ac) return;
+  let f;
+  if (ghosts.some(gh => gh.state === 'eaten' || gh.state === 'entering')) f = 900 + 300 * Math.sin(frame * 0.6);
+  else if (frightT > 0) f = ((frame / (frightT < 120 ? 12 : 24) | 0) % 2) ? 880 : 660; // police wee-woo, faster near the end
+  else if (isMC()) f = 130 + 18 * Math.sin(frame * 0.025); // low cave drone
+  else f = 320 + (1 - dotsLeft / totalDots) * 220 + 90 * Math.sin(frame * 0.13);
+  sirenOsc.frequency.setTargetAtTime(f, ac.currentTime, 0.015);
+  sirenGain.gain.setTargetAtTime(ac.currentTime < chewUntil ? 0.008 : 0.035, ac.currentTime, 0.05);
+}
+function sirenOff() { if (ac) sirenGain.gain.setTargetAtTime(0, ac.currentTime, 0.03); }
+function setMuted(m) {
+  muted = m;
+  if (ac) master.gain.setTargetAtTime(m ? 0 : 0.5, ac.currentTime, 0.02);
+}
+
+/* ---------- high score ---------- */
+const HI_KEY = 'neon-chomp-hi';
+function loadHi() { try { return parseInt(localStorage.getItem(HI_KEY), 10) || 0; } catch (e) { return 0; } }
+function saveHi() { try { localStorage.setItem(HI_KEY, String(hi)); } catch (e) {} }
+
+/* ---------- game state ---------- */
+let state = 'title', prevState = null, timer = 0, frame = 0;
+let score = 0, hi = loadHi(), lives = 3, level = 1, extraGiven = false, canJump = false;
+// jump ability: unlocked at JUMP_SCORE, airborne for JUMP_T frames (ghosts can't touch you), then JUMP_CD frames cooldown
+const JUMP_SCORE = 2500, JUMP_T = 40, JUMP_CD = 900;
+// more unlocks: the magnet pulls in dots up to MAGNET_R steps away; freeze stops the ghosts for FREEZE_T frames
+// (then FREEZE_CD frames cooldown); the shield blocks one ghost hit per level, followed by SAFE_T frames of blinking
+const MAGNET_SCORE = 5000, MAGNET_R = 2, FREEZE_SCORE = 15000, FREEZE_T = 180, FREEZE_CD = 1200;
+const SHIELD_SCORE = 30000, SAFE_T = 120;
+// punch: hits ghosts in front of the player for PUNCH_T frames and sends them home as eyes (no points), then PUNCH_CD frames cooldown
+const PUNCH_SCORE = 7500, PUNCH_T = 24, PUNCH_CD = 600;
+let canPunch = false, punchCd = 0;
+// what each power-up is, for the cards beside the game
+// key: keyboard key (null = works by itself); tap: how to use it on a phone
+const POWERS = [
+  { id:'jump',   icon:'⬆️', name:'SPRINGEN',  score:JUMP_SCORE,   key:'SPATIE', tap:'TIK OP HET SCHERM',
+    what:'Spring over de spoken heen. In de lucht kunnen ze je niet pakken.' },
+  { id:'magnet', icon:'🧲', name:'MAGNEET',   score:MAGNET_SCORE, key:null,
+    what:'Bolletjes vlak bij je vliegen vanzelf naar je toe.' },
+  { id:'punch',  icon:'👊', name:'SLAAN',     score:PUNCH_SCORE,  key:'E', tap:'TIK OP HET KAARTJE 👊',
+    what:'Sla een spook dat vóór je zit terug naar het spookhuis.' },
+  { id:'freeze', icon:'❄️', name:'BEVRIEZEN', score:FREEZE_SCORE, key:'F', tap:'TIK OP HET KAARTJE ❄️',
+    what:'Alle spoken staan 3 tellen stil en kunnen je niet pakken.' },
+  { id:'shield', icon:'🛡️', name:'SCHILD',    score:SHIELD_SCORE, key:null,
+    what:'Pakt een spook je? Dan ga je toch niet dood. 1 keer per level.' },
+];
+// every power-up brings an extra ghost that's good against it, so the game doesn't get easier
+// scatter: corner it wanders to (null = never wanders off, always hunts); mob: sprite in the minecraft theme
+const EXTRA_GHOSTS = [
+  { power:'jump',   name:'flits',   label:'FLITS',   color:'#7dff3a', scatter:[27, 14], mob:'spider',   what:'supersnel' },
+  { power:'magnet', name:'sluiper', label:'SLUIPER', color:'#7b5cff', scatter:[0, 14],  mob:'enderman', what:'bijna onzichtbaar' },
+  { power:'punch',  name:'tank',    label:'TANK',    color:'#c08040', scatter:[14, 31], mob:'zombie',   what:'slaan helpt niet' },
+  { power:'freeze', name:'vuur',    label:'VUUR',    color:'#ff5e1a', scatter:[14, -3], mob:'blaze',    what:'bevriest niet' },
+  { power:'shield', name:'jager',   label:'JAGER',   color:'#ff1fff', scatter:null,     mob:'wither',   what:'jaagt altijd op je' },
+];
+const FLITS_SPEED = 1.12, SLUIPER_SEE = 40; // flits speed factor; sluiper is only clearly visible within this many pixels
+const touchUI = matchMedia('(pointer:coarse)').matches;
+const howTo = pw => !pw.key ? 'GAAT VANZELF!' : touchUI ? pw.tap : 'DRUK OP ' + pw.key;
+let canMagnet = false, canFreeze = false, canShield = false, shieldUp = false, freezeT = 0, freezeCd = 0, pulls = [];
+let pac, ghosts, sp;
+let modeIdx = 0, modeT = 0, frightT = 0, frightTotal = 0, combo = 0;
+let killer = null, fruit = null, popups = [], houseDots = 0, lastDotT = 0, afterDeath = false, eatenGhost = null, deathT = 0;
+
+function spec(lv) {
+  const i = lv === 1 ? 0 : lv < 5 ? 1 : lv < 21 ? 2 : 3;
+  return {
+    pac:[.8, .9, 1, .9][i], pacF:[.9, .95, 1, 1][i], ghost:[.75, .85, .95, .95][i],
+    ghostF:[.5, .55, .6, .6][i], tunnel:[.4, .45, .5, .5][i],
+    fright:[6, 5, 4, 3, 2, 5, 2, 2, 1, 5, 2, 1, 1, 3, 1, 1, 0, 1][lv - 1] ?? 0,
+    sched: lv === 1 ? [7, 20, 7, 20, 5, 20, 5] : lv < 5 ? [7, 20, 7, 20, 5] : [5, 20, 5, 20, 5],
+    release: afterDeath ? [0, 7, 17] : lv === 1 ? [0, 30, 60] : lv === 2 ? [0, 0, 50] : [0, 0, 0]
+  };
+}
+function makeGhost(name, color, x, y, st, dir, scatter) {
+  return { name, color, x, y, dir, state:st, fright:false, acc:0, scatter, reverse:false, bob:dir === 'up' ? -1 : 1 };
+}
+function resetPositions() {
+  pac = { x:112, y:188, dir:'left', next:null, acc:0, moving:true, anim:0, jumpT:0, jumpCd:0, safeT:0, punchT:0 };
+  ghosts = [
+    makeGhost('blinky', '#ff073a', 112, 92, 'active', 'left', [25, -3]),
+    makeGhost('pinky', '#ff71ce', 112, 116, 'house', 'down', [2, -3]),
+    makeGhost('inky', '#05d9e8', 96, 116, 'house', 'up', [27, 31]),
+    makeGhost('clyde', '#ffa62b', 128, 116, 'house', 'up', [0, 31])
+  ];
+  modeIdx = 0; modeT = 0; frightT = 0; fruit = null; houseDots = 0; lastDotT = 0; eatenGhost = null;
+  freezeT = 0; pulls = [];
+  sp = spec(level);
+  addExtraGhosts(false);
+}
+const hasPower = id => ({ jump:canJump, magnet:canMagnet, punch:canPunch, freeze:canFreeze, shield:canShield })[id];
+const EXTRA_WAIT = 60, EXTRA_GAP = 90; // extras leave the house on their own clock: first after 1s, then one every 1.5s
+function addExtraGhosts(announce) {
+  // one extra ghost per unlocked power-up, starting in the ghost house
+  let n = ghosts.filter(gh => gh.wait > 0).length;
+  EXTRA_GHOSTS.forEach((e, i) => {
+    if (!hasPower(e.power) || ghosts.some(gh => gh.name === e.name)) return;
+    const gh = makeGhost(e.name, e.color, [104, 120, 96, 128, 112][i], 116, 'house', i % 2 ? 'down' : 'up', e.scatter);
+    gh.wait = EXTRA_WAIT + n++ * EXTRA_GAP;
+    ghosts.push(gh);
+    if (announce) unlocked('NIEUW SPOOK: ' + e.label, e.color);
+  });
+}
+function startGame() {
+  audioInit();
+  score = 0; lives = 3; level = 1; extraGiven = false; canJump = false; afterDeath = false; popups = [];
+  canMagnet = canFreeze = canShield = shieldUp = canPunch = false; freezeCd = punchCd = 0;
+  resetMaze(); resetPositions();
+  state = 'ready'; timer = 140; sfx.jingle();
+}
+function nextLevel() {
+  level++; afterDeath = false; shieldUp = canShield;
+  resetMaze(); resetPositions();
+  state = 'ready'; timer = 90; saveHi();
+}
+function addScore(n) {
+  score += n;
+  if (!extraGiven && score >= 10000) { extraGiven = true; lives++; sfx.life(); }
+  if (!canJump && score >= JUMP_SCORE) { canJump = true; unlocked('SPRINGEN!'); }
+  if (!canMagnet && score >= MAGNET_SCORE) { canMagnet = true; unlocked('MAGNEET!'); }
+  if (!canPunch && score >= PUNCH_SCORE) { canPunch = true; unlocked('SLAAN!'); }
+  if (!canFreeze && score >= FREEZE_SCORE) { canFreeze = true; unlocked('BEVRIEZEN!'); }
+  if (!canShield && score >= SHIELD_SCORE) { canShield = shieldUp = true; unlocked('SCHILD!'); }
+  if (ghosts) addExtraGhosts(true);
+  if (score > hi) hi = score;
+}
+function unlockAll() {
+  // test button: every power-up on and charged, the score stays as it is
+  if (state === 'title' || state === 'over') startGame();
+  canJump = canMagnet = canPunch = canFreeze = canShield = shieldUp = true;
+  pac.jumpCd = freezeCd = punchCd = 0;
+  unlocked('ALLES AAN!');
+  addExtraGhosts(false);
+}
+function unlocked(name, color = C.power) {
+  sfx.unlock();
+  const n = popups.filter(p => p.unlock).length; // several at once stack instead of overlapping
+  popups.push({ x:112, y:140 + n * 10, text:name, t:150, color, unlock:true });
+}
+/* ---------- power-up cards ---------- */
+// first three cards on the left of the maze, the rest on the right
+const powersL = document.getElementById('powersL'), powersR = document.getElementById('powersR');
+// the cards beside the game: built once, then only the status line, bar and colour change
+const cardEls = {};
+for (const pw of POWERS) {
+  const el = document.createElement('div');
+  el.className = 'pcard locked';
+  el.innerHTML = `<div class="pi">${pw.icon}</div><div class="pn">${pw.name}</div><div class="pw">${pw.what}</div>` +
+    `<div class="pk">${howTo(pw)}</div><div class="pbar"><i></i></div><div class="ps"></div>` +
+    `<div class="pg">👻 + spook ${ghostOf(pw.id).label}: ${ghostOf(pw.id).what}</div>`;
+  (Object.keys(cardEls).length < 3 ? powersL : powersR).appendChild(el);
+  cardEls[pw.id] = { el, bar:el.querySelector('.pbar i'), st:el.querySelector('.ps'), last:'' };
+}
+function ghostOf(id) { return EXTRA_GHOSTS.find(e => e.power === id); }
+function setCard(id, cls, status, fill) {
+  const c = cardEls[id], key = cls + status + fill;
+  if (c.last === key) return;
+  c.last = key; c.el.className = 'pcard ' + cls; c.st.textContent = status; c.bar.style.width = fill + '%';
+}
+function updatePowers() {
+  const charging = (cd, total) => ['', 'LAADT OP...', Math.round(100 * (1 - cd / total))];
+  const lock = pw => setCard(pw.id, 'locked', '🔒 VANAF ' + pw.score + ' PUNTEN', 0);
+  const [jp, mg, pu, fz, sh] = POWERS;
+  if (!canJump) lock(jp);
+  else if (pac.jumpT > 0) setCard('jump', 'active', 'IN DE LUCHT!', 0);
+  else if (pac.jumpCd > 0) setCard('jump', ...charging(pac.jumpCd, JUMP_CD));
+  else setCard('jump', 'ready', 'KLAAR!', 100);
+  if (!canMagnet) lock(mg); else setCard('magnet', 'ready', 'STAAT AAN', 100);
+  if (!canPunch) lock(pu);
+  else if (pac.punchT > 0) setCard('punch', 'active', 'POW!', 0);
+  else if (punchCd > 0) setCard('punch', ...charging(punchCd, PUNCH_CD));
+  else setCard('punch', 'ready', 'KLAAR!', 100);
+  if (!canFreeze) lock(fz);
+  else if (freezeT > 0) setCard('freeze', 'active', 'SPOKEN BEVROREN!', Math.round(100 * freezeT / FREEZE_T));
+  else if (freezeCd > 0) setCard('freeze', ...charging(freezeCd, FREEZE_CD));
+  else setCard('freeze', 'ready', 'KLAAR!', 100);
+  if (!canShield) lock(sh);
+  else if (pac.safeT > 0) setCard('shield', 'active', 'GERED!', 0);
+  else if (shieldUp) setCard('shield', 'ready', 'KLAAR!', 100);
+  else setCard('shield', '', 'OP - VOLGEND LEVEL WEER', 0);
+}
+function jump() {
+  if (!canJump || state !== 'play' || pac.jumpT > 0 || pac.jumpCd > 0) return;
+  pac.jumpT = JUMP_T; sfx.jump();
+}
+function freeze() {
+  if (state === 'play' && !canFreeze) return notYet('IJS: ' + FREEZE_SCORE);
+  if (!canFreeze || state !== 'play' || freezeT > 0 || freezeCd > 0) return;
+  freezeT = FREEZE_T; sfx.freeze();
+}
+// pressing a power key too early says how many points it needs, so it doesn't look broken
+function notYet(text) { if (!popups.some(p => p.text === text)) popups.push({ x:112, y:140, text, t:90, color:'#9a8cc8' }); }
+function punch() {
+  if (state === 'play' && !canPunch) return notYet('SLAAN: ' + PUNCH_SCORE);
+  if (state !== 'play' || pac.punchT > 0 || punchCd > 0) return;
+  pac.punchT = PUNCH_T; pac.punched = new Set(); punchCd = PUNCH_CD; sfx.swing();
+}
+function punchHits() {
+  // reach: from just behind the player to as far as the fist goes, a bit wider than a corridor
+  const [dx, dy] = DIRS[pac.dir];
+  for (const gh of ghosts) {
+    if (gh.state !== 'active' && gh.state !== 'leaving') continue;
+    const ox = gh.x - pac.x, oy = gh.y - pac.y, ahead = ox * dx + oy * dy, side = Math.abs(ox * dy - oy * dx);
+    if (ahead < -4 || ahead > 26 || side > 7) continue;
+    if (gh.name === 'tank' && !gh.fright) { // too tough: the fist bounces off and it only turns around
+      if (!pac.punched.has(gh)) { pac.punched.add(gh); gh.reverse = true; sfx.land(); popups.push({ x:gh.x, y:gh.y - 6, text:'TOK!', t:40, color:gh.color }); }
+      continue;
+    }
+    gh.fright = false; gh.state = gh.state === 'leaving' ? 'entering' : 'eaten';
+    sfx.punch();
+    popups.push({ x:gh.x, y:gh.y - 6, text:'POW!', t:40, color:C.face });
+  }
+}
+function magnet() {
+  // walk up to MAGNET_R open steps from the player's tile (not through walls); dots found there fly in
+  const seen = new Set([ty(pac) * COLS + tx(pac)]);
+  let edge = [[tx(pac), ty(pac)]];
+  for (let s = 0; s < MAGNET_R; s++) {
+    const nxt = [];
+    for (const [c, r] of edge) for (const d of ORDER) {
+      const nc = c + DIRS[d][0], nr = r + DIRS[d][1], k = nr * COLS + nc;
+      if (seen.has(k) || !open(nc, nr)) continue;
+      seen.add(k); nxt.push([nc, nr]);
+      if (tileAt(nc, nr) === '.') { pulls.push({ x:nc * T + 4, y:nr * T + 4, t:8 }); eat(nc, nr); if (state !== 'play') return; }
+    }
+    edge = nxt;
+  }
+}
+function energize() {
+  frightTotal = frightT = sp.fright * 60; combo = 0;
+  for (const gh of ghosts) {
+    if (gh.state === 'active') gh.reverse = true;
+    if (frightT > 0 && (gh.state === 'active' || gh.state === 'house' || gh.state === 'leaving')) gh.fright = true;
+  }
+  sfx.power();
+}
+function eat(c, r) {
+  const t = tileAt(c, r);
+  if (t !== '.' && t !== 'o') return;
+  grid[r][c] = ' '; dotsLeft--; dotsEaten++; houseDots++; lastDotT = 0;
+  addScore(t === '.' ? 10 : 50); sfx.waka();
+  if (t === 'o') energize();
+  if (dotsEaten === 70 || dotsEaten === 170) fruit = { t:600, kind:fruitFor(level) };
+  if (dotsLeft === 0) { state = 'clear'; timer = 150; sirenOff(); sfx.clear(); }
+}
+
+/* ---------- movement ---------- */
+function movePac() {
+  pac.acc += (frightT > 0 ? sp.pacF : sp.pac) * BASE;
+  while (pac.acc >= 1 && state === 'play') {
+    pac.acc -= 1;
+    if (pac.next === OPP[pac.dir]) pac.dir = pac.next;
+    if (atCenter(pac)) {
+      const c = tx(pac), r = ty(pac);
+      eat(c, r);
+      if (pac.next && pac.next !== pac.dir) { const d = DIRS[pac.next]; if (open(c + d[0], r + d[1])) pac.dir = pac.next; }
+      const d = DIRS[pac.dir];
+      if (!open(c + d[0], r + d[1])) { pac.moving = false; pac.acc = 0; break; }
+    }
+    pac.moving = true;
+    const d = DIRS[pac.dir]; pac.x += d[0]; pac.y += d[1]; wrap(pac);
+    pac.anim++;
+  }
+}
+function scatterMode() { return modeIdx < sp.sched.length && modeIdx % 2 === 0; }
+function target(gh) {
+  if (gh.state === 'eaten') return [13, 11];
+  if (scatterMode() && gh.scatter) return gh.scatter;
+  const px = tx(pac), py = ty(pac), d = DIRS[pac.dir];
+  switch (gh.name) {
+    case 'blinky': case 'flits': case 'tank': case 'jager': return [px, py];
+    case 'sluiper': return [px + 2 * d[0], py + 2 * d[1]];
+    case 'vuur': return [px - 3 * d[0], py - 3 * d[1]]; // sneaks up from behind
+    case 'pinky': return [px + 4 * d[0], py + 4 * d[1]];
+    case 'inky': { const ax = px + 2 * d[0], ay = py + 2 * d[1], b = ghosts[0]; return [2 * ax - tx(b), 2 * ay - ty(b)]; }
+    default: { const dd = (tx(gh) - px) ** 2 + (ty(gh) - py) ** 2; return dd > 64 ? [px, py] : gh.scatter; }
+  }
+}
+function chooseDir(gh, c, r) {
+  let opts = ORDER.filter(d => d !== OPP[gh.dir] && open(c + DIRS[d][0], r + DIRS[d][1]));
+  if (gh.state === 'active' && !gh.fright && (r === 11 || r === 23) && (c === 12 || c === 15)) {
+    const f = opts.filter(d => d !== 'up'); if (f.length) opts = f;
+  }
+  if (!opts.length) return OPP[gh.dir];
+  if (gh.fright && gh.state === 'active') return opts[Math.floor(Math.random() * opts.length)];
+  const [tgx, tgy] = target(gh);
+  let best = opts[0], bd = Infinity;
+  for (const d of opts) {
+    const dd = (c + DIRS[d][0] - tgx) ** 2 + (r + DIRS[d][1] - tgy) ** 2;
+    if (dd < bd) { bd = dd; best = d; }
+  }
+  return best;
+}
+function ghostStep(gh) {
+  switch (gh.state) {
+    case 'house':
+      if (gh.y <= 112) gh.bob = 1; else if (gh.y >= 120) gh.bob = -1;
+      gh.y += gh.bob; gh.dir = gh.bob < 0 ? 'up' : 'down';
+      break;
+    case 'leaving':
+      if (gh.x !== 112) { gh.dir = gh.x < 112 ? 'right' : 'left'; gh.x += gh.x < 112 ? 1 : -1; }
+      else if (gh.y > 92) { gh.y--; gh.dir = 'up'; }
+      else { gh.state = 'active'; gh.dir = 'left'; gh.reverse = false; }
+      break;
+    case 'entering':
+      if (gh.x !== 112) { gh.dir = gh.x < 112 ? 'right' : 'left'; gh.x += gh.x < 112 ? 1 : -1; }
+      else if (gh.y < 116) { gh.y++; gh.dir = 'down'; }
+      else { gh.state = 'leaving'; gh.fright = false; }
+      break;
+    default: {
+      if (gh.reverse) { gh.reverse = false; gh.dir = OPP[gh.dir]; }
+      if (atCenter(gh)) {
+        const c = tx(gh), r = ty(gh);
+        if (gh.state === 'eaten' && r === 11 && (c === 13 || c === 14)) { gh.state = 'entering'; return; }
+        gh.dir = chooseDir(gh, c, r);
+      }
+      const d = DIRS[gh.dir]; gh.x += d[0]; gh.y += d[1]; wrap(gh);
+    }
+  }
+}
+function ghostSpeed(gh) {
+  if (gh.state === 'eaten' || gh.state === 'entering') return 2;
+  if (gh.state === 'house' || gh.state === 'leaving') return 0.6;
+  const r = ty(gh), c = tx(gh);
+  if (r === 14 && (c <= 5 || c >= 22)) return sp.tunnel * BASE;
+  return (gh.fright ? sp.ghostF : sp.ghost * (gh.name === 'flits' ? FLITS_SPEED : 1)) * BASE;
+}
+function releaseGhosts() {
+  lastDotT++;
+  // extra ghosts don't queue behind the normal four; they leave when their own wait runs out
+  for (const gh of ghosts) if (gh.wait > 0 && gh.state === 'house' && --gh.wait === 0) gh.state = 'leaving';
+  for (let i = 1; i < 4; i++) {
+    const gh = ghosts[i];
+    if (gh.state !== 'house') continue;
+    if (houseDots >= sp.release[i - 1] || lastDotT > 240) { gh.state = 'leaving'; lastDotT = 0; }
+    break;
+  }
+}
+
+/* ---------- update ---------- */
+function update() {
+  frame++;
+  popups = popups.filter(p => --p.t > 0);
+  pulls = pulls.filter(p => --p.t > 0);
+  switch (state) {
+    case 'title': case 'paused': return;
+    case 'ready': if (--timer <= 0) state = 'play'; return;
+    case 'eatpause': if (--timer <= 0) { state = 'play'; eatenGhost = null; } return;
+    case 'dying':
+      deathT++;
+      if (deathT === 30 && !explodes()) sfx.death();
+      if (deathT >= 130) {
+        lives--;
+        if (lives <= 0) { state = 'over'; timer = 200; saveHi(); }
+        else { afterDeath = true; resetPositions(); state = 'ready'; timer = 90; }
+      }
+      return;
+    case 'clear': if (--timer <= 0) nextLevel(); return;
+    case 'over': if (--timer <= 0) state = 'title'; return;
+  }
+  // play
+  if (frightT > 0) {
+    if (--frightT === 0) { for (const gh of ghosts) gh.fright = false; sfx.powerDown(); }
+  } else if (modeIdx < sp.sched.length && ++modeT >= sp.sched[modeIdx] * 60) {
+    modeIdx++; modeT = 0;
+    for (const gh of ghosts) if (gh.state === 'active') gh.reverse = true;
+  }
+  if (freezeT > 0) { if (--freezeT === 0) freezeCd = FREEZE_CD; }
+  else { if (freezeCd > 0) freezeCd--; releaseGhosts(); }
+  if (pac.safeT > 0) pac.safeT--;
+  if (punchCd > 0) punchCd--;
+  if (pac.jumpT > 0) { if (--pac.jumpT === 0) { pac.jumpCd = JUMP_CD; sfx.land(); } }
+  else if (pac.jumpCd > 0) pac.jumpCd--;
+  movePac();
+  if (state === 'play' && canMagnet) magnet();
+  if (state === 'play' && pac.punchT > 0) { pac.punchT--; punchHits(); }
+  if (state !== 'play') return;
+  for (const gh of ghosts) {
+    // frozen ghosts stand still; eyes on their way home keep going
+    if (freezeT > 0 && gh.name !== 'vuur' && gh.state !== 'eaten' && gh.state !== 'entering') continue;
+    gh.acc += ghostSpeed(gh);
+    while (gh.acc >= 1) { gh.acc -= 1; ghostStep(gh); }
+  }
+  if (fruit && --fruit.t <= 0) fruit = null;
+  if (fruit && ty(pac) === 17 && Math.abs(pac.x - 112) <= 6) {
+    const pts = FRUITS[fruit.kind].pts;
+    addScore(pts); popups.push({ x:112, y:140, text:String(pts), t:100, color:C.door }); fruit = null; sfx.fruit();
+  }
+  for (const gh of ghosts) {
+    if (gh.state === 'eaten' || gh.state === 'entering' || gh.state === 'house' || pac.jumpT > 0) continue;
+    if (tx(gh) === tx(pac) && ty(gh) === ty(pac)) {
+      if (gh.fright) {
+        gh.fright = false;
+        gh.state = gh.state === 'leaving' ? 'entering' : 'eaten';
+        const pts = 200 << combo; combo = Math.min(combo + 1, 3);
+        addScore(pts);
+        popups.push({ x:gh.x, y:gh.y, text:String(pts), t:50, color:C.cyan });
+        eatenGhost = gh; state = 'eatpause'; timer = 50; sfx.ghost();
+        return;
+      }
+      // frozen ghosts can't bite, and nobody can right after the shield took a hit
+      if ((freezeT > 0 && gh.name !== 'vuur') || pac.safeT > 0) continue;
+      if (shieldUp) {
+        shieldUp = false; pac.safeT = SAFE_T; gh.reverse = true; sfx.shield();
+        popups.push({ x:pac.x, y:pac.y - 8, text:'SCHILD!', t:80, color:C.shield });
+        continue;
+      }
+      state = 'dying'; deathT = 0; killer = gh.name; sirenOff();
+      if (explodes()) sfx.creeper();
+      return;
+    }
+  }
+  siren();
+}
+
+/* ---------- draw ---------- */
+function text(str, x, y, color, align = 'left') {
+  g.font = FONT; g.textAlign = align; g.textBaseline = 'top'; g.fillStyle = color;
+  g.fillText(str, x, y);
+}
+function draw() {
+  const mc = isMC(), world = worldFor(level);
+  g.fillStyle = mc ? world.floor : '#000'; g.fillRect(0, 0, W, H);
+  const wallColor = WALLS[(level - 1) % WALLS.length];
+  const flashing = state === 'clear' && timer < 120 && ((timer / 12 | 0) % 2 === 0);
+  g.drawImage(mc ? mcWallLayer(world, flashing) : wallLayer(flashing ? C.white : wallColor), 0, 0);
+  // blocky theme: tone the neon bloom down
+  const glowOp = mc ? '0.15' : '';
+  if (glow.style.opacity !== glowOp) glow.style.opacity = glowOp;
+
+  // dots
+  // power bolts pulse gently instead of hard blinking
+  const boltAlpha = state !== 'play' ? 1 : 0.7 + 0.3 * Math.sin(frame * 0.06);
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const t = grid[r][c], x0 = c * T, y0 = r * T + OY;
+    if (t === '.') {
+      if (mc) { g.fillStyle = '#9be22d'; g.fillRect(x0 + 3, y0 + 3, 2, 2); g.fillStyle = '#eaff8a'; g.fillRect(x0 + 3, y0 + 3, 1, 1); }
+      else { g.fillStyle = C.dot; g.fillRect(x0 + 3, y0 + 3, 2, 2); }
+    } else if (t === 'o') {
+      g.globalAlpha = boltAlpha;
+      if (mc) DIAMOND.forEach((row, y) => { for (let x = 0; x < 8; x++) if (row[x] !== '.') { g.fillStyle = DIAMOND_PAL[row[x]]; g.fillRect(x0 + x, y0 + y, 1, 1); } });
+      else { g.fillStyle = C.power; for (const [x, y, w] of BOLT) g.fillRect(x0 + x, y0 + y, w, 1); }
+      g.globalAlpha = 1;
+    }
+  }
+  if (fruit) drawFruit(fruit.kind, 112, 140 + OY);
+  // magnet: dots sliding into the player
+  g.fillStyle = mc ? '#9be22d' : C.dot;
+  for (const p of pulls) { const k = 1 - p.t / 8; g.fillRect(Math.round(p.x + (pac.x - p.x) * k) - 1, Math.round(p.y + (pac.y - p.y) * k) - 1 + OY, 2, 2); }
+
+  // ghosts
+  const showGhosts = !(state === 'dying' && deathT >= 30) && state !== 'clear' && state !== 'over';
+  if (showGhosts) for (const gh of ghosts) {
+    if (gh === eatenGhost) continue;
+    if (gh.state === 'eaten' || gh.state === 'entering') { drawEyes(gh); continue; }
+    const f = freezeT > 0 ? 0 : (frame >> 3) & 1;
+    // ice blue while frozen, flickering back to normal just before they thaw
+    const iced = freezeT > 0 && !gh.fright && gh.name !== 'vuur' && (freezeT > 60 || ((freezeT >> 3) & 1));
+    if (gh.name === 'sluiper' && !gh.fright && Math.hypot(gh.x - pac.x, gh.y - pac.y) > SLUIPER_SEE) g.globalAlpha = (frame >> 3) & 1 ? 0.16 : 0.08;
+    if (iced) {
+      const img = mc ? mobSprite(mobFor(gh.name), f, C.ice) : ghostBody(C.ice, f);
+      g.drawImage(img, gh.x - (img.width >> 1), gh.y - (img.height >> 1) + OY);
+      if (!mc) drawEyes(gh);
+    } else if (gh.fright) {
+      const flash = frightTotal > 120 && frightT < 120 && ((frightT / 14 | 0) % 2 === 0);
+      const col = flash ? C.white : C.fright;
+      const img = mc ? mobSprite(mobFor(gh.name), f, col) : ghostBody(col, f);
+      g.drawImage(img, gh.x - (img.width >> 1), gh.y - (img.height >> 1) + OY);
+      drawFrightFace(gh, flash ? C.red : C.face);
+    } else if (mc) { const img = mobSprite(mobFor(gh.name), f); g.drawImage(img, gh.x - (img.width >> 1), gh.y - (img.height >> 1) + OY); }
+    else {
+      g.drawImage(ghostBody(gh.name === 'vuur' && (frame >> 2) & 1 ? '#ffd23f' : gh.color, f), gh.x - 7, gh.y - 7 + OY);
+      drawEyes(gh);
+    }
+    g.globalAlpha = 1;
+  }
+
+  // pac
+  if (state === 'dying') {
+    const hc = hero();
+    if (deathT < 30) drawHero(hc.sprite(pac.dir, 0.45), pac.x, pac.y + OY);
+    else if (deathT < 115) {
+      const k = Math.min(1, (deathT - 30) / 80);
+      if (hc.spinDeath) {
+        // head spins away and shrinks
+        const sc = 1 - k, h = hc.size / 2;
+        g.save(); g.translate(pac.x + 0.5, pac.y + 0.5 + OY); g.rotate(k * Math.PI * 4); g.scale(sc, sc);
+        g.drawImage(hc.sprite('down', 0.9), -h, -h); g.restore();
+      } else drawHero(hc.sprite('up', 0.2 + k * (Math.PI - 0.2)), pac.x, pac.y + OY);
+    }
+    if (explodes() && deathT >= 30 && deathT < 60) drawExplosion(pac.x, pac.y + OY, (deathT - 30) / 30);
+  } else if (state !== 'eatpause' && state !== 'over' && !(pac.safeT > 0 && (frame >> 2) & 1)) {
+    const m = [0, 0.45, 0.9, 0.45][(pac.anim >> 2) & 3];
+    let body = C.pac;
+    // jump arc: lift the sprite and leave a shadow on the floor
+    const lift = pac.jumpT > 0 ? Math.round(7 * Math.sin(Math.PI * (1 - pac.jumpT / JUMP_T))) : 0;
+    if (lift) { g.fillStyle = '#3a2a5c'; g.fillRect(pac.x - 4, pac.y + 5 + OY, 9, 2); g.fillRect(pac.x - 3, pac.y + 4 + OY, 7, 4); }
+    if (frightT > 0 && state !== 'title') {
+      const ending = frightT < 120 && ((frightT / 14 | 0) % 2 === 0);
+      body = ending ? C.pac : C.power;
+      if (!ending) drawAura(pac.x, pac.y - lift + OY);
+    }
+    drawHero(hero().sprite(pac.dir, state === 'title' ? 0.45 : m, body), pac.x, pac.y - lift + OY);
+    if (pac.punchT > 0) drawFist(pac.x, pac.y - lift + OY);
+  }
+
+  for (const p of popups) text(p.text, p.x, p.y - 4 + OY, p.color, 'center');
+
+  // power meter: shrinking bar under the HUD while the power pellet works
+  if (frightT > 0 && frightTotal > 0 && state !== 'title') {
+    const w = Math.ceil(96 * frightT / frightTotal);
+    const ending = frightT < 120 && ((frightT / 14 | 0) % 2 === 0);
+    g.fillStyle = C.ink; g.fillRect(63, 19, 98, 1); g.fillRect(63, 23, 98, 1); g.fillRect(63, 19, 1, 5); g.fillRect(160, 19, 1, 5);
+    g.fillStyle = ending ? C.white : C.power; g.fillRect(64, 20, w, 3);
+  }
+
+  // jump meter: top-left under the score, refills during the cooldown
+  if (canJump && state !== 'title' && state !== 'over') {
+    const ready = pac.jumpT === 0 && pac.jumpCd === 0;
+    const w = pac.jumpT > 0 ? 0 : Math.ceil(40 * (1 - pac.jumpCd / JUMP_CD));
+    g.fillStyle = C.ink; g.fillRect(7, 19, 42, 1); g.fillRect(7, 23, 42, 1); g.fillRect(7, 19, 1, 5); g.fillRect(48, 19, 1, 5);
+    g.fillStyle = ready && ((frame >> 4) & 1) ? C.white : '#00ff9f'; g.fillRect(8, 20, w, 3);
+  }
+
+  // freeze meter: top-right under the level, refills during the cooldown
+  if (canFreeze && state !== 'title' && state !== 'over') {
+    const ready = freezeT === 0 && freezeCd === 0;
+    const w = freezeT > 0 ? Math.ceil(40 * freezeT / FREEZE_T) : Math.ceil(40 * (1 - freezeCd / FREEZE_CD));
+    g.fillStyle = C.ink; g.fillRect(175, 19, 42, 1); g.fillRect(175, 23, 42, 1); g.fillRect(175, 19, 1, 5); g.fillRect(216, 19, 1, 5);
+    g.fillStyle = ready && ((frame >> 4) & 1) ? C.white : C.ice; g.fillRect(176, 20, w, 3);
+  }
+  // shield icon left of the freeze meter: gold while it's still there, grey once used up this level
+  if (canShield && state !== 'title' && state !== 'over') {
+    g.fillStyle = shieldUp ? C.shield : '#4a3f6b';
+    g.fillRect(166, 19, 5, 3); g.fillRect(167, 22, 3, 1); g.fillRect(168, 23, 1, 1);
+  }
+  // punch icon between the jump meter and the power meter: lit (and blinking) when ready, dim while recharging
+  if (canPunch && state !== 'title' && state !== 'over') {
+    const ready = punchCd === 0;
+    FIST.forEach((row, y) => { for (let x = 0; x < 5; x++) if (row[x] !== '.') {
+      g.fillStyle = !ready ? '#4a3f6b' : (frame >> 4) & 1 ? C.white : row[x] === '#' ? C.face : '#b5651d'; g.fillRect(53 + x, 19 + y, 1, 1);
+    } });
+  }
+  updatePowers();
+
+  // HUD
+  if (state !== 'play' || ((frame >> 4) & 1)) text('1UP', 8, 0, C.ink);
+  text('HIGH SCORE', 112, 0, C.ink, 'center');
+  text('LEVEL', 216, 0, C.ink, 'right');
+  text(score ? String(score) : '00', 56, 10, C.ink, 'right');
+  text(hi ? String(hi) : '00', 136, 10, C.ink, 'right');
+  text(String(level), 216, 10, C.ink, 'right');
+  const lifeIcons = state === 'title' ? 2 : Math.max(0, lives - 1 - (state === 'ready' || state === 'play' || state === 'eatpause' || state === 'dying' ? 0 : 0));
+  for (let i = 0; i < Math.min(lifeIcons, 5); i++) drawHero(hero().sprite('right', 0), 22 + i * 16, 279);
+  const first = Math.max(1, level - 6);
+  for (let lv = level, i = 0; lv >= first; lv--, i++) drawFruit(fruitFor(lv), 208 - i * 14, 279);
+
+  // overlay text in the corridor below the ghost house (row 17)
+  const ty17 = 17 * T + OY;
+  if (state === 'title') drawCharSelect();
+  else if (state === 'ready') text('READY!', 112, ty17, C.pac, 'center');
+  else if (state === 'over') text('GAME  OVER', 112, ty17, C.red, 'center');
+  else if (state === 'paused') text('PAUZE', 112, ty17, C.cyan, 'center');
+
+  sx.drawImage(buf, 0, 0, scr.width, scr.height);
+  gx.clearRect(0, 0, W, H); gx.drawImage(buf, 0, 0);
+}
+
+function drawFist(cx, cy) {
+  // the fist shoots out in front and comes back, with speed lines behind it
+  const [dx, dy] = DIRS[pac.dir], k = Math.sin(Math.PI * (1 - pac.punchT / PUNCH_T));
+  const fx = Math.round(cx + dx * (9 + 11 * k)) - 7, fy = Math.round(cy + dy * (9 + 11 * k)) - 7;
+  g.fillStyle = C.white;
+  for (let i = 1; i <= 3; i++) for (const o of [-4, 0, 4]) g.fillRect(fx + 7 - dx * (i * 4 + 4) + dy * o, fy + 7 - dy * (i * 4 + 4) + dx * o, 2, 2);
+  // dark outline first so the 3x fist stands out against walls and ghosts
+  g.fillStyle = '#2a1030';
+  FIST.forEach((row, y) => { for (let x = 0; x < 5; x++) if (row[x] !== '.') g.fillRect(fx + x * 3 - 1, fy + y * 3 - 1, 5, 5); });
+  FIST.forEach((row, y) => { for (let x = 0; x < 5; x++) if (row[x] !== '.') { g.fillStyle = row[x] === '#' ? C.face : '#b5651d'; g.fillRect(fx + x * 3, fy + y * 3, 3, 3); } });
+}
+const FIST = [".###.", "#-#-#", "#####", "#####", ".###."];
+function drawExplosion(cx, cy, k) {
+  // creeper blast: blocky expanding ring of white/orange/grey puffs
+  const r = 4 + k * 22;
+  for (let a = 0; a < 16; a++) {
+    const ang = a / 16 * Math.PI * 2, rr = r * (0.7 + 0.3 * phash(a, 3));
+    g.fillStyle = k < 0.3 ? '#ffffff' : k < 0.6 ? '#ffb347' : '#8a8a8a';
+    const s = Math.max(1, Math.round(5 * (1 - k)) + 1);
+    g.fillRect(Math.round(cx + Math.cos(ang) * rr) - (s >> 1), Math.round(cy + Math.sin(ang) * rr) - (s >> 1), s, s);
+  }
+  if (k < 0.15) { g.fillStyle = 'rgba(255,255,255,0.7)'; g.fillRect(0, OY, W, H - OY - 16); }
+}
+function drawCharSelect() {
+  // panel over the ghost house: name, big preview, arrows, start hint
+  const px = 40, py = 100, pw = 144, ph = 92;
+  g.fillStyle = '#000'; g.fillRect(px, py, pw, ph);
+  g.fillStyle = isMC() ? '#5fb04a' : C.door; g.fillRect(px, py, pw, 1); g.fillRect(px, py + ph - 1, pw, 1);
+  g.fillRect(px, py, 1, ph); g.fillRect(px + pw - 1, py, 1, ph);
+  text('KIES SPELER', 112, py + 8, C.ink, 'center');
+  const hc = hero(), img = hc.sprite('right', ((frame >> 3) & 1) ? 0.45 : 0), sz = hc.size * 2;
+  g.imageSmoothingEnabled = false; g.drawImage(img, 112 - sz / 2, py + 22, sz, sz);
+  if (CHARACTERS.length > 1) {
+    const bob = (frame >> 4) & 1;
+    text('<', 64 - bob, py + 22 + sz / 2 - 4, C.cyan, 'center');
+    text('>', 160 + bob, py + 22 + sz / 2 - 4, C.cyan, 'center');
+  }
+  text(hc.name, 112, py + 58, C.pac, 'center');
+  if ((frame >> 5) & 1) text('PUSH START', 112, py + 74, C.cyan, 'center');
+}
+
+/* ---------- input ---------- */
+const KEYMAP = { ArrowUp:'up', ArrowDown:'down', ArrowLeft:'left', ArrowRight:'right', w:'up', s:'down', a:'left', d:'right', W:'up', S:'down', A:'left', D:'right' };
+function steer(dir) {
+  if (state === 'title') { if (dir === 'left' || dir === 'right') pickChar(dir === 'left' ? -1 : 1); return; }
+  if (pac) pac.next = dir;
+}
+function startOrResume() {
+  if (state === 'title' || state === 'over') startGame();
+  else if (state === 'paused') togglePause();
+}
+function togglePause() {
+  if (state === 'paused') { state = prevState; prevState = null; audioInit(); }
+  else if (state !== 'title' && state !== 'over') { prevState = state; state = 'paused'; sirenOff(); }
+}
+window.addEventListener('keydown', e => {
+  if (KEYMAP[e.key]) { e.preventDefault(); steer(KEYMAP[e.key]); return; }
+  if (e.key === ' ' && state === 'play') { e.preventDefault(); jump(); }
+  else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startOrResume(); }
+  else if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') togglePause();
+  else if (e.key === 'm' || e.key === 'M') setMuted(!muted);
+  else if (e.key === 'f' || e.key === 'F') freeze();
+  else if (e.key === 'e' || e.key === 'E') punch();
+});
+document.addEventListener('visibilitychange', () => { if (document.hidden) { if (state !== 'paused') togglePause(); saveHi(); } });
+
+const screenEl = document.getElementById('screen');
+// tapping or clicking a card uses that power-up (passive ones have nothing to press)
+const ACTIONS = { jump, punch, freeze };
+for (const id in ACTIONS) {
+  cardEls[id].el.dataset.act = '';
+  cardEls[id].el.addEventListener('pointerdown', e => { e.preventDefault(); ACTIONS[id](); });
+}
+// pointerdown + preventDefault keeps focus off the button, so Space/Enter keep controlling the game
+const testBtn = document.getElementById('testBtn');
+testBtn.addEventListener('pointerdown', e => { e.preventDefault(); unlockAll(); });
+let touch = null;
+screenEl.addEventListener('touchstart', e => { const t = e.changedTouches[0]; touch = { x:t.clientX, y:t.clientY, moved:false }; e.preventDefault(); }, { passive:false });
+screenEl.addEventListener('touchmove', e => {
+  if (!touch) return;
+  const t = e.changedTouches[0], dx = t.clientX - touch.x, dy = t.clientY - touch.y;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) > 18) {
+    steer(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+    touch = { x:t.clientX, y:t.clientY, moved:true };
+  }
+  e.preventDefault();
+}, { passive:false });
+screenEl.addEventListener('touchend', () => {
+  if (touch && !touch.moved) { if (state === 'play') jump(); else startOrResume(); }
+  touch = null;
+});
+screenEl.addEventListener('click', () => {
+  if (state === 'title' || state === 'over' || state === 'paused') startOrResume();
+});
+
+/* ---------- loop ---------- */
+resetMaze(); resetPositions();
+let last = performance.now(), accT = 0;
+const STEP = 1000 / 60;
+function loop(now) {
+  accT += Math.min(100, now - last); last = now;
+  while (accT >= STEP) { update(); accT -= STEP; }
+  draw();
+  requestAnimationFrame(loop);
+}
+draw();
+(document.fonts ? document.fonts.load(FONT).catch(() => {}) : Promise.resolve()).then(() => requestAnimationFrame(loop));
+})();
+</script>
