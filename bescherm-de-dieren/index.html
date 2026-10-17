@@ -1,0 +1,1626 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bescherm de dieren</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Grandstander:wght@700;900&family=Lexend:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: één kolom als prentenboek: titel, speelscherm met HUD erin, knoppen eronder */
+:root{
+  --bg:#18211a; --panel:#243326; --ink:#f3efe2; --dim:#b3bfa8;
+  --sun:#ffd66b; --acorn:#c98a3c; --leaf:#8fd16a; --danger:#ff7a5c;
+  --display:"Grandstander", "Comic Sans MS", system-ui, sans-serif;
+  --body:"Lexend", system-ui, sans-serif;
+  color-scheme:dark;
+}
+/* Verborgen schermen echt verbergen, ook als je het bestand direct opent */
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0}
+body{background:radial-gradient(ellipse at 50% -10%, #2c4230 0%, var(--bg) 65%) fixed, var(--bg); color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.4; padding-inline:16px; box-sizing:border-box}
+.wrap{display:flex; flex-direction:column; align-items:center; gap:10px; padding-block:12px; max-width:800px; margin:0 auto}
+header{display:flex; flex-direction:column; align-items:center; gap:2px}
+h1{margin:0; font-family:var(--display); font-weight:900; font-size:clamp(24px,5vw,36px); color:var(--sun); letter-spacing:.01em; text-wrap:balance; text-align:center; text-shadow:0 3px 0 #6b4a1a}
+.lvl{margin:0; color:var(--dim); font-size:14px; letter-spacing:.12em; text-transform:uppercase}
+.screen{position:relative; aspect-ratio:4/3; max-width:100%; width:min(100%, calc((100dvh - 210px) * 4 / 3)); min-width:min(100%, 280px); background:#000; border:4px solid #5a3d22; border-radius:14px; box-shadow:0 0 0 3px #2b1d10, 0 12px 30px rgba(0,0,0,.5); overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none}
+.screen canvas{position:absolute; inset:0; width:100%; height:100%; image-rendering:pixelated; image-rendering:crisp-edges}
+.hud{position:absolute; inset:6px 6px auto 6px; display:flex; flex-wrap:wrap; gap:6px; justify-content:space-between; pointer-events:none; font-weight:600; font-size:clamp(11px,2.2vw,15px)}
+.pill{display:flex; align-items:center; gap:5px; background:rgba(20,28,20,.72); border:1px solid rgba(255,255,255,.12); border-radius:999px; padding:3px 9px; font-variant-numeric:tabular-nums}
+.pill img{width:1.35em; height:1.35em; image-rendering:pixelated}
+.pill .off{opacity:.25}
+.mats{gap:9px}
+.mats span{display:flex; align-items:center; gap:2px}
+.boss{position:absolute; left:50%; bottom:8px; transform:translateX(-50%); width:min(60%,260px); pointer-events:none; text-align:center; font-family:var(--display); font-size:clamp(12px,2.4vw,16px); color:var(--ink); text-shadow:0 2px 0 #000}
+.bar{height:10px; border-radius:6px; background:rgba(0,0,0,.6); border:2px solid #2b1d10; overflow:hidden; margin-top:2px}
+.bar i{display:block; height:100%; background:linear-gradient(#ff9a6b,#e0562c); transition:width .2s}
+.toast{position:absolute; left:50%; top:22%; transform:translateX(-50%); max-width:86%; background:rgba(20,28,20,.86); border:2px solid var(--sun); color:var(--ink); padding:6px 14px; border-radius:12px; font-weight:600; font-size:clamp(12px,2.4vw,16px); text-align:center; pointer-events:none; transition:opacity .25s}
+.banner{position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; font-family:var(--display); font-weight:900; font-size:clamp(22px,5.5vw,42px); color:var(--danger); text-shadow:0 3px 0 #3a1408, 0 0 18px rgba(0,0,0,.6); text-align:center; padding:16px}
+.overlay{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:16px; background:rgba(16,24,16,.9); text-align:center; overflow:auto}
+.overlay h2{margin:0; font-family:var(--display); font-weight:900; color:var(--sun); font-size:clamp(22px,5vw,36px); text-wrap:balance}
+.overlay p{margin:0; max-width:46ch; color:var(--ink); font-size:clamp(13px,2.4vw,16px)}
+.overlay ul{margin:0; padding:0; list-style:none; display:grid; gap:4px; font-size:clamp(12px,2.2vw,15px); color:var(--dim); max-width:46ch}
+.overlay ul b{color:var(--ink); font-weight:600}
+.levels{display:flex; flex-wrap:wrap; gap:8px; justify-content:center}
+.lvbtn{font:inherit; font-family:var(--display); font-weight:700; font-size:clamp(13px,2.4vw,16px); color:var(--ink); background:var(--panel); border:2px solid rgba(255,255,255,.18); border-radius:10px; padding:5px 12px; cursor:pointer}
+.lvbtn[aria-pressed="true"]{border-color:var(--sun); background:#3a4a2a}
+.lvbtn .ok{color:var(--leaf)}
+.btn{font:inherit; font-family:var(--display); font-weight:700; font-size:clamp(16px,3vw,20px); color:#2b1d10; background:var(--sun); border:0; border-radius:12px; padding:9px 26px; box-shadow:0 4px 0 #a07a1e; cursor:pointer}
+.btn:active{transform:translateY(3px); box-shadow:0 1px 0 #a07a1e}
+.btn:focus-visible,.small:focus-visible,.lvbtn:focus-visible,.pad button:focus-visible{outline:3px solid var(--leaf); outline-offset:2px}
+.btns{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center}
+.row{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:center; color:var(--dim); font-size:14px}
+.row b{color:var(--ink); font-weight:600}
+.small{font:inherit; font-size:13px; color:var(--ink); background:var(--panel); border:1px solid rgba(255,255,255,.15); border-radius:8px; padding:4px 10px; cursor:pointer}
+.pad{display:none; width:100%; max-width:520px; justify-content:space-between; align-items:center; gap:16px}
+.dpad{display:grid; grid-template-columns:repeat(3,56px); grid-template-rows:repeat(3,56px); gap:4px}
+.pad button{font:inherit; font-size:22px; color:var(--ink); background:var(--panel); border:2px solid rgba(255,255,255,.15); border-radius:12px; touch-action:none; user-select:none; -webkit-user-select:none}
+.pad button.on{background:#38513b}
+.dpad .u{grid-area:1/2} .dpad .l{grid-area:2/1} .dpad .r{grid-area:2/3} .dpad .d{grid-area:3/2}
+.throw{width:92px; height:92px; border-radius:50%!important; font-family:var(--display)!important; font-weight:700; font-size:18px!important; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; background:#5a3d22!important}
+.throw img{width:30px; height:30px; image-rendering:pixelated}
+@media (pointer:coarse){ .pad{display:flex} .keys{display:none} }
+@media (prefers-reduced-motion:reduce){ .toast{transition:none} }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Bescherm de dieren</h1>
+    <p class="lvl" id="lvltxt">Level 1 · De Weide</p>
+  </header>
+
+  <div class="screen" id="screen">
+    <canvas id="cv" width="256" height="192"></canvas>
+    <div class="hud">
+      <div class="pill" id="pouch" title="Eikels in je zakje"></div>
+      <div class="pill mats" id="mats" title="Bouwspullen"></div>
+      <div class="pill" id="saved" title="Geredde diertjes"></div>
+    </div>
+    <div class="boss" id="boss" hidden><span id="bossname"></span><div class="bar"><i id="bossbar"></i></div></div>
+    <div class="toast" id="toast" style="opacity:0"></div>
+    <div class="banner" id="banner" hidden></div>
+
+    <div class="overlay" id="intro">
+      <h2 id="introTitle"></h2>
+      <p id="introText"></p>
+      <ul>
+        <li><b>Lopen:</b> pijltjes of W A S D</li>
+        <li><b>Eikel gooien:</b> spatie. Je zakje vult vanzelf weer bij.</li>
+        <li><b>Oppakken:</b> loop tegen spullen en diertjes aan</li>
+        <li><b>Huisje bouwen:</b> 1 takje, 1 blaadje, 1 steentje en 1 mos. Loop naar een bouwplek in de tuin.</li>
+        <li><b>Redden:</b> breng elk diertje naar een leeg huisje</li>
+      </ul>
+      <div class="levels" id="levels"></div>
+      <button class="btn" id="start" type="button">Spelen!</button>
+    </div>
+
+    <div class="overlay" id="win" hidden>
+      <h2 id="winTitle"></h2>
+      <p id="winText"></p>
+      <ul id="stats"></ul>
+      <p id="winNext" style="color:var(--dim)"></p>
+      <div class="btns">
+        <button class="btn" id="next" type="button">Volgende level</button>
+        <button class="small" id="again" type="button">Nog een keer</button>
+        <button class="small" id="menu" type="button">Levels kiezen</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pad" id="pad">
+    <div class="dpad">
+      <button class="u" data-k="up" type="button" aria-label="Omhoog">▲</button>
+      <button class="l" data-k="left" type="button" aria-label="Links">◀</button>
+      <button class="r" data-k="right" type="button" aria-label="Rechts">▶</button>
+      <button class="d" data-k="down" type="button" aria-label="Omlaag">▼</button>
+    </div>
+    <button class="throw" data-k="throw" type="button" aria-label="Eikel gooien"><img id="throwimg" alt="">Gooi</button>
+  </div>
+
+  <div class="row">
+    <span class="keys"><b>Pijltjes</b> lopen · <b>Spatie</b> eikel gooien</span>
+    <button class="small" id="mute" type="button">Geluid: aan</button>
+    <button class="small" id="restart" type="button">Opnieuw beginnen</button>
+    <button class="small" id="menu2" type="button">Levels</button>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+//  BOUWDOOS: hier kun je de game makkelijk aanpassen
+// =====================================================================
+
+// Elke letter op een kaart is één vakje.
+//  T boom   O eikenboom   D dennenboom   . gras   , bloemen   g hoog gras
+//  * paddenstoel   = pad   W water   B brug   b struik   R rots
+//  H hol (hier begin je)   X bouwplek
+//  V hol van de grote vos  N nest van de grote uil  Q hol van de grote slang
+//  F vosje   U uiltje   S slangetje   Z wolfje   G grot van de grote wolf   A vleermuis   & nest van de grote spin
+//  M modder (daar loop je langzaam)   L waterlelie (daar kun je over het water hoppen)   J riet
+//  I ijs (daar glij je)   Y diepe sneeuw (daar loop je langzaam)   K rotswand
+//  E grotwand   C kristal (geeft licht)   P fakkel (loop ertegenaan om hem aan te steken)   % spinnenweb (plakkerig)
+//  Diertjes:  e egeltje  m muisje  k eekhoorntje  v vogeltje  p kikkertje
+//             r ree-kalfje  d dassenjong  z vleermuisje (hangt onder een boom)
+//             u eendje  a schildpadje  q otterjong  i ijsvogeltje
+//             h sneeuwhaasje  c marmotje  y berggeitje  n sneeuwuiltje  j poolvosje
+//             f molletje  x salamandertje  w glimwormpje (geeft licht)
+//  Spullen:   t takje    l blaadje s steentje     o mos
+const LEVELS = [
+  {
+    naam: "De Weide",
+    verhaal: "De kleine diertjes van de weide zijn bang voor de vossen. Help jij ze aan een veilig huisje?",
+    vijand: "vos", baas: "vos", baasNaam: "De grote vos",
+    startTip: "Zoek spullen en diertjes. Pas op voor de vosjes!",
+    baasKomt: "De grote vos komt eraan!",
+    baasTip: "Gooi eikels om de grote vos weg te jagen!",
+    gewonnen: "Alle diertjes van de weide wonen veilig in hun huisje, en de grote vos is weggejaagd.",
+    kaart: [
+      "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+      "TT...R..TO.TO,,,.T.TTO,...RRRRRRRRRRRRRT",
+      "T.TO..sTTO..R.TT.O,T..T.T.RR.........RRT",
+      "T..s..........o...,.b.,.,.R.t....V....RT",
+      "TT..O.....,.k........O.R..R...........RT",
+      "TT.....,........g.........R...........RT",
+      "T............,ggggg............o.....l.T",
+      "T...R.....t..gggmggg.....,,...,.=.t..,.T",
+      "T.............ggggg......F......=......T",
+      "TT......,......,g,.,............=...,,,T",
+      "T.....tbbbbbbbbbbb..,..,....b...=.....TT",
+      "TT..,..b.........b.......s.....e=..,...T",
+      "T......b.X..X..X.b..........,.o.=..,...T",
+      "TT.....b.........b....,.,.......=.,.O.TT",
+      "TT.....b.........================.....TT",
+      "TT.....b..H......b..=..................T",
+      "T......b.....X.X.b.R=.........,,.,....TT",
+      "T.l..b.b.........b..=.........bl....s.TT",
+      "TT.....bbbbb.bbbbb,.=...........b.gF...T",
+      "T....o......=.......=.t.....W....ggg...T",
+      "T..O........=....o..=...WWWWWWWWWggggsTT",
+      "T..l........=.......=.WWWWWWWWWWWWWg,.TT",
+      "T,......F.l.=.......=.WWWWWW.WWWWWWl..TT",
+      "TT...g......=...,...=BBBBBB.p.WWWWWW...T",
+      "TT,ggggg.R..=R.,....,.WWWWWW.WWWWWW....T",
+      "TTsggvggg...=.,...,...WWWWWWWWWWWWW...TT",
+      "T..ggggg...,............WWWWWWWWW....,TT",
+      "T....g..............o.,.....W........t.T",
+      "TT.T..TR.,T.TT..T.TTTT...TT.TTTT,.T.T.TT",
+      "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    ],
+  },
+  {
+    naam: "Het Moeras",
+    verhaal: "In het mistige moeras wonen slangen. Komt een slang omhoog en hoor je 'Sss'? Dan zie je een rode streep: daar schiet hij naartoe. Stap snel opzij! In de modder loop je langzaam, en over de waterlelies kun je over het water hoppen.",
+    vijand: "slang", baas: "slang", baasNaam: "De grote slang",
+    startTip: "Pas op voor de slangen! Zie je een rode streep? Stap opzij!",
+    baasKomt: "De grote slang komt uit haar hol!",
+    baasTip: "Ontwijk de rode streep. Gooi eikels, maar onder water kun je haar niet raken!",
+    gewonnen: "Alle diertjes van het moeras zijn veilig, en de grote slang is teruggekropen in haar hol.",
+    mist: true,
+    kleuren: { gras:'#6a9a42', gras2:'#5a8636', gras3:'#86b85a', hoog:'#4f8a36', hoog2:'#8cc060',
+      water:'#3d7f7a', water2:'#7ab8a0', water3:'#2c5f5a', schuim:'#cfe8d0' },
+    kaart: [
+      "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+      "TT.TTTTT....TTTT.T.T..T...TTT....,.T..TT",
+      "TTJWWJt......s......s...l.............TT",
+      "TTWWWW..MMMMM.......................Q..T",
+      "TTWWWW.MMMMMMM.....t.....JJoJJJ........T",
+      "T.JWWJl.MMMMM............WWWWWWWJ......T",
+      "T..Ju.g......g...S.....JSWWWWWWWWJ.....T",
+      "TT...ggg....gpg........WWWWWWWWWWW...s.T",
+      "TT....g......g.....o..WWWWWWWWWWWWWJ...T",
+      "T.T.....T............JWWWWWJ.J.WWWWJ..TT",
+      "TT....bbbbbbbbbbb...J=LLLL...a.BBBBB..TT",
+      "TT.....b.........b...=WWWWW..JJWWWWWJS.T",
+      "T..s...b.X..X..X.bb.J=WWWWWWWWWWWWWWJ.TT",
+      "TT.....b.........b...=WWWWWWWWWWWWWJ...T",
+      "TT.R...b.........=====WWWWWWWWWWWWl..t.T",
+      "T......b..H......b....JWWWWWWWWWWW.....T",
+      "T......b.....X.X.b.b....WWWWWWWWW......T",
+      "T.l....b.........b.....RJWWWWWWWMMMMMTTT",
+      "T......bbbbb.bbbbb.T.....JJJJ..MMMMMMM.T",
+      "T....o......=.................S.MMMMM..T",
+      "TT..J......o=.,,.....g........t.......TT",
+      "TT.WW.......=.......ggg...........q....T",
+      "TTWWWWJS....=........g...T..........o.TT",
+      "TTWWWW...t..=...s..........,.JJWWW.J..TT",
+      "TT.WW.......===========.....JWLLLLWWJ.TT",
+      "TT......MMM...........=.....JWWWWWWWJ.TT",
+      "TTi...MMMMMMM..l...S..=...o..J.WWW.J.lTT",
+      "TT......MMM......t....=......s.........T",
+      "TTT.TT.T.TTTT..TTTT.T...TTT...T......TTT",
+      "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    ],
+  },
+  {
+    naam: "Het Bos",
+    verhaal: "In het schemerige bos vliegen uiltjes rond. Zie je een rode kring op de grond? Spring snel opzij! Een uil kun je alleen raken als hij op de grond zit.",
+    vijand: "uil", baas: "uil", baasNaam: "De grote uil",
+    startTip: "Pas op voor de uiltjes. Zie je een rode kring? Spring opzij!",
+    baasKomt: "De grote uil wordt wakker!",
+    baasTip: "Ontwijk de rode kring. Raak de uil als hij op de grond zit!",
+    gewonnen: "Alle diertjes van het bos zijn veilig, en de grote uil is teruggevlogen naar zijn nest.",
+    schemer: true,
+    kleuren: { gras:'#4f9a48', gras2:'#3f8740', gras3:'#6cb85a', pad:'#c9a96e', pad2:'#ad8e57' },
+    kaart: [
+      "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+      "TTTTTTDTTTTDDTTDDDDTDTDDWWTTTTTDTDDDDDDT",
+      "TDDT...sTTDTTTDTTDDT.,TDTWWDTDTD...TTTTT",
+      "TD...U...DTTTTTTD..T.t..TWWDDD...N..*DTT",
+      "TD....*...t.TTT**.sz..*.DWWTDT.U,*.,.tTT",
+      "T..tr=================...WWDD....t....TT",
+      "TD......o=.DTTTDT...bU...WWTD...=..*.DDT",
+      "TD,..*...=TTDDDTT...*...DWWDDT..=.*s.DDT",
+      "TTDD.l*TD=*s...DTTT...TDDWWTTTTT=..DDTTT",
+      "TTDTDTT..=.......DTDDDTDDWWTDDDT=DDDTDDT",
+      "TDDDDDDbb=bbbbbbbbDTTDTTWWTDDDTT=TDDDDTT",
+      "TTTDTT.b.........b.TDTTTWWTTTD..=DDDTDTT",
+      "TTDTDD.b.X..X..X.b.DTTTTWWTT....=..DDDDT",
+      "TTDTT..b.........b..TDTWW....bl.=...DTDT",
+      "TDDTD..b.........======BB============.TT",
+      "TDTTD..b..H......b..=TTWWDT....U.t.T=TTT",
+      "TDTTT..b.....X.X.b..=TDWWDDT.o.....D=TTT",
+      "TTDDDT.b.........b.s=.TWWDDTDDT..DTT=TDT",
+      "TDDTTD.bbbbb=bbbbb..=.,WWDTTDDDDTDT.=*DT",
+      "TDDTTTTTD...=....b..=..WWDTTTTTTTTl.=..T",
+      "TDDTTTDTTTD.=.*.TDl.=*.WWTTDDDDTTD..=..T",
+      "TDTDDDDDDDDD=.*TDDD.=.TDWWTDD...D...=..T",
+      "TDDDT..DTT.o=....TDD=DTTWWT..U.,....=ebT",
+      "TTT.....T...=.....TT=..*WW.o.........*.T",
+      "TDT.........=*Uo..DT=====BB======s.....T",
+      "TD...========.....TDTDTTTWW...d........T",
+      "TD*l.k...T.......TDDTTTDDWW.......D...DT",
+      "TTD...o.TDDDb.lTTDTTDTTDDWWTT..T.DTTDDTT",
+      "TTTD.*.DTDTTDDTTDDTTDDDTTWWTTTDDDTTTTDTT",
+      "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    ],
+  },
+  {
+    naam: "De Sneeuwberg",
+    verhaal: "Hoog op de berg is het koud en glad. De wolfjes zijn sneller dan jij! Als een wolfje huilt, komen de anderen ook. Maar na een sprintje zijn ze moe en moeten ze even uitrusten. Op het ijs glij je uit, en in diepe sneeuw ga je langzaam.",
+    vijand: "wolf", baas: "wolf", baasNaam: "De grote wolf",
+    startTip: "Pas op voor de wolfjes! Ze zijn snel, maar ook snel moe.",
+    baasKomt: "De grote wolf komt uit zijn grot!",
+    baasTip: "Zie je een rode streep? Spring opzij! Na een sprong is de wolf moe: raak hem dan!",
+    gewonnen: "Alle diertjes van de berg zijn veilig, en de grote wolf is jankend teruggerend naar zijn grot.",
+    sneeuw: true,
+    kleuren: { gras:'#e9eff6', gras2:'#d3dde8', gras3:'#ffffff', pad:'#c4ccd6', pad2:'#aab4c0',
+      water:'#4a8ac8', water2:'#9ccaf0', water3:'#3570a8', schuim:'#eef6ff' },
+    kaart: [
+      "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+      "DD.D.DD...D.DDD....KKKKKKKKKKKKKKKKKDDDD",
+      "DD.....t........s....KKKKKKKKKKKKK....DD",
+      "D..IIIII..YYYcY.......KlKKKGKKKKK......D",
+      "DDIIhIIIIYYYYYYY..................D..s.D",
+      "DD.IIIII..YYYYY...t.............o.....DD",
+      "D........l......Z.....................DD",
+      "DD............D.......R.......O.......DD",
+      "DD.......................Z........ZYYY.D",
+      "DD.R................D.............YYYyYD",
+      "DD.....bbbbbbbbbbb.................YYY.D",
+      "D......b.........b......D...tII........D",
+      "D......b.X..X..X.b..o....IIIIIIIII.o...D",
+      "DDl....b.........b......IIIIIIIIIII...DD",
+      "D......b.........=====..IIIIIIIIIII....D",
+      "DD..D..b..H......b.....IIIIIIInIIIIIt.DD",
+      "D......b.....X.X.b....D.IIIIIIIIIII....D",
+      "DD.....b.........b......IIIIIIIIIII....D",
+      "D..s...bbbbb=bbbbb.......IIIIIIIII.....D",
+      "D...........=...W.........s.III......RDD",
+      "DD....o...D.=...W....Y.......Z...l.....D",
+      "DDD.........============Y..............D",
+      "DD.........o....W.YYYYYYY....D.........D",
+      "D....t...........WYYYYYYY........I....DD",
+      "DD....YYZYY......W...Ys.......IIIIIII..D",
+      "DD...YYYYYYY.l...W..........oIIIIIIIIIDD",
+      "D.....YYYYY......W.D.Z....R...IIIIIjI..D",
+      "D........O......W.......t........I...lDD",
+      "D....D.D..DDD...WD..DDDD.D.D.DDsDDDD..DD",
+      "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
+    ],
+  },
+  {
+    naam: "De Grot",
+    verhaal: "Diep onder de grond is het donker. Je ziet alleen wat dicht bij je is. Steek de fakkels aan: in het licht durven de vleermuizen niet te komen. Zie je rode oogjes in het donker? Pas op, dan duikt er een vleermuis op je af!",
+    vijand: "vleer", baas: "spin", baasNaam: "De grote spin",
+    startTip: "Steek de fakkels aan! Zie je rode oogjes? Spring opzij!",
+    baasKomt: "De grote spin zakt naar beneden!",
+    baasTip: "Ontwijk haar plakdraden. Zie je een schaduw groeien? Weg daar, ze laat zich vallen!",
+    gewonnen: "Alle diertjes van de grot zijn veilig, en de grote spin is hoog weggeklommen in haar web.",
+    donker: true,
+    kleuren: { gras:'#3d3944', gras2:'#322e38', gras3:'#4c4756', pad:'#5a5262', pad2:'#4a4352', rots:'#6a6474', rots2:'#8a8494', rots3:'#4a4552',
+      water:'#24467a', water2:'#4a78b0', water3:'#183258', schuim:'#8ab0e0' },
+    kaart: [
+      "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+      "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+      "EEEE...o.EEEEEEEEEEEEEEEEEEEEE&EEEEEEEEE",
+      "EEECt.A.*.EEEEEEEE...EEEEEE.......EEEEEE",
+      "EE...f..l..EEEEEP...AtEEP...o...%%..EEEE",
+      "EEEs......EEEEEE...w......%%......A..EEE",
+      "EEEE.....PEEEEEE.s....C...l.......t.CEEE",
+      "EEEEEE...EEEEEEE.....E.E.C...........EEE",
+      "EEEEEEE...E.EEE...EEEEEEE....*...s..EEEE",
+      "EEEEEEE...........EEEEEEEEE...%...EEEEEE",
+      "EEEEEE.RRRRRRRRRRREEEEEEEEEEE...EEEEEEEE",
+      "EEEEE..R.........REEEEEEEEEEE..PEEEEEEEE",
+      "EEEE...R.X..X..X.R.EEEEEEEEE...EEEEEEEEE",
+      "EEEE...R.........R.EE.PEE....l....EPEEEE",
+      "EEE....R.........===.........WWW....EEEE",
+      "EEEE...R..H......R..o....A.WWWWWWW..lEEE",
+      "EEEE...R.....X.X.R..EE.t...BBBBBBB...EEE",
+      "EEEEE..R.........REEEE.....WWWWWWW.d.EEE",
+      "EEEEE..RRRRR=RRRRREEEEEC...s.WW*....EEEE",
+      "EEEEEEE.........EEEEEEEEE.......o.EEEEEE",
+      "EEEEEEEEEEE..EEEEEEEEEEEEEE...EEEEEEEEEE",
+      "EEEEEEEEEE...EEEEEEEEEEEEEE..EEEEEEEEEEE",
+      "EEEEEEEE.E.PEEEEEEEEEEEEE...P.EEEEEEEEEE",
+      "EEEEE.......EEEEEEEEEE...........EEEEEEE",
+      "EEEEC......s..EEE.........s......t.EEEEE",
+      "EEE.l....A.............l.A....x....EEEEE",
+      "EEEE..z...t.*....PEE....*.........CEEEEE",
+      "EEEEE...o...EEEEEEEEEE........o..EEEEEEE",
+      "EEEEEEEE.EEEEEEEEEEEEEEEE.....EEEEEEEEEE",
+      "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
+    ],
+  },
+];
+const KOMT_NOG = "Je hebt alle levels gehaald! Heb jij een idee voor level 6?";
+
+const SPEL = {
+  snelheid: 76,          // hoe snel het konijntje hopt
+  snelheidMetDier: 64,   // iets langzamer als je een diertje draagt
+  eikelsMax: 5,          // zoveel eikels passen in je zakje
+  eikelBijvullen: 1.5,   // na zoveel seconden krijg je een nieuwe eikel
+  vosjeSnelheid: 56,     // jonge vosjes (iets langzamer dan jij)
+  terugNa: 12,           // na zoveel seconden komt een weggejaagd roofdier terug
+  uilMikken: 0.9,        // zoveel seconden heb je om weg te springen voor een uiltje
+  uilKring: 18,          // hoe groot de rode kring van een uiltje is (de grote uil: 6 groter)
+  uilZiet: 100,          // van hoe ver een uiltje je ziet
+  baasLeven: 6,          // zo vaak moet je de baas raken
+  slangSnelheid: 48,     // slangetjes
+  slangZiet: 90,         // van hoe ver een slangetje je ziet
+  slangMikken: 0.75,     // zoveel seconden heb je om opzij te stappen als een slangetje sist
+  modderTraag: 0.55,     // in de modder en diepe sneeuw loop je zoveel langzamer
+  ijsGlij: 2.2,          // hoe snel je op het ijs bijstuurt (kleiner = gladder)
+  wolfSnelheid: 90,      // wolfjes zijn sneller dan jij...
+  wolfSprint: 2.0,       // ...maar na zoveel seconden rennen zijn ze moe
+  wolfRust: 1.8,         // en rusten ze zo lang uit
+  wolfZiet: 95,          // van hoe ver een wolfje je ziet
+  licht: 58,             // zo groot is het lichtje rond het konijntje in de grot
+  fakkelLicht: 64,       // en rond een fakkel die aan is
+  vleerZiet: 72,         // van hoe ver een vleermuis je ziet
+  vleerMikken: 0.6,      // zoveel seconden gloeien de oogjes voordat hij duikt
+  vastTijd: 1.2,         // zo lang zit je vast in een plakdraad van de spin
+};
+
+const DIEREN = {
+  e:{naam:"het egeltje"}, m:{naam:"het muisje"}, k:{naam:"het eekhoorntje"},
+  v:{naam:"het vogeltje"}, p:{naam:"het kikkertje"},
+  r:{naam:"het ree-kalfje"}, d:{naam:"het dassenjong"}, z:{naam:"het vleermuisje"},
+  u:{naam:"het eendje"}, a:{naam:"het schildpadje"}, q:{naam:"het otterjong"}, i:{naam:"het ijsvogeltje"},
+  f:{naam:"het molletje"}, x:{naam:"het salamandertje"}, w:{naam:"het glimwormpje"},
+  h:{naam:"het sneeuwhaasje"}, c:{naam:"het marmotje"}, y:{naam:"het berggeitje"}, n:{naam:"het sneeuwuiltje"}, j:{naam:"het poolvosje"},
+};
+const SPULLEN = { t:"takje", l:"blaadje", s:"steentje", o:"mos" };
+
+// Plaatjes: elke letter is een kleur, een punt is doorzichtig.
+const KLEUR = {
+  // konijntje: grijs met donkergrijze vlekken
+  o:"#4a4d55", g:"#a9adb4", d:"#767b84", p:"#f0a3b4", w:"#f5f5f2", e:"#17171c", n:"#e07a90",
+  // vos
+  r:"#e0762a", R:"#b5561c", c:"#f7eddc", k:"#2a1a12", O:"#5a2d12",
+};
+const PLAATJES = {
+  konijnOmlaag:[
+    "....oo....oo....","...ogpo..opgo...","...ogpo..opgo...","...ogpo..opgo...",
+    "...oggooooggo...","..oggggggggggo..","..odgeggggeggo..","..oggggnnggggo..",
+    "...ogggwwgggo...","..oggwwwwwwggo..",".oggdwwwwwwgggo.",".ogddwwwwwwggdo.",
+    ".oggggwwwwggggo.","..oggggggggggo..","..ogwo....owgo..","...oo......oo...",
+  ],
+  konijnOmhoog:[
+    "....oo....oo....","...oggo..oggo...","...oggo..oggo...","...oggo..oggo...",
+    "...oggooooggo...","..oggggggggggo..","..oggggdgggggo..","..oggggggddggo..",
+    "...oggggggggo...","..oggggggggggo..",".ogddgggggggggo.",".oggggggggddggo.",
+    ".ogggggwwgggggo.","..ogggwwwwgggo..","..ogo......ogo..","...o........o...",
+  ],
+  konijnOpzij:[
+    "................","..oo............",".ogpo...........","..ogpo...oooo...",
+    "...ogpooggggo...","....oogggggego..","...ooggggggggno.",".ooggggggggggo..",
+    "owggdggggggoo...","owgdddgggggo....","owggggggggggo...",".oggggwwwgggo...",
+    "..oggggggggo....","..ogwo..ogwo....","...oo....oo.....","................",
+  ],
+  vos:[
+    "...........k..k.","occ.......orrrro","orco......orrerr","oro.oooooo.orcck",
+    "..orrorrrrrrrro.","...orrrrrrrrcro.","...orrrrrrrcco..","...oRrrrrrrRo...",
+    "...oko....oko...","...kk.....kk....",
+  ],
+  vosRen:[
+    "...........k..k.","occ.......orrrro","orco......orrerr","oro.oooooo.orcck",
+    "..orrorrrrrrrro.","...orrrrrrrrcro.","...orrrrrrrcco..","...oRrrrrrrRo...",
+    "....ok....ok....","..kk......kk....",
+  ],
+};
+const UILKLEUR = {b:"#7a5a3a", B:"#a9845a", c:"#e8d3a8", y:"#ffd23c", k:"#17171c", o:"#e08a2a"};
+const BAASUILKLEUR = {b:"#4f4a52", B:"#7d7684", c:"#d9d2c4", y:"#ff8a2a", k:"#17171c", o:"#e0b02a"};
+const UILPLAATJES = {
+  zit:[
+    "..b......b..","..bbbbbbbb..",".bBBBBBBBBb.",".bykyBBykyb.",".bBBBooBBBb.",".bBcccccBBb.",
+    "bbBcBcBcBBbb","bbBcccccBBbb",".bBcBcBcBBb.","..bbbbbbbb..","...o....o...",
+  ],
+  vlieg:[
+    "......b..b......",".....bbbbbb.....","b...bykBBkyb...b","bb..bBBooBBb..bb","bBbbbBcccBBbbbBb",
+    ".bBBbBcBcBBbBBb.","..bBBbcccBbBBb..","...bbbBcBBbbb...","......bbbb......","......o..o......",
+  ],
+  vliegOp:[
+    "bb....b..b....bb",".bb..bbbbbb..bb.","..bbbykBBkybbb..","...bbBBooBBbb...","....bBcccBBb....",
+    ".....BcBcBBb....",".....bcccBbb....","......BcBBb.....","......bbbb......","......o..o......",
+  ],
+};
+const DIERPLAATJES = {
+  e:{kleur:{s:"#5a3d26",S:"#8a6a4a",f:"#e7c6a0",k:"#17171c"}, rijen:[
+    "...sSsSs....","..sSsSsSs...",".sSsSsSsSs..",".sSsSsSsfkf.","sSsSsSsSfffk","sSsSsSsSff..",".sSsSsSsf...","..ff..ff....",
+  ]},
+  m:{kleur:{m:"#9a8a7a",M:"#c4b29e",p:"#f0a3b4",k:"#17171c"}, rijen:[
+    ".......mm...","......mppm..",".....mmmmmm.","....mmmmmkmm","...mmmmmmmmp","..mMMMMmmm..",".pmMMMMMmm..","p.mmmmmmm...","p..m..m.....",
+  ]},
+  k:{kleur:{b:"#b5562a",B:"#d9844a",c:"#f2dcc0",k:"#17171c"}, rijen:[
+    ".bb.........","bBBb....bb..","bBBBb..bbbb.","bBBBb.bbbkbb",".bBBb.bbbbbc","..bBbbbccbb.","...bbbcccb..","...bbbcccb..","...bb.bb.bb.",
+  ]},
+  v:{kleur:{u:"#4a8fd9",U:"#8cc0f0",y:"#f2a32a",k:"#17171c",w:"#f5f5f2"}, rijen:[
+    "....uuu.....","...uuuuu....","...uuukuyy..",".uuuuuuuu...","uUUuuwwwu...",".uUUuwwwu...","..uuuuuu....","....y..y....",
+  ]},
+  p:{kleur:{w:"#f5f5f2",k:"#17171c",g:"#5ab54a",G:"#3e8f34",y:"#c8e68a"}, rijen:[
+    "..ww....ww..",".wkkw..wkkw.",".gwwggggwwg.","gggggggggggg","gGggggggggGg","gGgyyyyyygGg",".ggyyyyyygg.","GGg......gGG",
+  ]},
+  r:{kleur:{c:"#b8743c",C:"#d9995a",w:"#f5efe2",k:"#17171c",l:"#7a4a22"}, rijen:[
+    "........c.c.","........cccc",".......ccckc",".......cccck","c.ccccccc...","cccwcwcccc..",".ccccwcccc..",".cwcccccw...","..cccccc....","..l.l..l.l..","..l.l..l.l..",
+  ]},
+  d:{kleur:{g:"#6f6f6f",G:"#8f8f8f",w:"#f5f5f2",k:"#17171c"}, rijen:[
+    ".........ww.","..ggggggkwwk",".gGGGGGgkwkw","ggGGGGGggwwk","gggggggggkk.",".gggggggg...",".kk..kk.....",
+  ]},
+  z:{kleur:{v:"#4b3b5a",V:"#6b5880",p:"#e0a0b0",w:"#f5f5f2",k:"#2a2030"}, rijen:[
+    "....kk....","...vvvv...",".vVvvvvVv.","vVVvvvvVVv","vVVvvvvVVv",".vVvwwvVv.","..vvppvv..","...v..v...",
+  ]},
+  u:{kleur:{y:"#f2d03a",Y:"#f8e68a",o:"#f08a2a",k:"#17171c"}, rijen:[
+    "......yyy...",".....yyyyy..",".....yykyoo.","......yyy...","..yyyyyyyy..",".yYYYyyyyy..","yyYYYYyyy...",".yyyyyyy....","...o..o.....",
+  ]},
+  a:{kleur:{s:"#3e8a4a",S:"#6ab85a",h:"#a8c86a",k:"#17171c",d:"#2a5f30"}, rijen:[
+    "...dddd.....","..dSsSsd....",".dSsSsSsd...",".dsSsSsSdhh.","dddddddddhkh",".hh..hh..hh.",
+  ]},
+  q:{kleur:{b:"#7a5236",B:"#a57a56",c:"#e8d3b8",k:"#17171c",n:"#2a1a12"}, rijen:[
+    "........bb..",".......bcccb",".......ckcnb","bb.bbbbbcccb",".bbBBBBBbbb.","..bBBBBBBb..","...bbbbbb...","...b.b.b.b..",
+  ]},
+  i:{kleur:{u:"#2a8fd0",U:"#6cc4f0",o:"#f08a2a",k:"#17171c",w:"#f5f5f2"}, rijen:[
+    "....uuu.....","...uUuuu....","...uwkuu....","...uuuukkkk.","..uUUoooo...",".uUUUooooo..","uu.uuoooo...","....k..k....",
+  ]},
+};
+// en de diertjes van de sneeuwberg
+Object.assign(DIERPLAATJES, {
+  h:{kleur:{w:"#f5f7fa",W:"#cfd7e0",k:"#17171c",p:"#f0a3b4",g:"#9aa3ad"}, rijen:[
+    "......w.w...","......wpwp..",".......wwww.","..wwwwwwwkw.",".wWWWwwwwwwp","wwWWWWwwww..",".wwwwwwww...","..g..g.g....",
+  ]},
+  c:{kleur:{b:"#8a6a48",B:"#b8946a",c:"#e8d3b8",k:"#17171c"}, rijen:[
+    "....bbbb....","...bBBBBb...","...bkBBkb...","...bBccBb...","..bbBBBBbb..",".bBBBccBBBb.",".bBBccccBBb.","..bbbbbbbb..","..bb....bb..",
+  ]},
+  y:{kleur:{w:"#f2efe6",W:"#d6d0c0",k:"#17171c",h:"#9a8a6a"}, rijen:[
+    "........h.h.",".......wwww.",".......wkww.","wwwwwwwwww..","wWWWWWwww...","wWWWWWWww...",".wwwwwwww...",".k.k..k.k...",".k.k..k.k...",
+  ]},
+  n:{kleur:{w:"#f5f5f2",W:"#d0d6dc",y:"#ffd23c",k:"#17171c",o:"#e08a2a",d:"#9aa3ad"}, rijen:[
+    "..w....w..","..wwwwww..",".wykwwykw.",".wwwoowww.",".wWdWWdWw.",".wWWWWWWw.","..wwwwww..","...o..o...",
+  ]},
+  j:{kleur:{w:"#f5f7fa",W:"#d8dee6",k:"#17171c",g:"#9aa3ad"}, rijen:[
+    "........w..w","........wwww","........wkwk","ww.wwwwwwww.",".wwWWWWWww..","..wWWWWWWw..","..wwwwwwww..","..g.g..g.g..",
+  ]},
+});
+// en de diertjes van de grot
+Object.assign(DIERPLAATJES, {
+  f:{kleur:{m:"#3a3036",M:"#5f5058",p:"#f0a3b4",k:"#17171c"}, rijen:[
+    "...mmmmm....",".mmMMMMMmm..","mMMMMMMMMMm.","mMMMMMMMMkMp","mMMMMMMMMMpp",".mmmmmmmmm..","pp.pp..pp.pp",
+  ]},
+  x:{kleur:{o:"#f08a2a",O:"#ffb04a",k:"#17171c",y:"#3a2a1a"}, rijen:[
+    "o......ooo..","oo....oOOko.",".ooooOOOOOoo","..oOyOOyOOo.","..o..o..o...",
+  ]},
+  w:{kleur:{g:"#b8e05a",G:"#f0ffb0",k:"#17171c",b:"#5a7a2a"}, rijen:[
+    "........bb..",".......bkbb.","..gg..gGbbb.",".gGGggGGgg..","gGGGGGGGg...",".gggggggg...",
+  ]},
+});
+// vleermuizen en de grote spin
+const VLEERKLEUR = {v:"#3a2a4a", V:"#6a5084", r:"#ff3a3a"};
+const SPINKLEUR = {s:"#241628", S:"#5a3a6a", k:"#241628", r:"#ff4040", y:"#ffd23c"};
+const GROTPLAATJES = {
+  vleer1:["v.....v.....v","vv...vvv...vv","vVv.vVVVv.vVv",".vVvVrVrVvVv.","..vvVVVVVvv..","....vVVVv....",".....v.v....."],
+  vleer2:["......v......",".....vvv.....","....vrVrv....","..vvVVVVVvv..",".vVvVVVVVvVv.","vVv..vVv..vVv","vv....v....vv"],
+  spin1:["k.....sss.....k",".k...sSySs...k.","..k.sSSySSs.k..","kkkksSSySSskkkk","....srSrSrs....","kkkksSSSSSskkkk","..k.sSSSSSs.k..",".k...sSSSs...k.","k.....sss.....k"],
+  spin2:[".k....sss....k.","..k..sSySs..k..","k..ksSSySSsk..k",".kkksSSySSskkk.","....srSrSrs....",".kkksSSSSSskkk.","k..ksSSSSSsk..k","..k..sSSSs..k..",".k....sss....k."],
+};
+// slangen: een kop en rondjes voor het lijf
+const SLANGKLEUR = {g:"#1f4a1a", G:"#a8d84a", d:"#5f9a2a", y:"#f5e65a", k:"#17171c", w:"#f5f5f2"};
+const BAASSLANGKLEUR = {g:"#1a2e3a", G:"#4a8aa8", d:"#2a5a74", y:"#f2a32a", k:"#17171c", w:"#f5f5f2"};
+const SLANGPLAATJES = {
+  kop:[
+    "...gggg...",".ggGGGGg..","gGGGGwkGg.","gGGGGGGGgg","gGyyyyGGGg","gGGGGGGGg.",".ggggggg..",
+  ],
+  lijf:[
+    "..gggg..",".gGGGGg.","gGGyGGGg","gGyyyGGg","gGGyGGGg","gdGGGGdg",".gddddg.","..gggg..",
+  ],
+};
+const SPULPLAATJES = {
+  t:{kleur:{t:"#7a4e2a",T:"#a5753f",g:"#5fb34a"}, rijen:[
+    "........g.",".......gg.","......t...",".....t....","..t.tT....","...tT.....","..tT......",".tT.......","tT........",
+  ]},
+  l:{kleur:{l:"#4fae3c",L:"#8ad870",v:"#2f7a27"}, rijen:[
+    "......ll..","....llLl..","..lLLlvl..",".lLLlvll..",".lLlvlll..",".llvlll...","..vlll....",".v........",
+  ]},
+  s:{kleur:{s:"#9aa0a8",S:"#d0d4da",d:"#6c7178"}, rijen:[
+    "...ssss...","..sSSsss..",".sSSssssd.",".ssssssdd.","..ddddddd.",
+  ]},
+  o:{kleur:{m:"#3f8f3a",M:"#7fd06a",n:"#2b6a2a"}, rijen:[
+    "...M.M....","..mMmMmM..",".mMmmMmmm.","mmMmnmmMmm",".nmnnmnmn.",
+  ]},
+  eikel:{kleur:{c:"#6e4524",C:"#9b6a3c",a:"#c98a3c",A:"#eab46a"}, rijen:[
+    "..c...",".CCCC.","CcCcCc",".aAaa.",".aAaa.","..aa..",
+  ]},
+  huisje:{kleur:{L:"#5cb848",l:"#3a8a2f",D:"#2f6f27",t:"#9a6634",T:"#6b4426",k:"#24160c",m:"#7fd06a"}, rijen:[
+    ".......LL.......","......LlLL......",".....LLlLLl.....","....LlLLlLLL....","...LLLlLLLlLL...","..LlLLLLlLLLlL..",
+    ".DDDDDDDDDDDDDD.","..tTtTtTtTtTtT..","..tTtTtkkTtTtT..","..tTtTkkkkTtTt..","..tTtTkkkkTtTt..","..tTtTkkkkTtTt..",".mmmmmkkkkmmmmm.",
+  ]},
+  hart:{kleur:{h:"#ff6b8a",H:"#ffb3c4"}, rijen:[".hh.hh.","hHhhhhh","hhhhhhh",".hhhhh.","..hhh..","...h..."]},
+};
+
+// =====================================================================
+//  Hieronder zit de motor van de game
+// =====================================================================
+const TS = 16, VW = 256, VH = 192;
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const $ = id => document.getElementById(id);
+
+// --- plaatjes omzetten naar canvasjes (ook gespiegeld) ---
+function bake(rows, pal){
+  const h = rows.length, w = Math.max(...rows.map(r => r.length));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d');
+  rows.forEach((r, y) => [...r].forEach((ch, i) => { if (ch !== '.' && pal[ch]) { x.fillStyle = pal[ch]; x.fillRect(i, y, 1, 1); } }));
+  return c;
+}
+function flip(c){ const f = document.createElement('canvas'); f.width = c.width; f.height = c.height; const x = f.getContext('2d'); x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(c, 0, 0); return f; }
+const IMG = {};
+const both = (name, c) => { IMG[name] = c; IMG[name + 'L'] = flip(c); };
+for (const [k, rows] of Object.entries(PLAATJES)) both(k, bake(rows, KLEUR));
+const BOSSPAL = {...KLEUR, r:"#c9541c", R:"#8f3a10", c:"#f2e2c8"};
+// wolven zijn grijze vossen
+const WOLFPAL = {...KLEUR, r:"#8a929c", R:"#5f6670", c:"#eef2f6", O:"#3a3f46"}, BAASWOLFPAL = {...KLEUR, r:"#5a6274", R:"#3a4050", c:"#d8dee8", O:"#22262e"};
+both('wolf', bake(PLAATJES.vos, WOLFPAL)); both('wolfRen', bake(PLAATJES.vosRen, WOLFPAL));
+both('baaswolf', bake(PLAATJES.vos, BAASWOLFPAL)); both('baaswolfRen', bake(PLAATJES.vosRen, BAASWOLFPAL));
+both('baas', bake(PLAATJES.vos, BOSSPAL)); both('baasRen', bake(PLAATJES.vosRen, BOSSPAL));
+for (const [k, rows] of Object.entries(UILPLAATJES)) { both('uil_' + k, bake(rows, UILKLEUR)); both('baasuil_' + k, bake(rows, BAASUILKLEUR)); }
+for (const [k, d] of Object.entries(DIERPLAATJES)) both('dier_' + k, bake(d.rijen, d.kleur));
+for (const k of ['vleer1', 'vleer2']) IMG[k] = bake(GROTPLAATJES[k], VLEERKLEUR);
+for (const k of ['spin1', 'spin2']) IMG[k] = bake(GROTPLAATJES[k], SPINKLEUR);
+for (const [k, rows] of Object.entries(SLANGPLAATJES)) { both('slang_' + k, bake(rows, SLANGKLEUR)); both('baasslang_' + k, bake(rows, BAASSLANGKLEUR)); }
+for (const [k, d] of Object.entries(SPULPLAATJES)) IMG[k] = bake(d.rijen, d.kleur);
+function glow(col, r){ const c = document.createElement('canvas'); c.width = c.height = r * 2; const x = c.getContext('2d'); const g = x.createRadialGradient(r, r, 0, r, r, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, r * 2, r * 2); return c; }
+const GLOW = { kristal: glow('rgba(120,220,255,.55)', 22), vuur: glow('rgba(255,170,60,.6)', 26), worm: glow('rgba(200,255,120,.6)', 14), vlieg: glow('rgba(255,245,150,.9)', 6), pad: glow('rgba(255,150,210,.55)', 12), mist: glow('rgba(225,240,230,.22)', 44) };
+
+// --- kleuren voor de tegels ---
+const C0 = {gras:'#5fb34a', gras2:'#4f9e3e', gras3:'#7dcc63', pad:'#dcbc7a', pad2:'#c4a160', water:'#3b80d8', water2:'#7ab8f5', water3:'#2a62b4', schuim:'#d6efff',
+  blad:'#2f7a32', blad2:'#46a046', blad3:'#62bd57', bladD:'#235e27', eik:'#3d8a2e', eik2:'#5aa83f', stam:'#6b4426', rots:'#8d929c', rots2:'#bfc4cc', rots3:'#5f646d',
+  den:'#1f5f3a', den2:'#2f7f4c', denD:'#174a2c',
+  hout:'#a3703c', hout2:'#7a5028', aarde:'#8a5f36', aarde2:'#6e4a28', hoog:'#3f9a3a', hoog2:'#79c95a'};
+const C = {...C0};
+const R = (c, x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
+const hash = (x, y, s = 0) => { let h = (x * 374761393 + y * 668265263 + s * 2147483647) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return (h ^ (h >>> 16)) >>> 0; };
+
+let map, MW, MH, LV = 0;
+const tile = (x, y) => (x < 0 || y < 0 || x >= MW || y >= MH) ? 'T' : map[y][x];
+const SOLID = new Set(['T','O','D','N','W','b','R','V','Q','K','G','E','C','P','&']);
+
+function drawGrass(c, ox, oy, x, y){
+  R(c, ox, oy, 16, 16, C.gras);
+  for (let i = 0; i < 4; i++) R(c, ox + hash(x, y, i) % 15, oy + hash(x, y, i + 7) % 14, 1, 2, C.gras2);
+  R(c, ox + hash(x, y, 20) % 15, oy + hash(x, y, 21) % 15, 1, 1, C.gras3);
+}
+function drawTree(c, ox, oy, a, b){
+  R(c, ox + 2, oy + 13, 12, 2, 'rgba(0,0,0,.18)'); R(c, ox + 6, oy + 10, 4, 5, C.stam);
+  R(c, ox + 2, oy + 1, 12, 10, a); R(c, ox + 1, oy + 3, 14, 7, a); R(c, ox + 3, oy, 10, 1, a);
+  R(c, ox + 4, oy + 2, 4, 3, b); R(c, ox + 5, oy + 3, 2, 1, C.blad3); R(c, ox + 2, oy + 10, 12, 1, C.bladD);
+}
+function drawTile(c, ch, x, y, ox, oy){
+  const path = '=XHB';
+  switch (ch) {
+    case ',': { drawGrass(c, ox, oy, x, y); const cols = ['#ff6b81','#ffe15a','#ffffff','#c99bff'];
+      for (let i = 0; i < 3; i++) { const fx = ox + 2 + hash(x, y, i + 30) % 11, fy = oy + 2 + hash(x, y, i + 40) % 11; R(c, fx, fy + 2, 1, 2, C.gras2); R(c, fx - 1, fy, 3, 2, cols[hash(x, y, i + 50) % 4]); R(c, fx, fy, 1, 1, '#f4c542'); } break; }
+    case '=': { R(c, ox, oy, 16, 16, C.pad); for (let i = 0; i < 4; i++) R(c, ox + hash(x, y, i) % 14, oy + hash(x, y, i + 9) % 14, 2, 1, C.pad2);
+      if (!path.includes(tile(x, y - 1))) R(c, ox, oy, 16, 1, C.gras2); if (!path.includes(tile(x, y + 1))) R(c, ox, oy + 15, 16, 1, C.pad2);
+      if (!path.includes(tile(x - 1, y))) R(c, ox, oy, 1, 16, C.gras2); if (!path.includes(tile(x + 1, y))) R(c, ox + 15, oy, 1, 16, C.pad2); break; }
+    case 'g': { drawGrass(c, ox, oy, x, y); for (let i = 0; i < 6; i++) { const gx = ox + 1 + (i * 5 + hash(x, y, i) % 3) % 15, gy = oy + 2 + (i % 3) * 5; R(c, gx, gy, 1, 5, C.hoog); R(c, gx + 1, gy + 1, 1, 4, C.hoog); R(c, gx, gy, 1, 1, C.hoog2); } break; }
+    case 'T': drawGrass(c, ox, oy, x, y); drawTree(c, ox, oy, C.blad, C.blad2); break;
+    case 'O': drawGrass(c, ox, oy, x, y); drawTree(c, ox, oy, C.eik, C.eik2);
+      R(c, ox + 9, oy + 5, 2, 2, '#c98a3c'); R(c, ox + 9, oy + 4, 2, 1, '#6e4524'); R(c, ox + 4, oy + 7, 2, 2, '#c98a3c'); R(c, ox + 4, oy + 6, 2, 1, '#6e4524'); break;
+    case 'D': drawGrass(c, ox, oy, x, y); R(c, ox + 2, oy + 13, 12, 2, 'rgba(0,0,0,.2)'); R(c, ox + 7, oy + 12, 2, 3, C.stam);
+      R(c, ox + 6, oy, 4, 2, C.den); R(c, ox + 4, oy + 2, 8, 3, C.den); R(c, ox + 3, oy + 5, 10, 3, C.den); R(c, ox + 2, oy + 8, 12, 4, C.den);
+      R(c, ox + 6, oy + 1, 2, 1, C.den2); R(c, ox + 4, oy + 3, 2, 1, C.den2); R(c, ox + 3, oy + 6, 3, 1, C.den2); R(c, ox + 2, oy + 9, 3, 1, C.den2); R(c, ox + 2, oy + 11, 12, 1, C.denD); break;
+    case 'N': drawGrass(c, ox, oy, x, y); drawTree(c, ox, oy, C.blad, C.blad2);
+      R(c, ox + 3, oy + 4, 10, 4, '#8a5f36'); R(c, ox + 4, oy + 3, 8, 1, '#a57744'); R(c, ox + 5, oy + 4, 6, 2, '#3a2614'); R(c, ox + 2, oy + 6, 2, 1, '#a57744'); R(c, ox + 12, oy + 5, 2, 1, '#a57744'); break;
+    case '*': drawGrass(c, ox, oy, x, y); R(c, ox + 7, oy + 9, 2, 4, '#efe6d0'); R(c, ox + 5, oy + 6, 6, 3, '#d9433a'); R(c, ox + 6, oy + 5, 4, 1, '#d9433a');
+      R(c, ox + 6, oy + 6, 1, 1, '#fff'); R(c, ox + 9, oy + 7, 1, 1, '#fff'); R(c, ox + 3, oy + 12, 1, 2, '#efe6d0'); R(c, ox + 2, oy + 11, 3, 1, '#e8823a'); break;
+    case 'b': drawGrass(c, ox, oy, x, y); R(c, ox + 2, oy + 5, 12, 9, C.blad); R(c, ox + 1, oy + 7, 14, 5, C.blad); R(c, ox + 4, oy + 6, 3, 2, C.blad3); R(c, ox + 2, oy + 13, 12, 1, C.bladD);
+      if (hash(x, y) % 2) { R(c, ox + 9, oy + 8, 1, 1, '#e2475a'); R(c, ox + 5, oy + 10, 1, 1, '#e2475a'); R(c, ox + 11, oy + 11, 1, 1, '#e2475a'); } break;
+    case 'R': drawGrass(c, ox, oy, x, y); R(c, ox + 2, oy + 4, 12, 10, C.rots); R(c, ox + 1, oy + 6, 14, 7, C.rots); R(c, ox + 3, oy + 4, 6, 2, C.rots2); R(c, ox + 2, oy + 6, 2, 3, C.rots2); R(c, ox + 2, oy + 13, 12, 2, C.rots3); R(c, ox + 12, oy + 7, 2, 6, C.rots3); break;
+    case 'H': drawGrass(c, ox, oy, x, y); R(c, ox + 1, oy + 4, 14, 11, C.aarde); R(c, ox + 3, oy + 2, 10, 2, C.aarde); R(c, ox + 4, oy + 3, 4, 1, '#a57744');
+      R(c, ox + 4, oy + 7, 8, 7, '#2a1a10'); R(c, ox + 5, oy + 6, 6, 1, '#2a1a10'); R(c, ox + 1, oy + 14, 14, 1, C.aarde2); break;
+    case 'X': drawGrass(c, ox, oy, x, y); R(c, ox + 2, oy + 3, 12, 11, C.aarde); R(c, ox + 1, oy + 5, 14, 7, C.aarde); R(c, ox + 3, oy + 4, 3, 1, '#a57744');
+      for (const [px, py] of [[2,3],[13,3],[2,12],[13,12]]) { R(c, ox + px, oy + py - 2, 1, 4, C.hout); R(c, ox + px, oy + py - 2, 1, 1, '#f2d27a'); } break;
+    case 'V': drawGrass(c, ox, oy, x, y); R(c, ox, oy + 3, 16, 13, C.rots3); R(c, ox + 1, oy + 2, 14, 2, C.rots); R(c, ox + 3, oy + 7, 10, 9, '#1a1310'); R(c, ox + 4, oy + 6, 8, 1, '#1a1310'); break;
+    case 'Q': drawGrass(c, ox, oy, x, y); R(c, ox, oy + 3, 16, 13, '#4a5a44'); R(c, ox + 1, oy + 2, 14, 2, '#6a7a60'); R(c, ox + 3, oy + 7, 10, 9, '#141a12'); R(c, ox + 4, oy + 6, 8, 1, '#141a12');
+      R(c, ox + 2, oy + 4, 2, 1, '#4f9a3a'); R(c, ox + 11, oy + 3, 3, 1, '#4f9a3a'); break;
+    case 'M': R(c, ox, oy, 16, 16, '#7a5530'); for (let i = 0; i < 3; i++) R(c, ox + hash(x, y, i) % 12, oy + hash(x, y, i + 4) % 13, 4, 2, '#5f4022');
+      R(c, ox + hash(x, y, 9) % 13, oy + hash(x, y, 10) % 13, 2, 2, '#9a7448');
+      if (tile(x, y - 1) !== 'M') R(c, ox, oy, 16, 1, C.gras2); break;
+    case 'J': drawGrass(c, ox, oy, x, y);
+      for (let i = 0; i < 3; i++) { const rx = ox + 2 + i * 5 + hash(x, y, i) % 2, ry = oy + 2 + hash(x, y, i + 3) % 3; R(c, rx, ry + 4, 1, 10 - (ry - oy), '#5a8a3a'); R(c, rx - 1, ry, 2, 5, '#7a4a22'); R(c, rx + 1, ry + 6, 2, 1, '#6aa04a'); } break;
+    case 'I': R(c, ox, oy, 16, 16, '#b8def2'); for (let i = 0; i < 2; i++) R(c, ox + hash(x, y, i) % 11, oy + 2 + hash(x, y, i + 3) % 12, 5, 1, '#e8f6ff');
+      R(c, ox + hash(x, y, 7) % 14, oy + hash(x, y, 8) % 14, 1, 1, '#ffffff');
+      if (tile(x, y - 1) !== 'I') R(c, ox, oy, 16, 1, '#ffffff'); if (tile(x, y + 1) !== 'I') R(c, ox, oy + 15, 16, 1, '#8cbcd8'); break;
+    case 'Y': drawGrass(c, ox, oy, x, y); R(c, ox + 1, oy + 6, 14, 8, '#ffffff'); R(c, ox + 3, oy + 3, 10, 4, '#ffffff'); R(c, ox + 2, oy + 12, 12, 2, '#c8d4e2'); R(c, ox + 10, oy + 7, 4, 5, '#dde6f0'); break;
+    case 'K': R(c, ox, oy, 16, 16, '#6a6f78'); R(c, ox + 1, oy + 5, 6, 4, '#8a9099'); R(c, ox + 8, oy + 10, 7, 4, '#8a9099'); R(c, ox, oy + 15, 16, 1, '#4a4e56');
+      if (!'KG'.includes(tile(x, y - 1))) { R(c, ox, oy, 16, 3, '#ffffff'); R(c, ox + 3, oy + 3, 4, 1, '#ffffff'); R(c, ox + 10, oy + 3, 3, 1, '#ffffff'); } break;
+    case 'G': R(c, ox, oy, 16, 16, '#6a6f78'); R(c, ox + 2, oy + 4, 12, 12, '#16181c'); R(c, ox + 3, oy + 3, 10, 1, '#16181c'); R(c, ox + 1, oy + 4, 1, 12, '#4a4e56'); R(c, ox + 14, oy + 4, 1, 12, '#4a4e56');
+      R(c, ox + 5, oy + 9, 2, 1, '#ffd23c'); R(c, ox + 9, oy + 9, 2, 1, '#ffd23c'); break; // oogjes in het donker
+    case 'E': case 'P': case '&': { // grotwand (met een fakkel of het spinnennest erin)
+      R(c, ox, oy, 16, 16, '#221f28');
+      for (let i = 0; i < 3; i++) R(c, ox + hash(x, y, i) % 11, oy + hash(x, y, i + 3) % 12, 5, 3, '#2e2a36');
+      if (tile(x, y + 1) !== 'E' && tile(x, y + 1) !== 'P') { R(c, ox, oy + 12, 16, 4, '#3a3544'); R(c, ox, oy + 12, 16, 1, '#4c4658'); }
+      if (ch === 'P') { R(c, ox + 7, oy + 7, 2, 7, '#7a4a22'); R(c, ox + 5, oy + 5, 6, 3, '#4a4e56'); R(c, ox + 6, oy + 4, 4, 1, '#6a6f78'); }
+      if (ch === '&') { ctx.strokeStyle = 'rgba(230,230,240,.7)'; c.strokeStyle = 'rgba(230,230,240,.7)'; c.lineWidth = 1; c.beginPath();
+        for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; c.moveTo(ox + 8, oy + 8); c.lineTo(ox + 8 + Math.cos(a) * 9, oy + 8 + Math.sin(a) * 9); }
+        for (const r of [3, 6]) { c.moveTo(ox + 8 + r, oy + 8); c.arc(ox + 8, oy + 8, r, 0, 6.28); } c.stroke(); }
+      break; }
+    case 'C': drawGrass(c, ox, oy, x, y); R(c, ox + 6, oy + 2, 4, 12, '#5ad0f0'); R(c, ox + 7, oy + 1, 2, 2, '#bff0ff'); R(c, ox + 2, oy + 7, 4, 7, '#9a6ae0'); R(c, ox + 3, oy + 6, 2, 1, '#d8c0ff');
+      R(c, ox + 10, oy + 6, 4, 8, '#5ad0f0'); R(c, ox + 11, oy + 5, 2, 1, '#bff0ff'); R(c, ox + 7, oy + 4, 1, 8, '#bff0ff'); R(c, ox + 1, oy + 14, 14, 1, '#2a2632'); break;
+    case '%': drawGrass(c, ox, oy, x, y); c.strokeStyle = 'rgba(225,225,235,.75)'; c.lineWidth = 1; c.beginPath();
+      c.moveTo(ox, oy); c.lineTo(ox + 16, oy + 16); c.moveTo(ox + 16, oy); c.lineTo(ox, oy + 16); c.moveTo(ox + 8, oy); c.lineTo(ox + 8, oy + 16); c.moveTo(ox, oy + 8); c.lineTo(ox + 16, oy + 8);
+      c.moveTo(ox + 12, oy + 8); c.arc(ox + 8, oy + 8, 4, 0, 6.28); c.moveTo(ox + 15, oy + 8); c.arc(ox + 8, oy + 8, 7, 0, 6.28); c.stroke(); break;
+    case 'W': case 'B': case 'L': break; // getekend in drawWater (beweegt)
+    default: drawGrass(c, ox, oy, x, y);
+  }
+  if (LEVELS[LV].sneeuw && 'TODN'.includes(ch)) { // sneeuw op de bomen
+    const w = '#ffffff';
+    if (ch === 'D') { R(c, ox + 6, oy, 4, 1, w); R(c, ox + 4, oy + 2, 3, 1, w); R(c, ox + 9, oy + 2, 3, 1, w); R(c, ox + 3, oy + 5, 4, 1, w); R(c, ox + 10, oy + 5, 3, 1, w); R(c, ox + 2, oy + 8, 4, 1, w); R(c, ox + 10, oy + 8, 4, 1, w); }
+    else { R(c, ox + 3, oy, 10, 1, w); R(c, ox + 2, oy + 1, 12, 1, w); R(c, ox + 1, oy + 3, 4, 1, w); R(c, ox + 11, oy + 3, 4, 1, w); }
+  }
+}
+function drawWater(c, x, y, ox, oy, t){
+  R(c, ox, oy, 16, 16, C.water);
+  for (let i = 0; i < 2; i++) { const yy = 3 + hash(x, y, i) % 11; const xx = (hash(x, y, i + 5) % 16 + Math.floor(t * 5 + i * 7)) % 16; R(c, ox + xx, oy + yy, Math.min(4, 16 - xx), 1, C.water2); if (xx > 12) R(c, ox, oy + yy, xx - 12, 1, C.water2); }
+  const land = (a, b) => !'WBL'.includes(tile(a, b));
+  if (land(x, y - 1)) { R(c, ox, oy, 16, 3, C.water3); R(c, ox, oy + 3, 16, 1, C.schuim); }
+  if (land(x, y + 1)) R(c, ox, oy + 15, 16, 1, C.schuim);
+  if (land(x - 1, y)) R(c, ox, oy, 1, 16, C.schuim);
+  if (land(x + 1, y)) R(c, ox + 15, oy, 1, 16, C.schuim);
+  if (tile(x, y) === 'L') { // waterlelie
+    R(c, ox + 2, oy + 3, 12, 10, '#3f9a3a'); R(c, ox + 1, oy + 5, 14, 6, '#3f9a3a'); R(c, ox + 3, oy + 4, 5, 2, '#6cc45a'); R(c, ox + 8, oy + 7, 6, 2, C.water); R(c, ox + 2, oy + 12, 12, 1, '#2a6a28');
+    if (hash(x, y) % 2) { R(c, ox + 5, oy + 7, 3, 2, '#ff9ac0'); R(c, ox + 6, oy + 6, 1, 1, '#ffd0e0'); R(c, ox + 6, oy + 8, 1, 1, '#ffe15a'); }
+  }
+  if (tile(x, y) === 'B') { R(c, ox, oy + 2, 16, 12, C.hout); for (let k = 0; k < 4; k++) R(c, ox + k * 4, oy + 2, 1, 12, C.hout2); R(c, ox, oy + 1, 16, 2, C.hout2); R(c, ox, oy + 13, 16, 2, C.hout2); }
+}
+
+// --- geluid ---
+let AC = null, muted = false;
+function beep(f, dur = .1, type = 'square', vol = .06, f2 = null, delay = 0){
+  if (muted) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + .02);
+}
+const SFX = {
+  gooi: () => beep(700, .08, 'triangle', .07, 300),
+  raak: () => { beep(900, .12, 'square', .05, 450); beep(500, .1, 'triangle', .05, 300, .06); },
+  pak:  () => { beep(660, .07, 'square', .04); beep(990, .09, 'square', .04, null, .06); },
+  bouw: () => [523, 659, 784, 1047].forEach((f, i) => beep(f, .1, 'triangle', .07, null, i * .07)),
+  red:  () => [784, 988, 1175, 1568].forEach((f, i) => beep(f, .14, 'square', .045, null, i * .09)),
+  au:   () => { beep(500, .25, 'sawtooth', .05, 150); },
+  sis:  () => { beep(2600, .3, 'sawtooth', .015, 1900); beep(3100, .25, 'square', .01, 2400, .05); },
+  huil: () => { beep(380, .5, 'sine', .06, 620); beep(620, .5, 'sine', .05, 420, .45); },
+  piep: () => { beep(2200, .06, 'square', .03); beep(2600, .06, 'square', .03, null, .08); },
+  vuur: () => { beep(200, .3, 'sawtooth', .04, 600); beep(800, .15, 'triangle', .04, 400, .1); },
+  oehoe:() => { beep(420, .16, 'sine', .07, 380); beep(360, .28, 'sine', .07, 330, .2); },
+  plof: () => beep(170, .12, 'triangle', .09, 70),
+  baas: () => [196, 185, 175, 165].forEach((f, i) => beep(f, .25, 'sawtooth', .05, null, i * .2)),
+  win:  () => [523, 659, 784, 659, 784, 1047].forEach((f, i) => beep(f, .16, 'square', .05, null, i * .12)),
+};
+
+// --- voortgang (welke levels zijn gehaald) ---
+const SAVE_KEY = 'ravi-game-gehaald';
+// We onthouden de namen van de levels, dan mag de volgorde veranderen.
+// Oude bewaarde spellen hebben nummers: die horen bij de oude volgorde.
+const OUDE_VOLGORDE = ["De Weide", "Het Bos", "Het Moeras"];
+let gehaald = [];
+try { gehaald = JSON.parse(localStorage.getItem(SAVE_KEY) || '[]').map(g => typeof g === 'number' ? OUDE_VOLGORDE[g] : g); } catch (e) {}
+const isGehaald = i => gehaald.includes(LEVELS[i].naam);
+function markWon(i){ if (!isGehaald(i)) gehaald.push(LEVELS[i].naam); try { localStorage.setItem(SAVE_KEY, JSON.stringify(gehaald)); } catch (e) {} }
+
+// --- spelstatus ---
+let S;
+function newGame(lv = LV){
+  LV = lv; const L = LEVELS[LV];
+  Object.assign(C, C0, L.kleuren || {});
+  MH = L.kaart.length; MW = Math.max(...L.kaart.map(r => r.length));
+  map = L.kaart.map(r => r.padEnd(MW, 'T').split(''));
+  S = { t:0, player:null, dir:'down', moving:false, carry:null, inv:{t:0,l:0,s:0,o:0}, eikels:SPEL.eikelsMax, refill:0,
+        vel:{x:0, y:0}, vast:0, webs:[], fakkels:[], kristallen:[], enemies:[], animals:[], items:[], spots:[], acorns:[], fx:[], flies:[], glows:[], boss:null, saved:0, total:0,
+        hol:null, den:null, pv:{x:0, y:0}, caught:0, thrown:0, time:0, state:'intro', banner:0 };
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+    const ch = map[y][x], px = x * TS, py = y * TS;
+    if (ch === 'H') { S.hol = {x:px, y:py}; continue; }
+    if (ch === 'X') { S.spots.push({x:px, y:py, house:false, animal:null}); continue; }
+    if ('VNQG&'.includes(ch)) { S.den = {x:px, y:py + TS}; continue; }
+    if (ch === 'P') { S.fakkels.push({x:px + 8, y:py + 6, aan:false}); continue; }
+    if (ch === 'C') { S.kristallen.push({x:px + 8, y:py + 8}); continue; }
+    if (ch === '*') { S.glows.push({x:px + 8, y:py + 8}); continue; }
+    if (ch === 'F') { S.enemies.push(makeFox(px, py)); map[y][x] = '.'; }
+    else if (ch === 'U') { S.enemies.push(makeOwl(px + 8, py + 12)); map[y][x] = baseOf(x, y); }
+    else if (ch === 'S') { S.enemies.push(makeSnake(px + 8, py + 10)); map[y][x] = baseOf(x, y); }
+    else if (ch === 'Z') { S.enemies.push(makeWolf(px, py)); map[y][x] = '.'; }
+    else if (ch === 'A') { S.enemies.push(makeBat(px + 8, py + 8)); map[y][x] = baseOf(x, y); }
+    else if (DIEREN[ch]) { const hang = ch === 'z'; S.animals.push({kind:ch, x:px + 2, y:py + (hang ? 0 : 3), home:{x:px + 2, y:py + (hang ? 0 : 3)}, hang, state:'wild', ph:hash(x, y) % 10}); map[y][x] = baseOf(x, y); }
+    else if (SPULLEN[ch]) { S.items.push({kind:ch, x:px + 3, y:py + 4, ph:hash(x, y) % 10}); map[y][x] = baseOf(x, y); }
+  }
+  if (L.schemer) for (let i = 0; i < 40; i++) S.flies.push({x:Math.random() * MW * TS, y:Math.random() * MH * TS, ph:Math.random() * 6.28, sp:.5 + Math.random()});
+  S.total = S.animals.length;
+  S.player = {x:S.hol.x, y:S.hol.y, blink:0};
+  $('lvltxt').textContent = `Level ${LV + 1} · ${L.naam}`;
+  $('bossname').textContent = L.baasNaam;
+  $('boss').hidden = true; $('banner').hidden = true;
+  buildStatic(); updateHud();
+}
+function baseOf(x, y){ const n = {}; for (const [a, b] of [[1,0],[-1,0],[0,1],[0,-1]]) { const c = tile(x + a, y + b); if ('.g=B'.includes(c)) n[c] = (n[c] || 0) + 1; } let best = '.', bn = 0; for (const k in n) if (n[k] > bn) { best = k; bn = n[k]; } return best === 'B' ? '.' : best; }
+function makeFox(x, y){ return {type:'vos', x, y, home:{x, y}, vx:0, vy:0, face:1, state:'wander', timer:0, wt:0}; }
+function makeBat(x, y){ return {type:'vleer', x, y, home:{x, y}, h:12, ang:Math.random() * 6.28, face:1, state:'fly', timer:0, cool:1 + Math.random() * 2}; }
+function makeWolf(x, y){ return {type:'wolf', x, y, home:{x, y}, vx:0, vy:0, face:1, state:'wander', timer:0, wt:0, stamina:0}; }
+function makeSnake(x, y){ const s = {type:'slang', x, y, home:{x, y}, vx:0, vy:0, face:1, state:'wander', timer:0, wt:0, cool:0, trail:[]}; kronkel(s); return s; }
+// een opgerold lijf om mee te beginnen
+function kronkel(s, n = 30, r = 3){ s.trail = []; for (let i = 0; i < n; i++) s.trail.push({x:s.x - Math.cos(i * .35) * r * (1 + i / n), y:s.y - Math.sin(i * .35) * r * .6}); }
+function makeOwl(x, y){ return {type:'uil', x, y, home:{x, y}, h:26, ang:Math.random() * 6.28, face:1, state:'patrol', timer:0, cool:1 + Math.random() * 2}; }
+
+const DONKER = document.createElement('canvas'); DONKER.width = VW; DONKER.height = VH;
+let layer;
+function buildStatic(){
+  layer = document.createElement('canvas'); layer.width = MW * TS; layer.height = MH * TS;
+  const c = layer.getContext('2d');
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) drawTile(c, map[y][x], x, y, x * TS, y * TS);
+}
+
+// --- botsen ---
+const solidAt = (px, py) => SOLID.has(tile(Math.floor(px / TS), Math.floor(py / TS)));
+function boxFree(x, y){ return !(solidAt(x + 3, y + 9) || solidAt(x + 12, y + 9) || solidAt(x + 3, y + 15) || solidAt(x + 12, y + 15)); }
+function moveBody(b, dx, dy){
+  let ok = true;
+  if (dx) { if (boxFree(b.x + dx, b.y)) b.x += dx; else ok = false; }
+  if (dy) { if (boxFree(b.x, b.y + dy)) b.y += dy; else ok = false; }
+  return ok;
+}
+// De tuin rond het hol is veilig: daar komen roofdieren niet.
+const inSafe = (x, y) => Math.hypot(x - (S.hol.x + 8), y - (S.hol.y + 8)) < 6 * TS;
+function moveFox(f, dx, dy){
+  if (inSafe(f.x + 8 + dx, f.y + 12 + dy)) return false;
+  return moveBody(f, dx, dy);
+}
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+// slangen kunnen ook zwemmen, maar niet in de tuin komen
+function slangVrij(x, y, r = 4){
+  for (const [a, b] of [[-r, -r * .7], [r, -r * .7], [-r, r * .7], [r, r * .7]]) { const ch = tile(Math.floor((x + a) / TS), Math.floor((y + b) / TS)); if (SOLID.has(ch) && ch !== 'W') return false; }
+  return !inSafe(x, y);
+}
+function spoor(s, max = 40){ const t = s.trail; if (!t.length || Math.hypot(t[0].x - s.x, t[0].y - s.y) >= 2) { t.unshift({x:s.x, y:s.y}); if (t.length > max) t.pop(); } }
+function moveSnake(s, dx, dy, r = 4, max = 40){
+  let ok = true;
+  if (dx) { if (slangVrij(s.x + dx, s.y, r)) s.x += dx; else ok = false; }
+  if (dy) { if (slangVrij(s.x, s.y + dy, r)) s.y += dy; else ok = false; }
+  spoor(s, max); s.zwem = 'WL'.includes(tile(Math.floor(s.x / TS), Math.floor(s.y / TS)));
+  return ok;
+}
+// vliegen: recht op een doel af, over bomen heen
+function flyTo(o, tx, ty, v, dt){ const dx = tx - o.x, dy = ty - o.y, d = Math.hypot(dx, dy); if (d > .5) { const m = Math.min(d, v * dt); o.x += dx / d * m; o.y += dy / d * m; if (Math.abs(dx) > 2) o.face = dx > 0 ? 1 : -1; } }
+
+// --- invoer ---
+const keys = {up:false, down:false, left:false, right:false, throw:false};
+const KEYMAP = {ArrowUp:'up', KeyW:'up', ArrowDown:'down', KeyS:'down', ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right', Space:'throw', KeyJ:'throw', KeyX:'throw'};
+let throwPressed = false;
+addEventListener('keydown', e => {
+  const k = KEYMAP[e.code]; if (!k) return;
+  if (S.state !== 'play') { if (k === 'throw' && S.state === 'intro') { e.preventDefault(); startPlay(); } return; }
+  e.preventDefault(); if (k === 'throw' && !keys.throw) throwPressed = true; keys[k] = true;
+});
+addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+document.querySelectorAll('.pad button').forEach(b => {
+  const k = b.dataset.k;
+  const on = e => { e.preventDefault(); b.setPointerCapture?.(e.pointerId); b.classList.add('on'); if (k === 'throw') throwPressed = true; else keys[k] = true; };
+  const off = () => { b.classList.remove('on'); keys[k] = false; };
+  b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
+});
+
+// --- berichten ---
+let toastT = null;
+function toast(msg, ms = 2200){ const el = $('toast'); el.textContent = msg; el.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => el.style.opacity = 0, ms); }
+let hintT = -9;
+function hint(msg){ if (S.t - hintT > 3) { hintT = S.t; toast(msg); } }
+function banner(msg, sec = 2.2){ $('banner').textContent = msg; $('banner').hidden = false; S.banner = sec; }
+function pop(x, y, img, txt){ S.fx.push({x, y, img, txt, t:0}); }
+function sparkles(x, y, col, n = 10){ for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = 20 + Math.random() * 40; S.fx.push({x, y, vx:Math.cos(a) * v, vy:Math.sin(a) * v - 20, col, t:0, spark:true}); } }
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+
+// --- HUD ---
+const icon = k => IMG[k].toDataURL();
+const ICON = {eikel:icon('eikel'), t:icon('t'), l:icon('l'), s:icon('s'), o:icon('o'), hart:icon('hart')};
+$('throwimg').src = ICON.eikel;
+function updateHud(){
+  let p = ''; for (let i = 0; i < SPEL.eikelsMax; i++) p += `<img src="${ICON.eikel}" alt="" class="${i < S.eikels ? '' : 'off'}">`;
+  $('pouch').innerHTML = p;
+  $('mats').innerHTML = Object.keys(SPULLEN).map(k => `<span><img src="${ICON[k]}" alt="${SPULLEN[k]}">${S.inv[k]}</span>`).join('');
+  $('saved').innerHTML = `<img src="${ICON.hart}" alt="">${S.saved}/${S.total} veilig`;
+  if (S.boss) $('bossbar').style.width = (100 * Math.max(0, S.boss.hp) / SPEL.baasLeven) + '%';
+}
+
+// --- startscherm met levels ---
+function showIntro(){
+  const L = LEVELS[LV];
+  $('introTitle').textContent = `Level ${LV + 1}: ${L.naam}`;
+  $('introText').textContent = L.verhaal;
+  $('levels').innerHTML = LEVELS.map((l, i) => `<button class="lvbtn" type="button" data-i="${i}" aria-pressed="${i === LV}">${i + 1}. ${l.naam}${isGehaald(i) ? ' <span class="ok">✓</span>' : ''}</button>`).join('');
+  $('levels').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { newGame(+b.dataset.i); showIntro(); }));
+  $('win').hidden = true; $('intro').hidden = false; S.state = 'intro';
+}
+
+// --- spelregels ---
+function startPlay(){
+  $('intro').hidden = true; $('win').hidden = true; S.state = 'play'; beep(523, .08, 'square', .04);
+  toast(LEVELS[LV].startTip, 3200);
+}
+function caught(door){
+  if (S.player.blink > 0) return;
+  S.vast = 0;
+  S.caught++; SFX.au(); sparkles(S.player.x + 8, S.player.y + 8, '#ffffff', 8);
+  S.player.x = S.hol.x; S.player.y = S.hol.y; S.player.blink = 2; S.dir = 'down';
+  const wie = door || {vos:'een vos', uil:'een uil', slang:'een slang', wolf:'een wolf', vleer:'een vleermuis'}[LEVELS[LV].vijand];
+  if (S.carry) {
+    // Het diertje schrikt en rent terug naar zijn eigen plekje
+    const an = S.carry; S.carry = null;
+    an.state = 'wild'; an.x = an.home.x; an.y = an.home.y;
+    toast(`Oei, ${wie}! Terug naar je hol. ${cap(DIEREN[an.kind].naam)} schrok en rende terug naar zijn plekje.`, 3200);
+  } else toast(`Oei, ${wie}! Terug naar je hol.`);
+}
+function throwAcorn(){
+  if (S.eikels <= 0) { hint('Je zakje is leeg. Wacht even, dan vult het weer bij.'); return; }
+  const d = {up:[0,-1], down:[0,1], left:[-1,0], right:[1,0]}[S.dir];
+  S.acorns.push({x:S.player.x + 8, y:S.player.y + 9, vx:d[0] * 190, vy:d[1] * 190, life:.6, rot:0});
+  if (S.eikels === SPEL.eikelsMax) S.refill = 0;
+  S.eikels--; S.thrown++; SFX.gooi(); updateHud();
+}
+
+// ---------- roofdieren ----------
+const ENEMY = {
+  vos: {
+    hitbox: f => (f.state === 'wander' || f.state === 'chase') ? {x:f.x + 8, y:f.y + 10, r:11} : null,
+    scare(f, P){ const a = Math.atan2(f.y - P.y, f.x - P.x); f.state = 'flee'; f.timer = 1.4; f.vx = Math.cos(a) * 120; f.vy = Math.sin(a) * 120; SFX.raak(); pop(f.x + 8, f.y, null, 'Wegwezen!'); },
+    update(f, dt, P, pc){
+      const fc = {x:f.x + 8, y:f.y + 10}, dP = Math.hypot(pc.x - fc.x, pc.y - fc.y), dH = dist(f, f.home);
+      if (f.state === 'gone') { f.timer -= dt; if (f.timer <= 0 && Math.hypot(P.x - f.home.x, P.y - f.home.y) > 90) { f.x = f.home.x; f.y = f.home.y; f.state = 'wander'; f.appear = .6; } return; }
+      if (f.state === 'flee') { moveFox(f, f.vx * dt, f.vy * dt); f.face = f.vx >= 0 ? 1 : -1; f.timer -= dt; if (f.timer <= 0) { f.state = 'gone'; f.timer = SPEL.terugNa; } return; }
+      if (f.appear > 0) f.appear -= dt;
+      const leash = 7 * TS;
+      if (dP < 78 && P.blink <= 0 && !inSafe(pc.x, pc.y) && Math.hypot(pc.x - f.home.x - 8, pc.y - f.home.y - 10) < leash + 30) f.state = 'chase';
+      else if (f.state === 'chase') f.state = 'wander';
+      let vx, vy;
+      if (f.state === 'chase') { const a = Math.atan2(pc.y - fc.y, pc.x - fc.x); vx = Math.cos(a) * SPEL.vosjeSnelheid; vy = Math.sin(a) * SPEL.vosjeSnelheid; }
+      else {
+        f.wt -= dt;
+        if (f.wt <= 0 || dH > leash) { f.wt = 1.2 + Math.random() * 1.8; const a = dH > leash ? Math.atan2(f.home.y - f.y, f.home.x - f.x) : Math.random() * 6.28; const sp = Math.random() < .3 ? 0 : 26; f.vx = Math.cos(a) * sp; f.vy = Math.sin(a) * sp; }
+        vx = f.vx; vy = f.vy;
+      }
+      if (!moveFox(f, vx * dt, vy * dt) && f.state === 'wander') f.wt = 0;
+      if (Math.abs(vx) > 1) f.face = vx > 0 ? 1 : -1;
+      f.run = Math.hypot(vx, vy) > 1;
+      if (dP < 11 && P.blink <= 0) caught();
+    },
+    draw(f, camX, camY){
+      if (f.appear > 0 && Math.floor(S.t * 12) % 2) return;
+      const fr = f.run && Math.floor(S.t * 8) % 2 ? 'vosRen' : 'vos', x = Math.round(f.x) - camX, y = Math.round(f.y) - camY;
+      ctx.globalAlpha = f.state === 'flee' ? Math.max(.2, f.timer / 1.4) : 1;
+      ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(x + 3, y + 14, 11, 2);
+      ctx.drawImage(IMG[fr + (f.face < 0 ? 'L' : '')], x, y + 5);
+      if (f.state === 'chase') { ctx.fillStyle = '#ff5a3c'; ctx.fillRect(x + 7, y - 2, 2, 4); ctx.fillRect(x + 7, y + 3, 2, 1); }
+      ctx.globalAlpha = 1;
+    },
+    sortY: f => f.y + 15,
+  },
+  uil: {
+    // x,y is de plek op de grond onder de uil, h is hoe hoog hij vliegt
+    hitbox: u => (u.state === 'sit' || (u.state === 'rise' && u.h < 10)) ? {x:u.x, y:u.y - 6, r:11} : null,
+    scare(u, P){ const a = Math.atan2(u.y - P.y, u.x - P.x); u.state = 'flee'; u.timer = 1.6; u.vx = Math.cos(a) * 70; u.vy = Math.sin(a) * 70; SFX.raak(); pop(u.x, u.y - 14, null, 'Oehoe!'); },
+    update(u, dt, P, pc){
+      switch (u.state) {
+        case 'gone': u.timer -= dt; if (u.timer <= 0) { u.state = 'patrol'; u.x = u.home.x; u.y = u.home.y; u.h = 40; u.appear = .8; u.cool = 2; } return;
+        case 'flee': u.h += 45 * dt; u.x += u.vx * dt; u.y += u.vy * dt; u.face = u.vx >= 0 ? 1 : -1; u.timer -= dt; if (u.timer <= 0) { u.state = 'gone'; u.timer = SPEL.terugNa; } return;
+        case 'patrol':
+          if (u.appear > 0) u.appear -= dt;
+          u.ang += dt * 1.3; flyTo(u, u.home.x + Math.cos(u.ang) * 30, u.home.y + Math.sin(u.ang) * 18, 55, dt); u.h += (26 - u.h) * Math.min(1, dt * 3); u.cool -= dt;
+          if (u.cool <= 0 && P.blink <= 0 && !inSafe(pc.x, pc.y) && Math.hypot(pc.x - u.x, pc.y - u.y) < SPEL.uilZiet && Math.hypot(pc.x - u.home.x, pc.y - u.home.y) < 8 * TS) { u.state = 'aim'; u.locked = false; u.timer = SPEL.uilMikken + .35; u.aimT = u.timer; u.tx = pc.x; u.ty = pc.y; SFX.oehoe(); }
+          break;
+        case 'aim': if (u.timer > .45) { u.tx = pc.x; u.ty = pc.y; } else if (!u.locked) { u.locked = true; u.tx = pc.x + S.pv.x * .7; u.ty = pc.y + S.pv.y * .7; } flyTo(u, u.tx, u.ty, 130, dt); u.timer -= dt; if (u.timer <= 0) { u.state = 'dive'; u.timer = .28; u.sx = u.x; u.sy = u.y; u.sh = u.h; } break;
+        case 'dive': {
+          u.timer -= dt; const k = 1 - Math.max(0, u.timer) / .28; u.x = u.sx + (u.tx - u.sx) * k; u.y = u.sy + (u.ty - u.sy) * k; u.h = u.sh * (1 - k);
+          if (u.timer <= 0) { u.state = 'sit'; u.timer = 1.7; u.h = 0; SFX.plof(); sparkles(u.x, u.y, '#d8c8a0', 6); if (Math.hypot(pc.x - u.x, pc.y - u.y) < SPEL.uilKring) caught(); }
+          break; }
+        case 'sit': u.timer -= dt; if (u.timer <= 0) u.state = 'rise'; break;
+        case 'rise': u.h += 40 * dt; if (u.h >= 26) { u.state = 'patrol'; u.cool = 1.1; } break;
+      }
+    },
+    draw(u, camX, camY){ drawOwl(u, camX, camY, 'uil_', 1, SPEL.uilKring); },
+    sortY: u => u.h > 3 ? u.y + 1000 : u.y,
+  },
+  slang: {
+    // x,y is de kop. Onder water kun je hem niet raken.
+    hitbox: s => ['wander', 'chase', 'ready', 'strike', 'tired'].includes(s.state) && !s.zwem ? {x:s.x, y:s.y - 3, r:11} : null,
+    scare(s, P){ const a = Math.atan2(s.y - P.y, s.x - P.x); s.state = 'flee'; s.timer = 1.4; s.vx = Math.cos(a) * 110; s.vy = Math.sin(a) * 110; SFX.raak(); pop(s.x, s.y - 12, null, 'Sssorry!'); },
+    update(s, dt, P, pc){
+      const dP = Math.hypot(pc.x - s.x, pc.y - s.y), dH = dist(s, s.home), leash = 7 * TS;
+      if (s.state === 'gone') { s.timer -= dt; if (s.timer <= 0 && Math.hypot(P.x - s.home.x, P.y - s.home.y) > 90) { s.x = s.home.x; s.y = s.home.y; kronkel(s); s.state = 'wander'; s.appear = .6; } return; }
+      if (s.state === 'flee') { moveSnake(s, s.vx * dt, s.vy * dt); s.face = s.vx >= 0 ? 1 : -1; s.timer -= dt; if (s.timer <= 0) { s.state = 'gone'; s.timer = SPEL.terugNa; } return; }
+      if (s.appear > 0) s.appear -= dt;
+      s.cool -= dt;
+      const ziet = dP < SPEL.slangZiet && P.blink <= 0 && !inSafe(pc.x, pc.y) && Math.hypot(pc.x - s.home.x, pc.y - s.home.y) < leash + 30;
+      if (s.state === 'ready') { // omhoog komen en sissen
+        if (s.timer > .3) s.da = Math.atan2(pc.y - s.y, pc.x - s.x);
+        s.face = Math.cos(s.da) >= 0 ? 1 : -1; s.timer -= dt;
+        if (s.timer <= 0) { s.state = 'strike'; s.timer = .28; }
+      } else if (s.state === 'strike') {
+        if (!moveSnake(s, Math.cos(s.da) * 200 * dt, Math.sin(s.da) * 200 * dt)) s.timer = 0;
+        s.timer -= dt; if (s.timer <= 0) { s.state = 'tired'; s.timer = 1.1; }
+      } else if (s.state === 'tired') { s.timer -= dt; if (s.timer <= 0) { s.state = 'wander'; s.cool = 1; } }
+      else {
+        s.state = ziet ? 'chase' : 'wander';
+        let vx, vy;
+        if (s.state === 'chase') { const a = Math.atan2(pc.y - s.y, pc.x - s.x); vx = Math.cos(a) * SPEL.slangSnelheid; vy = Math.sin(a) * SPEL.slangSnelheid;
+          if (dP < 46 && !s.zwem && s.cool <= 0) { s.state = 'ready'; s.timer = SPEL.slangMikken; s.da = a; SFX.sis(); } }
+        else {
+          s.wt -= dt;
+          if (s.wt <= 0 || dH > leash) { s.wt = 1.2 + Math.random() * 1.8; const a = dH > leash ? Math.atan2(s.home.y - s.y, s.home.x - s.x) : Math.random() * 6.28; const sp = Math.random() < .3 ? 0 : 22; s.vx = Math.cos(a) * sp; s.vy = Math.sin(a) * sp; }
+          vx = s.vx; vy = s.vy;
+        }
+        if (s.state !== 'ready') { if (!moveSnake(s, vx * dt, vy * dt) && s.state === 'wander') s.wt = 0; if (Math.abs(vx) > 1) s.face = vx > 0 ? 1 : -1; }
+      }
+      if (!s.zwem && dP < (s.state === 'strike' ? 11 : 9) && P.blink <= 0) { caught(); s.state = 'tired'; s.timer = 1.5; }
+    },
+    draw(s, camX, camY){ if (s.appear > 0 && Math.floor(S.t * 12) % 2) return; drawSnake(s, camX, camY, 1, 'slang_', 52); },
+    sortY: s => s.y,
+  },
+};
+// ---------- vleermuizen ----------
+// Is het hier licht van een brandende fakkel? Daar komen vleermuizen niet.
+const inFakkelLicht = (x, y, extra = 0) => S.fakkels.some(f => f.aan && Math.hypot(x - f.x, y - f.y) < SPEL.fakkelLicht + extra);
+ENEMY.vleer = {
+  hitbox: b => ['fly', 'aim', 'swoop', 'back'].includes(b.state) ? {x:b.x, y:b.y, r:11} : null,
+  scare(b, P){ const a = Math.atan2(b.y - P.y, b.x - P.x); b.state = 'flee'; b.timer = 1.2; b.vx = Math.cos(a) * 90; b.vy = Math.sin(a) * 90; SFX.raak(); pop(b.x, b.y - 16, null, 'Piep!'); },
+  update(b, dt, P, pc){
+    switch (b.state) {
+      case 'gone': b.timer -= dt; if (b.timer <= 0) { if (inFakkelLicht(b.home.x, b.home.y)) { b.timer = 3; return; } b.state = 'fly'; b.x = b.home.x; b.y = b.home.y; b.appear = .8; b.cool = 2; } return;
+      case 'flee': b.x += b.vx * dt; b.y += b.vy * dt; b.h += 20 * dt; b.timer -= dt; if (b.timer <= 0) { b.state = 'gone'; b.h = 12; b.timer = SPEL.terugNa; } return;
+      case 'fly':
+        if (b.appear > 0) b.appear -= dt;
+        if (inFakkelLicht(b.x, b.y)) { b.state = 'flee'; b.timer = 1.2; b.vx = 0; b.vy = -40; pop(b.x, b.y - 16, null, 'Te licht!'); return; }
+        b.ang += dt * 2; flyTo(b, b.home.x + Math.cos(b.ang) * 26, b.home.y + Math.sin(b.ang) * 14, 60, dt); b.cool -= dt;
+        if (b.cool <= 0 && P.blink <= 0 && !inSafe(pc.x, pc.y) && !inFakkelLicht(pc.x, pc.y) && Math.hypot(pc.x - b.x, pc.y - b.y) < SPEL.vleerZiet) { b.state = 'aim'; b.timer = SPEL.vleerMikken; SFX.piep(); }
+        break;
+      case 'aim': b.timer -= dt; if (b.timer <= 0) { const a = Math.atan2(pc.y - b.y, pc.x - b.x); b.state = 'swoop'; b.vx = Math.cos(a) * 150; b.vy = Math.sin(a) * 150; b.timer = .7; } break;
+      case 'swoop':
+        b.x += b.vx * dt; b.y += b.vy * dt; b.face = b.vx >= 0 ? 1 : -1; b.timer -= dt;
+        if (Math.hypot(pc.x - b.x, pc.y - b.y) < 10 && P.blink <= 0) { caught(); b.timer = 0; }
+        if (b.timer <= 0 || inFakkelLicht(b.x, b.y)) { b.state = 'back'; b.cool = 2.2; }
+        break;
+      case 'back': flyTo(b, b.home.x, b.home.y, 70, dt); if (dist(b, b.home) < 4) b.state = 'fly'; break;
+    }
+  },
+  draw(b, camX, camY){
+    if (b.state === 'gone' || b.appear > 0 && Math.floor(S.t * 12) % 2) return;
+    const x = Math.round(b.x) - camX, y = Math.round(b.y) - camY;
+    ctx.globalAlpha = b.state === 'flee' ? Math.max(0, b.timer / 1.2) : 1;
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x - 4, y, 8, 2);
+    ctx.drawImage(IMG[Math.floor(S.t * (b.state === 'swoop' ? 16 : 9)) % 2 ? 'vleer1' : 'vleer2'], x - 6, Math.round(y - b.h - 4));
+    ctx.globalAlpha = 1;
+  },
+  // rode oogjes zie je ook in het donker
+  ogen(b, camX, camY){
+    if (['gone', 'flee'].includes(b.state)) return;
+    const x = Math.round(b.x) - camX, y = Math.round(b.y - b.h) - camY, fel = b.state === 'aim' || b.state === 'swoop';
+    ctx.globalAlpha = fel ? .7 + .3 * Math.sin(S.t * 20) : .55; ctx.fillStyle = fel ? '#ff5050' : '#d02a2a';
+    ctx.fillRect(x - 2, y - 1, 1, 1); ctx.fillRect(x + 1, y - 1, 1, 1); if (fel) { ctx.fillRect(x - 3, y - 1, 1, 1); ctx.fillRect(x + 2, y - 1, 1, 1); }
+    ctx.globalAlpha = 1;
+  },
+  sortY: b => b.y + 500,
+};
+
+// ---------- wolfjes ----------
+ENEMY.wolf = {
+  hitbox: w => ['wander', 'chase', 'howl', 'rest'].includes(w.state) ? {x:w.x + 8, y:w.y + 10, r:11} : null,
+  scare(w, P){ const a = Math.atan2(w.y - P.y, w.x - P.x); w.state = 'flee'; w.timer = 1.4; w.vx = Math.cos(a) * 130; w.vy = Math.sin(a) * 130; SFX.raak(); pop(w.x + 8, w.y, null, 'Kaiii!'); },
+  update(w, dt, P, pc){
+    const fc = {x:w.x + 8, y:w.y + 10}, dP = Math.hypot(pc.x - fc.x, pc.y - fc.y), dH = dist(w, w.home), leash = 8 * TS;
+    if (w.state === 'gone') { w.timer -= dt; if (w.timer <= 0 && Math.hypot(P.x - w.home.x, P.y - w.home.y) > 90) { w.x = w.home.x; w.y = w.home.y; w.state = 'wander'; w.appear = .6; w.gehuild = false; } return; }
+    if (w.state === 'flee') { moveFox(w, w.vx * dt, w.vy * dt); w.face = w.vx >= 0 ? 1 : -1; w.timer -= dt; if (w.timer <= 0) { w.state = 'gone'; w.timer = SPEL.terugNa; } return; }
+    if (w.appear > 0) w.appear -= dt;
+    const ziet = dP < SPEL.wolfZiet && P.blink <= 0 && !inSafe(pc.x, pc.y) && Math.hypot(pc.x - w.home.x - 8, pc.y - w.home.y - 10) < leash + 30;
+    w.run = false;
+    if (w.state === 'howl') { w.timer -= dt; if (w.timer <= 0) { w.state = 'chase'; w.stamina = SPEL.wolfSprint; } }
+    else if (w.state === 'rest') { w.timer -= dt; if (w.timer <= 0) w.state = 'wander'; }
+    else if (w.state === 'chase') {
+      w.stamina -= dt;
+      if (!ziet) w.state = 'wander';
+      else { const a = Math.atan2(pc.y - fc.y, pc.x - fc.x); moveFox(w, Math.cos(a) * SPEL.wolfSnelheid * dt, Math.sin(a) * SPEL.wolfSnelheid * dt); w.face = Math.cos(a) >= 0 ? 1 : -1; w.run = true; }
+      if (w.stamina <= 0) { w.state = 'rest'; w.timer = SPEL.wolfRust; pop(w.x + 8, w.y - 2, null, 'Hijg!'); }
+    } else { // rondlopen
+      if (ziet) {
+        if (w.gehuild) { w.state = 'chase'; w.stamina = SPEL.wolfSprint; }
+        else { // huilen: de wolfjes in de buurt komen ook
+          w.gehuild = true; w.state = 'howl'; w.timer = .7; SFX.huil(); pop(w.x + 8, w.y - 4, null, 'Auuu!');
+          for (const o of S.enemies) if (o !== w && o.type === 'wolf' && o.state === 'wander' && dist(o, w) < 130) { o.state = 'chase'; o.stamina = SPEL.wolfSprint; o.gehuild = true; }
+        }
+      } else {
+        w.wt -= dt;
+        if (w.wt <= 0 || dH > leash) { w.wt = 1.2 + Math.random() * 1.8; const a = dH > leash ? Math.atan2(w.home.y - w.y, w.home.x - w.x) : Math.random() * 6.28; const sp = Math.random() < .3 ? 0 : 28; w.vx = Math.cos(a) * sp; w.vy = Math.sin(a) * sp; }
+        if (!moveFox(w, w.vx * dt, w.vy * dt)) w.wt = 0;
+        if (Math.abs(w.vx) > 1) w.face = w.vx > 0 ? 1 : -1; w.run = Math.hypot(w.vx, w.vy) > 1;
+      }
+    }
+    if (w.state !== 'rest' && dP < 11 && P.blink <= 0) caught();
+  },
+  draw(w, camX, camY){
+    if (w.appear > 0 && Math.floor(S.t * 12) % 2) return;
+    const x = Math.round(w.x) - camX, y = Math.round(w.y) - camY, L = w.face < 0 ? 'L' : '';
+    ctx.globalAlpha = w.state === 'flee' ? Math.max(.2, w.timer / 1.4) : 1;
+    ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(x + 3, y + 14, 11, 2);
+    if (w.state === 'rest') { // ligt uit te hijgen
+      ctx.drawImage(IMG['wolf' + L], 0, 0, 16, 8, x, y + 8, 16, 7);
+      if (Math.floor(S.t * 3) % 2) { const bx = w.face < 0 ? x - 2 : x + 16; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(bx, y + 7, 2, 2); ctx.fillRect(bx + (w.face < 0 ? -2 : 2), y + 5, 2, 2); }
+    } else {
+      const fr = w.run && Math.floor(S.t * 10) % 2 ? 'wolfRen' : 'wolf';
+      ctx.drawImage(IMG[fr + L], x, y + 5 - (w.state === 'howl' ? 2 : 0));
+      if (w.state === 'chase') { ctx.fillStyle = '#ff5a3c'; ctx.fillRect(x + 7, y - 2, 2, 4); ctx.fillRect(x + 7, y + 3, 2, 1); }
+    }
+    ctx.globalAlpha = 1;
+  },
+  sortY: w => w.y + 15,
+};
+
+// De rode streep: hier springt of schiet iets naartoe (k gaat van 0 naar 1)
+function drawLane(x, y, ang, lengte, half, k){
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+  ctx.fillStyle = `rgba(255,60,40,${.18 + .22 * k})`; ctx.fillRect(4, -half, lengte, half * 2);
+  ctx.fillStyle = `rgba(255,90,60,${.5 + .4 * Math.sin(S.t * 18)})`; ctx.fillRect(4, -half, lengte * k, 1); ctx.fillRect(4, half - 1, lengte * k, 1);
+  ctx.beginPath(); ctx.moveTo(lengte + 4, -half - 2); ctx.lineTo(lengte + 4 + half * 2, 0); ctx.lineTo(lengte + 4, half + 2); ctx.fill();
+  ctx.restore();
+}
+// Een slang tekenen: eerst de rode streep (waar hij naartoe schiet), dan het lijf en de kop
+function drawSnake(s, camX, camY, sc, pre, lengte){
+  const x = Math.round(s.x) - camX, y = Math.round(s.y) - camY;
+  ctx.globalAlpha = s.state === 'flee' ? Math.max(.2, s.timer / 1.4) : s.alpha ?? 1;
+  if (s.state === 'ready') {
+    drawLane(x, y, s.da, lengte, 5 * sc, 1 - s.timer / (s.aimT || SPEL.slangMikken));
+  }
+  if (s.zwem) { // onder water: alleen kringen en oogjes
+    const r = 5 * sc + Math.sin(S.t * 4) * sc;
+    ctx.strokeStyle = 'rgba(220,245,235,.7)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(x, y, r + 2, (r + 2) / 2, 0, 0, 6.28); ctx.stroke();
+    R(ctx, x - 3 * sc, y - 1, 2 * sc, 2 * sc, '#e8d25a'); R(ctx, x + sc, y - 1, 2 * sc, 2 * sc, '#e8d25a'); R(ctx, x - 3 * sc + 1, y, sc, sc, '#17171c'); R(ctx, x + sc + 1, y, sc, sc, '#17171c');
+    ctx.globalAlpha = 1; return;
+  }
+  const n = 6, stap = 2 * sc, t = s.trail;
+  for (let i = n; i >= 1; i--) {
+    const p = t[Math.min(t.length - 1, i * stap)] || s, sz = Math.round(8 * sc * (1 - i / (n + 3) * .6));
+    const px = Math.round(p.x) - camX, py = Math.round(p.y) - camY;
+    if (i === n) { ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(px - sz / 2, py + sz / 2 - 1, sz, 2); }
+    ctx.drawImage(IMG[pre + 'lijf'], px - sz / 2, py - sz / 2, sz, sz);
+  }
+  const op = s.state === 'ready' ? 4 * sc : s.state === 'tired' ? -1 : 0, L = s.face < 0 ? 'L' : '';
+  ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(x - 5 * sc, y + 3 * sc, 10 * sc, 2);
+  ctx.drawImage(IMG[pre + 'kop' + L], x - 5 * sc, y - 4 * sc - op, 10 * sc, 7 * sc);
+  if (s.flash > 0 && Math.floor(S.t * 20) % 2) { ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(IMG[pre + 'kop' + L], x - 5 * sc, y - 4 * sc - op, 10 * sc, 7 * sc); ctx.globalCompositeOperation = 'source-over'; }
+  if (s.state === 'ready' || s.state === 'chase' && Math.floor(S.t * 5) % 3 === 0) { // tongetje
+    const tx = s.face < 0 ? x - 6 * sc : x + 5 * sc, ty = y - op;
+    R(ctx, tx, ty, 2 * sc, 1, '#e0404a'); R(ctx, tx + (s.face < 0 ? -1 : 2 * sc), ty - 1, 1, 1, '#e0404a'); R(ctx, tx + (s.face < 0 ? -1 : 2 * sc), ty + 1, 1, 1, '#e0404a');
+  }
+  if (s.state === 'ready') { ctx.font = 'bold 8px sans-serif'; ctx.fillStyle = '#fff'; ctx.fillText('Sss', x - 6, y - 8 * sc - op); }
+  if (s.state === 'tired') { ctx.font = 'bold 7px sans-serif'; ctx.fillStyle = '#ffe15a'; ctx.fillText('~', x - 2 + Math.round(Math.sin(S.t * 6) * 2), y - 6 * sc); }
+  ctx.globalAlpha = 1;
+}
+function drawOwl(u, camX, camY, pre, sc, ring){
+  if (u.state === 'gone') return;
+  const x = Math.round(u.x) - camX, y = Math.round(u.y) - camY;
+  if (u.state === 'aim' || u.state === 'dive') {
+    const tx = Math.round(u.tx) - camX, ty = Math.round(u.ty) - camY, k = u.state === 'dive' ? 1 : 1 - u.timer / (u.aimT || SPEL.uilMikken);
+    // de kring is precies de plek waar je gepakt wordt
+    ctx.beginPath(); ctx.arc(tx, ty, ring, 0, 6.28);
+    ctx.fillStyle = `rgba(255,60,40,${.12 + .2 * k})`; ctx.fill();
+    ctx.strokeStyle = `rgba(255,70,50,${.55 + .4 * Math.sin(S.t * 18)})`; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(tx, ty, ring * k, 0, 6.28); ctx.strokeStyle = 'rgba(255,200,180,.6)'; ctx.lineWidth = 1; ctx.stroke();
+  }
+  if (u.appear > 0 && Math.floor(S.t * 12) % 2) return;
+  const a = u.state === 'flee' ? Math.max(0, u.timer / 1.6) : u.state === 'leave' ? Math.max(0, u.timer / 2.5) : 1;
+  ctx.globalAlpha = a;
+  const sw = Math.max(3, (10 - u.h / 6) * sc);
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x, y, sw / 2 + 1, sw / 4 + .5, 0, 0, 6.28); ctx.fill();
+  const L = u.face < 0 ? 'L' : '';
+  if (u.h > 2 || u.state === 'flee' || u.state === 'leave') {
+    const im = IMG[pre + (Math.floor(S.t * 7) % 2 ? 'vlieg' : 'vliegOp') + L];
+    ctx.drawImage(im, x - 8 * sc, Math.round(y - 10 * sc - u.h), 16 * sc, 10 * sc);
+  } else {
+    const im = IMG[pre + 'zit' + L];
+    ctx.drawImage(im, x - 6 * sc, y - 11 * sc, 12 * sc, 11 * sc);
+    if (u.flash > 0 && Math.floor(S.t * 20) % 2) { ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(im, x - 6 * sc, y - 11 * sc, 12 * sc, 11 * sc); ctx.globalCompositeOperation = 'source-over'; }
+    if (u.state === 'sit') { const z = Math.floor(S.t * 3) % 3; ctx.fillStyle = '#fff'; ctx.font = 'bold 7px sans-serif'; ctx.fillText('?', x + 5 * sc, y - 11 * sc - z); }
+  }
+  ctx.globalAlpha = 1;
+}
+
+// ---------- bazen ----------
+const BOSS = {
+  vos: {
+    make: () => ({x:S.den.x, y:S.den.y, hp:SPEL.baasLeven, state:'enter', timer:1.2, face:-1, speed:48, dashT:3, vx:0, vy:0, flash:0}),
+    hitbox: B => ['enter', 'gone', 'flee'].includes(B.state) ? null : {x:B.x + 16, y:B.y + 12, r:18},
+    hit(B, P){
+      const an = Math.atan2(B.y - P.y, B.x - P.x); B.vx = Math.cos(an) * 160; B.vy = Math.sin(an) * 160;
+      if (B.hp <= 0) { B.state = 'flee'; B.timer = 2.5; pop(B.x + 16, B.y - 4, null, 'Jaaauw!'); }
+      else { B.state = 'hurt'; B.timer = .5; B.speed += 7; }
+    },
+    update(B, dt, P, pc){
+      const bc = {x:B.x + 16, y:B.y + 14}, a = Math.atan2(pc.y - bc.y, pc.x - bc.x), dP = Math.hypot(pc.x - bc.x, pc.y - bc.y);
+      const free = (nx, ny) => !solidAt(nx + 8, ny + 22) && !solidAt(nx + 24, ny + 22) && !solidAt(nx + 8, ny + 14) && !solidAt(nx + 24, ny + 14) && nx > 0 && ny > 0;
+      const bmove = (vx, vy) => { if (free(B.x + vx, B.y + vy)) { B.x += vx; B.y += vy; return true; } if (free(B.x + vx, B.y)) { B.x += vx; return false; } if (free(B.x, B.y + vy)) B.y += vy; return false; };
+      const nearHol = Math.hypot(pc.x - S.hol.x - 8, pc.y - S.hol.y - 8) < 26;
+      B.flash = Math.max(0, B.flash - dt);
+      if (B.state === 'enter') { B.timer -= dt; B.y += 20 * dt; if (B.timer <= 0) B.state = 'chase'; }
+      else if (B.state === 'hurt') { bmove(B.vx * dt, B.vy * dt); B.vx *= .9; B.vy *= .9; B.timer -= dt; if (B.timer <= 0) { B.state = 'chase'; B.dashT = 2.2; } }
+      else if (B.state === 'flee') { const fa = Math.atan2(S.den.y - B.y, S.den.x - B.x); bmove(Math.cos(fa) * 150 * dt, Math.sin(fa) * 150 * dt); B.face = Math.cos(fa) >= 0 ? 1 : -1; B.timer -= dt; B.alpha = Math.max(0, B.timer / 2.5); if (B.timer <= 0) { B.state = 'gone'; win(); } }
+      else if (B.state === 'chase') {
+        const sp = nearHol ? -B.speed * .6 : B.speed;
+        bmove(Math.cos(a) * sp * dt, Math.sin(a) * sp * dt); B.face = Math.cos(a) * Math.sign(sp || 1) >= 0 ? 1 : -1;
+        B.dashT -= dt; if (B.dashT <= 0 && dP < 120 && !nearHol) { B.state = 'crouch'; B.timer = .55; B.da = a; }
+      } else if (B.state === 'crouch') { B.timer -= dt; if (B.timer <= 0) { B.state = 'dash'; B.timer = .45; } }
+      else if (B.state === 'dash') { if (!bmove(Math.cos(B.da) * 175 * dt, Math.sin(B.da) * 175 * dt)) B.timer = 0; B.face = Math.cos(B.da) >= 0 ? 1 : -1; B.timer -= dt; if (B.timer <= 0) { B.state = 'chase'; B.dashT = 2.5 + Math.random() * 1.5; } }
+      if (['chase', 'dash', 'crouch'].includes(B.state) && dP < 15 && P.blink <= 0) { caught(); B.state = 'chase'; B.dashT = 3; }
+    },
+    draw(B, camX, camY){
+      const bx = Math.round(B.x) - camX, by = Math.round(B.y) - camY + (B.state === 'crouch' ? 2 : 0);
+      ctx.globalAlpha = B.state === 'flee' ? B.alpha : 1;
+      ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fillRect(bx + 5, by + 21, 22, 3);
+      const fr = (B.state === 'chase' || B.state === 'dash' || B.state === 'flee') && Math.floor(S.t * 10) % 2 ? 'baasRen' : 'baas';
+      ctx.drawImage(IMG[fr + (B.face < 0 ? 'L' : '')], bx, by + 2, 32, 20);
+      if (B.flash > 0 && Math.floor(S.t * 20) % 2) { ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(IMG[fr + (B.face < 0 ? 'L' : '')], bx, by + 2, 32, 20); ctx.globalCompositeOperation = 'source-over'; }
+      if (B.state === 'crouch') { ctx.fillStyle = '#ff5a3c'; ctx.fillRect(bx + 15, by - 8, 3, 6); ctx.fillRect(bx + 15, by - 1, 3, 2); }
+      ctx.globalAlpha = 1;
+    },
+    sortY: B => B.y + 24,
+  },
+  uil: {
+    make: () => ({x:S.den.x + 8, y:S.den.y, h:50, hp:SPEL.baasLeven, state:'enter', timer:1.8, face:-1, ang:0, flash:0, aimT:1.05, sitT:2.0}),
+    hitbox: B => (B.state === 'sit' || (B.state === 'rise' && B.h < 14)) ? {x:B.x, y:B.y - 10, r:17} : null,
+    hit(B){
+      if (B.hp <= 0) { B.state = 'leave'; B.timer = 2.5; pop(B.x, B.y - 30, null, 'OEHOEEE!'); }
+      else { B.state = 'rise'; B.aimT = Math.max(.7, B.aimT - .06); B.sitT = Math.max(1.1, B.sitT - .15); }
+    },
+    update(B, dt, P, pc){
+      switch (B.state) {
+        case 'enter': flyTo(B, pc.x, pc.y - 20, 90, dt); B.h += (40 - B.h) * Math.min(1, dt * 2); B.timer -= dt; if (B.timer <= 0) { B.state = 'circle'; B.timer = 1.5; } break;
+        case 'circle':
+          B.ang += dt * 1.5; flyTo(B, pc.x + Math.cos(B.ang) * 60, pc.y + Math.sin(B.ang) * 36, 120, dt); B.h += (40 - B.h) * Math.min(1, dt * 3); B.timer -= dt;
+          if (B.timer <= 0 && !inSafe(pc.x, pc.y) && P.blink <= 0) { B.state = 'aim'; B.locked = false; B.timer = B.aimT; B.tx = pc.x; B.ty = pc.y; SFX.oehoe(); }
+          break;
+        case 'aim': if (B.timer > .4) { B.tx = pc.x; B.ty = pc.y; } else if (!B.locked) { B.locked = true; B.tx = pc.x + S.pv.x * .6; B.ty = pc.y + S.pv.y * .6; } flyTo(B, B.tx, B.ty, 150, dt); B.timer -= dt; if (B.timer <= 0) { B.state = 'dive'; B.timer = .3; B.sx = B.x; B.sy = B.y; B.sh = B.h; } break;
+        case 'dive': {
+          B.timer -= dt; const k = 1 - Math.max(0, B.timer) / .3; B.x = B.sx + (B.tx - B.sx) * k; B.y = B.sy + (B.ty - B.sy) * k; B.h = B.sh * (1 - k);
+          if (B.timer <= 0) { B.state = 'sit'; B.timer = B.sitT; B.h = 0; SFX.plof(); sparkles(B.x, B.y, '#d8c8a0', 12); if (Math.hypot(pc.x - B.x, pc.y - B.y) < SPEL.uilKring + 6) { caught(); B.state = 'rise'; } }
+          break; }
+        case 'sit': B.timer -= dt; if (B.timer <= 0) B.state = 'rise'; break;
+        case 'rise': B.h += 50 * dt; if (B.h >= 40) { B.state = 'circle'; B.timer = 1.5 + Math.random(); } break;
+        case 'leave': flyTo(B, S.den.x + 8, S.den.y - 8, 90, dt); B.h += 25 * dt; B.timer -= dt; if (B.timer <= 0) { B.state = 'gone'; win(); } break;
+      }
+      B.flash = Math.max(0, B.flash - dt);
+    },
+    draw(B, camX, camY){ drawOwl(B, camX, camY, 'baasuil_', 2, SPEL.uilKring + 6); },
+    sortY: B => B.h > 3 ? B.y + 1000 : B.y,
+  },
+  slang: {
+    make: () => { const B = {x:S.den.x + 8, y:S.den.y + 4, hp:SPEL.baasLeven, state:'enter', timer:1.6, face:-1, speed:40, readyT:2, aimT:1.0, flash:0, alpha:1, trail:[]}; kronkel(B, 40, 8); return B; },
+    hitbox: B => ['chase', 'ready', 'strike', 'tired'].includes(B.state) && !B.zwem ? {x:B.x, y:B.y - 6, r:16} : null,
+    hit(B){
+      if (B.hp <= 0) { B.state = 'leave'; B.timer = 2.5; pop(B.x, B.y - 26, null, 'SSSSS!'); }
+      else { B.state = 'dive'; B.timer = .6; B.speed += 5; B.aimT = Math.max(.6, B.aimT - .08); pop(B.x, B.y - 26, null, 'Sssss!'); }
+    },
+    update(B, dt, P, pc){
+      const a = Math.atan2(pc.y - B.y, pc.x - B.x), dP = Math.hypot(pc.x - B.x, pc.y - B.y);
+      const nearHol = Math.hypot(pc.x - S.hol.x - 8, pc.y - S.hol.y - 8) < 26;
+      const zet = (vx, vy) => moveSnake(B, vx, vy, 8, 60);
+      B.flash = Math.max(0, B.flash - dt);
+      switch (B.state) {
+        case 'enter': zet(0, 26 * dt); B.timer -= dt; if (B.timer <= 0) B.state = 'chase'; break;
+        case 'chase': {
+          const sp = nearHol ? -B.speed * .6 : B.speed;
+          zet(Math.cos(a) * sp * dt, Math.sin(a) * sp * dt); B.face = Math.cos(a) * Math.sign(sp || 1) >= 0 ? 1 : -1;
+          B.readyT -= dt;
+          if (B.readyT <= 0 && dP < 110 && !nearHol && !B.zwem) { B.state = 'ready'; B.timer = B.aimT; B.da = a; B.locked = false; SFX.sis(); }
+          break; }
+        case 'ready':
+          if (B.timer > .35) B.da = a; else if (!B.locked) { B.locked = true; B.da = Math.atan2(pc.y + S.pv.y * .5 - B.y, pc.x + S.pv.x * .5 - B.x); }
+          B.face = Math.cos(B.da) >= 0 ? 1 : -1; B.timer -= dt; if (B.timer <= 0) { B.state = 'strike'; B.timer = .42; }
+          break;
+        case 'strike': if (!zet(Math.cos(B.da) * 260 * dt, Math.sin(B.da) * 260 * dt)) B.timer = 0; B.timer -= dt; if (B.timer <= 0) { B.state = 'tired'; B.timer = 1.3; } break;
+        case 'tired': B.timer -= dt; if (B.timer <= 0) { B.state = 'chase'; B.readyT = 2 + Math.random(); } break;
+        case 'dive': // ze duikt weg en komt ergens anders weer boven
+          B.timer -= dt; B.alpha = Math.max(0, B.timer / .6);
+          if (B.timer <= 0) {
+            for (let i = 0; i < 60; i++) { const an = Math.random() * 6.28, r = 80 + Math.random() * 40, nx = pc.x + Math.cos(an) * r, ny = pc.y + Math.sin(an) * r;
+              if (nx > 24 && ny > 24 && nx < MW * TS - 24 && ny < MH * TS - 24 && slangVrij(nx, ny, 8) && !'WL'.includes(tile(Math.floor(nx / TS), Math.floor(ny / TS)))) { B.x = nx; B.y = ny; break; } }
+            kronkel(B, 40, 8); B.zwem = false; B.state = 'rise'; B.timer = .8; sparkles(B.x, B.y, '#8a6a40', 10);
+          }
+          break;
+        case 'rise': B.timer -= dt; B.alpha = 1 - Math.max(0, B.timer / .8); if (B.timer <= 0) { B.state = 'chase'; B.readyT = 1.5; } break;
+        case 'leave': { const fa = Math.atan2(S.den.y - B.y, S.den.x + 8 - B.x); zet(Math.cos(fa) * 120 * dt, Math.sin(fa) * 120 * dt); B.face = Math.cos(fa) >= 0 ? 1 : -1;
+          B.timer -= dt; B.alpha = Math.max(0, B.timer / 2.5); if (B.timer <= 0) { B.state = 'gone'; win(); } break; }
+      }
+      if (['chase', 'ready', 'strike', 'tired'].includes(B.state) && !B.zwem && dP < 14 && P.blink <= 0) { caught(); B.state = 'chase'; B.readyT = 3; }
+    },
+    draw(B, camX, camY){ drawSnake(B, camX, camY, 2, 'baasslang_', 110); },
+    sortY: B => B.y,
+  },
+};
+BOSS.wolf = {
+  make: () => ({x:S.den.x - 8, y:S.den.y, hp:SPEL.baasLeven, state:'enter', timer:1.2, face:-1, speed:52, dashT:2.5, vx:0, vy:0, flash:0, aimT:.8}),
+  hitbox: B => ['enter', 'gone', 'flee'].includes(B.state) ? null : {x:B.x + 16, y:B.y + 12, r:18},
+  hit(B, P){
+    const an = Math.atan2(B.y - P.y, B.x - P.x); B.vx = Math.cos(an) * 160; B.vy = Math.sin(an) * 160;
+    if (B.hp <= 0) { B.state = 'flee'; B.timer = 2.5; pop(B.x + 16, B.y - 4, null, 'Auuuw!'); }
+    else { B.state = 'hurt'; B.timer = .5; B.speed += 5; B.aimT = Math.max(.55, B.aimT - .05); if (B.hp === 4 || B.hp === 2) B.huilen = true; }
+  },
+  update(B, dt, P, pc){
+    const bc = {x:B.x + 16, y:B.y + 14}, a = Math.atan2(pc.y - bc.y, pc.x - bc.x), dP = Math.hypot(pc.x - bc.x, pc.y - bc.y);
+    const free = (nx, ny) => !solidAt(nx + 8, ny + 22) && !solidAt(nx + 24, ny + 22) && !solidAt(nx + 8, ny + 14) && !solidAt(nx + 24, ny + 14) && nx > 0 && ny > 0 && !inSafe(nx + 16, ny + 18);
+    const bmove = (vx, vy) => { if (free(B.x + vx, B.y + vy)) { B.x += vx; B.y += vy; return true; } if (free(B.x + vx, B.y)) { B.x += vx; return false; } if (free(B.x, B.y + vy)) B.y += vy; return false; };
+    const opIjs = tile(Math.floor(bc.x / TS), Math.floor((B.y + 20) / TS)) === 'I';
+    const nearHol = Math.hypot(pc.x - S.hol.x - 8, pc.y - S.hol.y - 8) < 26;
+    B.flash = Math.max(0, B.flash - dt);
+    switch (B.state) {
+      case 'enter': B.timer -= dt; B.y += 20 * dt; if (B.timer <= 0) B.state = 'chase'; break;
+      case 'hurt': bmove(B.vx * dt, B.vy * dt); B.vx *= .9; B.vy *= .9; B.timer -= dt;
+        if (B.timer <= 0) { if (B.huilen) { B.huilen = false; B.state = 'howl'; B.timer = 1.2; SFX.huil(); pop(B.x + 16, B.y - 6, null, 'AUUUUU!'); } else { B.state = 'chase'; B.dashT = 2; } } break;
+      case 'howl': B.timer -= dt; if (B.timer <= 0) { // twee wolfjes komen helpen
+        for (const k of [-1, 1]) { const w = makeWolf(S.den.x + k * 20, S.den.y + 8); w.gehuild = true; w.state = 'chase'; w.stamina = SPEL.wolfSprint; w.appear = .6; S.enemies.push(w); }
+        B.state = 'chase'; B.dashT = 2.5; } break;
+      case 'flee': { const fa = Math.atan2(S.den.y - B.y, S.den.x - B.x); bmove(Math.cos(fa) * 150 * dt, Math.sin(fa) * 150 * dt); B.face = Math.cos(fa) >= 0 ? 1 : -1; B.timer -= dt; B.alpha = Math.max(0, B.timer / 2.5); if (B.timer <= 0) { B.state = 'gone'; win(); } break; }
+      case 'chase': {
+        const sp = nearHol ? -B.speed * .6 : B.speed;
+        bmove(Math.cos(a) * sp * dt, Math.sin(a) * sp * dt); B.face = Math.cos(a) * Math.sign(sp || 1) >= 0 ? 1 : -1;
+        B.dashT -= dt; if (B.dashT <= 0 && dP < 120 && !nearHol) { B.state = 'crouch'; B.timer = B.aimT; B.da = a; }
+        break; }
+      case 'crouch': if (B.timer > .3) B.da = a; B.face = Math.cos(B.da) >= 0 ? 1 : -1; B.timer -= dt; if (B.timer <= 0) { B.state = 'dash'; B.timer = .45; B.dv = 210; } break;
+      case 'dash': // op het ijs glijdt hij nog een stuk door
+        if (!bmove(Math.cos(B.da) * B.dv * dt, Math.sin(B.da) * B.dv * dt)) B.timer = 0;
+        B.timer -= dt; if (B.timer <= 0 && opIjs && B.dv > 60) { B.dv *= Math.pow(.15, dt); B.timer = .02; if (!B.glijTip) { B.glijTip = true; pop(B.x + 16, B.y - 4, null, 'Woeps!'); } }
+        if (B.timer <= 0) { B.state = 'tired'; B.timer = 1.3; } break;
+      case 'tired': B.timer -= dt; if (B.timer <= 0) { B.state = 'chase'; B.dashT = 2.2 + Math.random(); } break;
+    }
+    if (['chase', 'dash', 'crouch'].includes(B.state) && dP < 15 && P.blink <= 0) { caught(); B.state = 'chase'; B.dashT = 3; }
+  },
+  draw(B, camX, camY){
+    const bx = Math.round(B.x) - camX, by = Math.round(B.y) - camY + (B.state === 'crouch' ? 2 : 0), L = B.face < 0 ? 'L' : '';
+    if (B.state === 'crouch') drawLane(bx + 16, by + 14, B.da, 90, 10, 1 - B.timer / B.aimT);
+    ctx.globalAlpha = B.state === 'flee' ? B.alpha : 1;
+    ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fillRect(bx + 5, by + 21, 22, 3);
+    const fr = ['chase', 'dash', 'flee'].includes(B.state) && Math.floor(S.t * 10) % 2 ? 'baaswolfRen' : 'baaswolf';
+    if (B.state === 'tired') ctx.drawImage(IMG['baaswolf' + L], 0, 0, 16, 8, bx, by + 10, 32, 13);
+    else ctx.drawImage(IMG[fr + L], bx, by + 2 - (B.state === 'howl' ? 3 : 0), 32, 20);
+    if (B.flash > 0 && Math.floor(S.t * 20) % 2) { ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(IMG[fr + L], bx, by + 2, 32, 20); ctx.globalCompositeOperation = 'source-over'; }
+    if (B.state === 'tired' && Math.floor(S.t * 3) % 2) { const hx = B.face < 0 ? bx - 4 : bx + 32; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(hx, by + 9, 3, 3); ctx.fillRect(hx + (B.face < 0 ? -3 : 3), by + 6, 3, 3); }
+    ctx.globalAlpha = 1;
+  },
+  sortY: B => B.y + 24,
+};
+BOSS.spin = {
+  // h is hoe hoog ze aan haar draad hangt
+  make: () => ({x:S.den.x + 8, y:S.den.y + 20, h:70, hp:SPEL.baasLeven, state:'enter', timer:1.4, face:1, shootT:2.5, flash:0, walk:0}),
+  hitbox: B => ['walk', 'shoot'].includes(B.state) ? {x:B.x, y:B.y - 6, r:16} : null,
+  hit(B){
+    if (B.hp <= 0) { B.state = 'leave'; B.timer = 2.2; pop(B.x, B.y - 26, null, 'Iiiieks!'); }
+    else { B.state = 'up'; B.timer = .8; pop(B.x, B.y - 26, null, 'Au, mijn pootjes!'); }
+  },
+  update(B, dt, P, pc){
+    const free = (x, y) => !solidAt(x - 8, y - 4) && !solidAt(x + 8, y - 4) && !solidAt(x - 8, y + 4) && !solidAt(x + 8, y + 4) && !inSafe(x, y);
+    const nearHol = Math.hypot(pc.x - S.hol.x - 8, pc.y - S.hol.y - 8) < 26;
+    B.flash = Math.max(0, B.flash - dt);
+    switch (B.state) {
+      case 'enter': B.h = Math.max(0, B.h - 60 * dt); B.timer -= dt; if (B.timer <= 0 && B.h <= 0) B.state = 'walk'; break;
+      case 'walk': {
+        const a = Math.atan2(pc.y - B.y, pc.x - B.x), sp = nearHol ? -24 : 34, nx = B.x + Math.cos(a) * sp * dt, ny = B.y + Math.sin(a) * sp * dt;
+        if (free(nx, B.y)) B.x = nx; if (free(B.x, ny)) B.y = ny; B.walk += dt; B.face = Math.cos(a) >= 0 ? 1 : -1;
+        B.shootT -= dt; if (B.shootT <= 0 && !nearHol) { B.state = 'shoot'; B.timer = .5; }
+        break; }
+      case 'shoot': B.timer -= dt; if (B.timer <= 0) { // drie plakdraden in een waaier
+        const a = Math.atan2(pc.y - B.y, pc.x - B.x);
+        for (const d of B.hp <= 3 ? [-.3, 0, .3] : [-.18, .18]) S.webs.push({x:B.x, y:B.y - 4, vx:Math.cos(a + d) * 105, vy:Math.sin(a + d) * 105, life:1.6});
+        SFX.gooi(); B.state = 'walk'; B.shootT = 2.2 + Math.random(); }
+        break;
+      case 'up': B.h += 90 * dt; B.timer -= dt; if (B.timer <= 0) { B.state = 'hang'; B.timer = 1 + Math.random() * .6; } break;
+      case 'hang': B.timer -= dt; if (B.timer <= 0) { // ze kiest een plek om op te vallen
+        let tx = pc.x + S.pv.x * .5, ty = pc.y + S.pv.y * .5;
+        if (!free(tx, ty)) { tx = pc.x; ty = pc.y; }
+        if (!free(tx, ty) || nearHol) { B.timer = .5; break; }
+        B.x = tx; B.y = ty; B.state = 'drop'; B.timer = 1.0; B.h = 90; }
+        break;
+      case 'drop': B.timer -= dt; if (B.timer <= .25) B.h = Math.max(0, B.h - 400 * dt);
+        if (B.timer <= 0) { B.h = 0; SFX.plof(); sparkles(B.x, B.y, '#8a8494', 12); if (Math.hypot(pc.x - B.x, pc.y - B.y) < 18) caught('de spin'); B.state = 'walk'; B.shootT = 1.5; }
+        break;
+      case 'leave': B.h += 60 * dt; B.timer -= dt; if (B.timer <= 0) { B.state = 'gone'; win(); } break;
+    }
+    if (['walk', 'shoot'].includes(B.state) && Math.hypot(pc.x - B.x, pc.y - B.y) < 14 && P.blink <= 0) { caught('de spin'); B.shootT = 2.5; }
+  },
+  draw(B, camX, camY){
+    if (B.state === 'hang' || B.state === 'gone' || B.state === 'drop' && B.h > 60) return;
+    const x = Math.round(B.x) - camX, y = Math.round(B.y - B.h) - camY;
+    ctx.globalAlpha = B.state === 'leave' ? Math.max(0, B.timer / 2.2) : 1;
+    if (B.h > 0) { ctx.fillStyle = 'rgba(230,230,240,.6)'; ctx.fillRect(x, 0, 1, y - 6); }
+    const im = IMG[B.state === 'walk' && Math.floor(B.walk * 8) % 2 ? 'spin2' : 'spin1'];
+    ctx.drawImage(im, x - 15, y - 18, 30, 18);
+    if (B.flash > 0 && Math.floor(S.t * 20) % 2) { ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(im, x - 15, y - 18, 30, 18); ctx.globalCompositeOperation = 'source-over'; }
+    if (B.state === 'shoot') { ctx.fillStyle = '#fff'; ctx.font = 'bold 8px sans-serif'; ctx.fillText('!', x - 1, y - 22); }
+    ctx.globalAlpha = 1;
+  },
+  // de schaduw waar ze gaat landen: die zie je ook in het donker
+  bovenop(B, camX, camY){
+    if (LEVELS[LV].donker && ['walk', 'shoot', 'enter', 'up'].includes(B.state)) { // rode oogjes in het donker
+      const x = Math.round(B.x) - camX, y = Math.round(B.y - B.h) - camY - 10;
+      ctx.globalAlpha = B.state === 'shoot' ? 1 : .7; ctx.fillStyle = '#ff4040'; for (const dx of [-5, -1, 3]) ctx.fillRect(x + dx, y, 2, 2); ctx.globalAlpha = 1;
+    }
+    if (B.state !== 'drop') return;
+    const x = Math.round(B.x) - camX, y = Math.round(B.y) - camY, k = Math.min(1, 1 - B.timer);
+    ctx.beginPath(); ctx.arc(x, y, 18, 0, 6.28); ctx.fillStyle = `rgba(255,60,40,${.12 + .25 * k})`; ctx.fill();
+    ctx.strokeStyle = `rgba(255,70,50,${.55 + .4 * Math.sin(S.t * 18)})`; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(x, y, 4 + 10 * k, 2 + 5 * k, 0, 0, 6.28); ctx.fillStyle = 'rgba(0,0,0,.5)'; ctx.fill();
+  },
+  sortY: B => B.y + B.h * 0 + (B.h > 0 ? 1000 : 0),
+};
+function spawnBoss(){
+  const L = LEVELS[LV];
+  S.boss = BOSS[L.baas].make(); S.boss.type = L.baas;
+  $('boss').hidden = false; updateHud(); SFX.baas(); banner(L.baasKomt);
+  setTimeout(() => S.state === 'play' && toast(L.baasTip, 3000), 2300);
+}
+
+function update(dt){
+  S.t += dt;
+  for (const f of S.flies) { f.ph += dt * f.sp; f.x += Math.cos(f.ph * .7) * 8 * dt; f.y += Math.sin(f.ph) * 6 * dt; }
+  if (S.state !== 'play') return;
+  S.time += dt;
+  if (S.banner > 0 && (S.banner -= dt) <= 0) $('banner').hidden = true;
+  const P = S.player;
+  if (P.blink > 0) P.blink -= dt;
+
+  // lopen (op het ijs glij je door, in modder en diepe sneeuw ga je langzaam)
+  let ix = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), iy = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
+  S.moving = !!(ix || iy);
+  if (ix && iy) { ix *= .7071; iy *= .7071; }
+  if (S.moving) { if (Math.abs(ix) > Math.abs(iy) || (ix && !iy)) S.dir = ix > 0 ? 'right' : 'left'; else S.dir = iy > 0 ? 'down' : 'up'; }
+  const onder = tile(Math.floor((P.x + 8) / TS), Math.floor((P.y + 13) / TS));
+  const traag = 'MY%'.includes(onder), ijs = onder === 'I';
+  if (S.vast > 0) { S.vast -= dt; ix = iy = 0; S.moving = false; }
+  if (traag && !S.modderTip) { S.modderTip = true; toast({M:'Modder! Hier loop je langzaam.', Y:'Diepe sneeuw! Hier loop je langzaam.', '%':'Een plakkerig spinnenweb! Hier loop je langzaam.'}[onder]); }
+  if (ijs && !S.ijsTip) { S.ijsTip = true; toast('Ijs! Hier glij je uit. Rem op tijd!'); }
+  const snel = (S.carry ? SPEL.snelheidMetDier : SPEL.snelheid) * (traag ? SPEL.modderTraag : 1);
+  if (ijs) { const k = Math.min(1, dt * SPEL.ijsGlij); S.vel.x += (ix * snel - S.vel.x) * k; S.vel.y += (iy * snel - S.vel.y) * k; }
+  else S.vel = {x:ix * snel, y:iy * snel};
+  if (S.vel.x || S.vel.y) {
+    const ox = P.x, oy = P.y; moveBody(P, S.vel.x * dt, S.vel.y * dt);
+    if (P.x === ox) S.vel.x = 0; if (P.y === oy) S.vel.y = 0;
+    S.pv = {x:(P.x - ox) / dt, y:(P.y - oy) / dt}; S.moving = S.moving || Math.hypot(S.pv.x, S.pv.y) > 5;
+  } else S.pv = {x:0, y:0};
+  const pc = {x:P.x + 8, y:P.y + 11};
+
+  // eikels
+  if (throwPressed) { throwPressed = false; throwAcorn(); }
+  if (S.eikels < SPEL.eikelsMax) { S.refill += dt; if (S.refill >= SPEL.eikelBijvullen) { S.refill = 0; S.eikels++; updateHud(); } }
+  for (const a of S.acorns) {
+    a.x += a.vx * dt; a.y += a.vy * dt; a.life -= dt; a.rot += dt * 14;
+    if (solidAt(a.x, a.y + 4) && tile(Math.floor(a.x / TS), Math.floor((a.y + 4) / TS)) !== 'W') a.life = 0;
+    for (const e of S.enemies) { const hb = ENEMY[e.type].hitbox(e); if (a.life > 0 && hb && Math.hypot(a.x - hb.x, a.y - hb.y) < hb.r) { ENEMY[e.type].scare(e, P); a.life = 0; } }
+    const B = S.boss;
+    if (B && a.life > 0) { const hb = BOSS[B.type].hitbox(B);
+      if (hb && Math.hypot(a.x - hb.x, a.y - hb.y) < hb.r) { a.life = 0; B.hp--; B.flash = .3; SFX.raak(); sparkles(hb.x, hb.y, '#ffd66b', 8); BOSS[B.type].hit(B, P); updateHud(); } }
+  }
+  S.acorns = S.acorns.filter(a => a.life > 0);
+
+  // spullen oppakken
+  for (const it of S.items) if (!it.got && Math.hypot(pc.x - (it.x + 5), pc.y - (it.y + 4)) < 11) {
+    it.got = true; S.inv[it.kind]++; SFX.pak(); pop(it.x + 5, it.y, IMG[it.kind], '+1'); updateHud();
+    if (!S.firstItem) { S.firstItem = true; toast(`Een ${SPULLEN[it.kind]}! Met 1 takje, 1 blaadje, 1 steentje en 1 mos bouw je een huisje.`, 3500); }
+  }
+  // diertjes oppakken
+  for (const an of S.animals) if (an.state === 'wild' && Math.hypot(pc.x - (an.x + 6), pc.y - (an.y + (an.hang ? 8 : 5))) < 13) {
+    if (S.carry) { hint(`Je draagt al ${DIEREN[S.carry.kind].naam}. Breng het eerst naar een huisje.`); continue; }
+    an.state = 'carried'; S.carry = an; SFX.pak();
+    toast(`Je hebt ${DIEREN[an.kind].naam}! Breng het naar een huisje in de tuin.`, 3000);
+  }
+  // bouwplekken
+  for (const sp of S.spots) {
+    if (Math.hypot(pc.x - (sp.x + 8), pc.y - (sp.y + 10)) > 11) continue;
+    if (!sp.house) {
+      if (S.inv.t && S.inv.l && S.inv.s && S.inv.o) {
+        for (const k in S.inv) S.inv[k]--; sp.house = true; SFX.bouw(); sparkles(sp.x + 8, sp.y + 6, '#ffd66b', 14); updateHud();
+        toast(S.carry ? 'Huisje gebouwd! Zet het diertje erin.' : 'Huisje gebouwd! Zoek nu een diertje dat erin wil wonen.');
+      } else {
+        const mis = Object.keys(SPULLEN).filter(k => !S.inv[k]).map(k => SPULLEN[k]);
+        hint('Om hier te bouwen heb je nog nodig: ' + mis.join(', ') + '.');
+      }
+    } else if (!sp.animal && S.carry) {
+      sp.animal = S.carry; S.carry.state = 'home'; S.carry = null; S.saved++;
+      SFX.red(); sparkles(sp.x + 8, sp.y + 4, '#ff8fa8', 14); pop(sp.x + 8, sp.y - 2, IMG.hart, '');
+      toast(`${cap(DIEREN[sp.animal.kind].naam)} is veilig! (${S.saved}/${S.total})`); updateHud();
+      if (S.saved === S.total) setTimeout(() => S.state === 'play' && !S.boss && spawnBoss(), 1500);
+    }
+  }
+
+  // fakkels aansteken
+  for (const f of S.fakkels) if (!f.aan && Math.hypot(pc.x - f.x, pc.y - (f.y + 6)) < 20) {
+    f.aan = true; SFX.vuur(); sparkles(f.x, f.y - 2, '#ffb347', 12);
+    if (!S.fakkelTip) { S.fakkelTip = true; toast('De fakkel brandt! In het licht durven de vleermuizen niet te komen.', 3200); }
+  }
+  // plakdraden van de spin
+  for (const w of S.webs) {
+    w.x += w.vx * dt; w.y += w.vy * dt; w.life -= dt;
+    if (solidAt(w.x, w.y) && tile(Math.floor(w.x / TS), Math.floor(w.y / TS)) !== 'W') w.life = 0;
+    if (w.life > 0 && Math.hypot(w.x - pc.x, w.y - pc.y) < 9 && P.blink <= 0) { w.life = 0; S.vast = SPEL.vastTijd; SFX.plof(); toast('Je zit vast in het web!'); }
+  }
+  S.webs = S.webs.filter(w => w.life > 0);
+  for (const e of S.enemies) ENEMY[e.type].update(e, dt, P, pc);
+  if (S.boss) BOSS[S.boss.type].update(S.boss, dt, P, pc);
+
+  // effecten
+  for (const e of S.fx) { e.t += dt; if (e.spark) { e.x += e.vx * dt; e.y += e.vy * dt; e.vy += 90 * dt; } }
+  S.fx = S.fx.filter(e => e.t < (e.spark ? .7 : 1));
+}
+
+function win(){
+  S.state = 'win'; SFX.win(); $('boss').hidden = true; markWon(LV);
+  const L = LEVELS[LV], m = Math.floor(S.time / 60), s = Math.floor(S.time % 60), next = LEVELS[LV + 1];
+  $('winTitle').textContent = `Level ${LV + 1} gehaald!`;
+  $('winText').textContent = L.gewonnen;
+  $('stats').innerHTML = `<li><b>Tijd:</b> ${m} min ${s} sec</li><li><b>Eikels gegooid:</b> ${S.thrown}</li><li><b>Keer terug naar je hol:</b> ${S.caught}</li>`;
+  $('winNext').textContent = next ? `Op naar level ${LV + 2}: ${next.naam}!` : KOMT_NOG;
+  $('next').hidden = !next;
+  setTimeout(() => { $('win').hidden = false; (next ? $('next') : $('again')).focus(); }, 900);
+}
+
+// --- tekenen ---
+function draw(){
+  const P = S.player;
+  let camX = Math.round(P.x + 8 - VW / 2), camY = Math.round(P.y + 8 - VH / 2);
+  camX = Math.max(0, Math.min(MW * TS - VW, camX)); camY = Math.max(0, Math.min(MH * TS - VH, camY));
+  ctx.drawImage(layer, -camX, -camY);
+  const x0 = Math.floor(camX / TS), y0 = Math.floor(camY / TS);
+  for (let y = y0; y <= y0 + VH / TS + 1; y++) for (let x = x0; x <= x0 + VW / TS + 1; x++) if ('WBL'.includes(tile(x, y))) drawWater(ctx, x, y, x * TS - camX, y * TS - camY, S.t);
+
+  const sprites = [];
+  for (const sp of S.spots) if (sp.house) sprites.push({y:sp.y + 14, d:() => {
+    ctx.drawImage(IMG.huisje, sp.x - camX, sp.y - camY + 1);
+    if (sp.animal) { const im = IMG['dier_' + sp.animal.kind], sy = sp.animal.hang ? im.height - 6 : 0; ctx.drawImage(im, 0, sy, im.width, 6, sp.x - camX + 2, sp.y - camY + 6 + Math.round(Math.sin(S.t * 2 + sp.x) * .6), im.width, 6); }
+  }});
+  else if (S.inv.t && S.inv.l && S.inv.s && S.inv.o && Math.sin(S.t * 6) > 0) sprites.push({y:sp.y, d:() => { ctx.fillStyle = 'rgba(255,214,107,.35)'; ctx.fillRect(sp.x - camX + 1, sp.y - camY + 3, 14, 11); }});
+  for (const it of S.items) if (!it.got) sprites.push({y:it.y + 8, d:() => {
+    const b = Math.round(Math.sin(S.t * 3 + it.ph) * 1); const im = IMG[it.kind];
+    ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(it.x - camX + 1, it.y - camY + 9, 8, 1);
+    ctx.drawImage(im, it.x - camX, it.y - camY - 1 + b + (9 - im.height));
+    if ((S.t * 1.5 + it.ph) % 4 < .25) { ctx.fillStyle = '#fff'; ctx.fillRect(it.x - camX + 8, it.y - camY - 2, 1, 3); ctx.fillRect(it.x - camX + 7, it.y - camY - 1, 3, 1); }
+  }});
+  for (const an of S.animals) if (an.state === 'wild') sprites.push({y:an.y + 9, d:() => {
+    const x = an.x - camX, y = an.y - camY;
+    if (an.hang) {
+      const im = IMG['dier_z'], sw = Math.round(Math.sin(S.t * 2 + an.ph));
+      ctx.fillStyle = '#6b4426'; ctx.fillRect(x - 2, y, 14, 2);
+      ctx.drawImage(im, x + 1 + sw, y + 1);
+      if ((S.t + an.ph) % 2.5 < 1) { ctx.fillStyle = '#ffffff'; ctx.font = '8px sans-serif'; ctx.fillText('!', x + 13, y + 8); }
+      return;
+    }
+    const hop = (S.t * 1.3 + an.ph) % 3 < .3 ? -2 : 0; const look = Math.floor(S.t / 2 + an.ph) % 2 ? 'L' : '';
+    const im = IMG['dier_' + an.kind + look];
+    ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(x + 1, y + 9, 10, 2);
+    ctx.drawImage(im, x, y + hop + (10 - im.height));
+    if ((S.t + an.ph) % 2.5 < 1) { ctx.fillStyle = '#ffffff'; ctx.font = '8px sans-serif'; ctx.fillText('!', x + 4, y - 3 + hop); }
+  }});
+  for (const e of S.enemies) if (e.state !== 'gone') sprites.push({y:ENEMY[e.type].sortY(e), d:() => ENEMY[e.type].draw(e, camX, camY)});
+  const B = S.boss;
+  if (B && B.state !== 'gone') sprites.push({y:BOSS[B.type].sortY(B), d:() => BOSS[B.type].draw(B, camX, camY)});
+  sprites.push({y:P.y + 15, d:() => {
+    if (P.blink > 0 && Math.floor(S.t * 14) % 2) return;
+    const px = Math.round(P.x) - camX, py = Math.round(P.y) - camY;
+    const hop = S.moving ? -Math.abs(Math.round(Math.sin(S.t * 14) * 2)) : 0;
+    ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(px + 3, py + 14, 10, 2);
+    const im = {down:IMG.konijnOmlaag, up:IMG.konijnOmhoog, right:IMG.konijnOpzij, left:IMG.konijnOpzijL}[S.dir];
+    ctx.drawImage(im, px, py + hop);
+    if (S.carry) { const d = IMG['dier_' + S.carry.kind]; ctx.drawImage(d, px + 2, py - 9 + hop); }
+  }});
+  sprites.sort((a, b) => a.y - b.y).forEach(s => s.d());
+
+  // schemer: alles wat paarser en donkerder, met lichtjes
+  if (LEVELS[LV].schemer) {
+    ctx.globalCompositeOperation = 'multiply'; ctx.fillStyle = '#a194d4'; ctx.fillRect(0, 0, VW, VH);
+    ctx.globalCompositeOperation = 'lighter';
+    for (const g of S.glows) { const x = g.x - camX, y = g.y - camY; if (x > -16 && y > -16 && x < VW + 16 && y < VH + 16) { ctx.globalAlpha = .6 + .3 * Math.sin(S.t * 2 + g.x); ctx.drawImage(GLOW.pad, x - 12, y - 12); } }
+    for (const f of S.flies) { const x = Math.round(f.x - camX), y = Math.round(f.y - camY); if (x < -8 || y < -8 || x > VW + 8 || y > VH + 8) continue; const on = .5 + .5 * Math.sin(f.ph * 3); ctx.globalAlpha = on; ctx.drawImage(GLOW.vlieg, x - 6, y - 6); ctx.fillStyle = '#fffbd0'; ctx.fillRect(x, y, 1, 1); }
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // het donker van de grot, met gaatjes van licht
+  if (LEVELS[LV].donker) {
+    const dc = DONKER.getContext('2d');
+    dc.globalCompositeOperation = 'source-over'; dc.clearRect(0, 0, VW, VH); dc.fillStyle = 'rgba(6,5,12,.94)'; dc.fillRect(0, 0, VW, VH);
+    dc.globalCompositeOperation = 'destination-out';
+    const gat = (wx, wy, r) => { const x = wx - camX, y = wy - camY; if (x < -r || y < -r || x > VW + r || y > VH + r) return;
+      const g = dc.createRadialGradient(x, y, r * .35, x, y, r); g.addColorStop(0, 'rgba(0,0,0,1)'); g.addColorStop(1, 'rgba(0,0,0,0)'); dc.fillStyle = g; dc.fillRect(x - r, y - r, r * 2, r * 2); };
+    gat(P.x + 8, P.y + 8, SPEL.licht + Math.sin(S.t * 9) * 1.5);
+    gat(S.hol.x + 8, S.hol.y + 8, 90);
+    for (const f of S.fakkels) if (f.aan) gat(f.x, f.y, SPEL.fakkelLicht + Math.sin(S.t * 11 + f.x) * 2);
+    for (const k of S.kristallen) gat(k.x, k.y, 30);
+    for (const g of S.glows) gat(g.x, g.y, 18);
+    for (const an of S.animals) if (an.kind === 'w' && an.state !== 'carried') gat(an.x + 6, an.y + 4, 22);
+    for (const sp of S.spots) if (sp.animal && sp.animal.kind === 'w') gat(sp.x + 8, sp.y + 8, 22);
+    if (S.carry && S.carry.kind === 'w') gat(P.x + 8, P.y - 4, 30);
+    ctx.drawImage(DONKER, 0, 0);
+    // gekleurde gloed, vlammetjes, rode oogjes en de schaduw van de spin
+    ctx.globalCompositeOperation = 'lighter';
+    for (const k of S.kristallen) ctx.drawImage(GLOW.kristal, k.x - camX - 22, k.y - camY - 22);
+    for (const f of S.fakkels) if (f.aan) ctx.drawImage(GLOW.vuur, f.x - camX - 26, f.y - camY - 30);
+    for (const an of S.animals) if (an.kind === 'w' && an.state === 'wild') ctx.drawImage(GLOW.worm, an.x + 6 - camX - 14, an.y + 4 - camY - 14);
+    ctx.globalCompositeOperation = 'source-over';
+    for (const f of S.fakkels) if (f.aan) { const x = f.x - camX, y = f.y - camY - 4, fl = Math.floor(S.t * 10 + f.x) % 3;
+      R(ctx, x - 2, y - 3 + (fl === 1 ? 1 : 0), 4, 4, '#ff8a2a'); R(ctx, x - 1, y - 5 + fl % 2, 2, 3, '#ffd23c'); R(ctx, x, y - 6 - (fl === 2 ? 1 : 0), 1, 2, '#fff4b0'); }
+    for (const e of S.enemies) if (ENEMY[e.type].ogen) ENEMY[e.type].ogen(e, camX, camY);
+  }
+  if (S.boss && BOSS[S.boss.type].bovenop) BOSS[S.boss.type].bovenop(S.boss, camX, camY);
+  // plakdraden
+  for (const w of S.webs) { const x = Math.round(w.x - camX), y = Math.round(w.y - camY); R(ctx, x - 2, y - 2, 5, 5, 'rgba(240,240,250,.9)'); R(ctx, x - 3, y, 7, 1, '#ffffff'); R(ctx, x, y - 3, 1, 7, '#ffffff'); }
+  if (S.vast > 0) { const x = Math.round(P.x) - camX, y = Math.round(P.y) - camY; ctx.strokeStyle = 'rgba(240,240,250,.85)'; ctx.lineWidth = 1; ctx.beginPath();
+    for (let k = 0; k < 4; k++) { ctx.moveTo(x + 1, y + 3 + k * 3); ctx.lineTo(x + 15, y + 5 + k * 3 - (k % 2) * 3); } ctx.stroke(); }
+  // sneeuw die valt
+  if (LEVELS[LV].sneeuw) for (let i = 0; i < 60; i++) {
+    const sx = (hash(i, 1) % VW + S.t * (5 + hash(i, 2) % 8) + Math.sin(S.t + i) * 4) % VW, sy = (hash(i, 3) % VH + S.t * (12 + hash(i, 4) % 12)) % VH;
+    R(ctx, Math.round(sx), Math.round(sy), hash(i, 5) % 3 ? 1 : 2, hash(i, 5) % 3 ? 1 : 2, '#ffffff');
+  }
+  // mist die langzaam over het moeras drijft
+  if (LEVELS[LV].mist) {
+    for (let i = 0; i < 14; i++) {
+      const wx = (hash(i, 1) % (MW * TS) + S.t * (4 + i % 3 * 2)) % (MW * TS), wy = hash(i, 2) % (MH * TS) + Math.sin(S.t * .3 + i) * 10;
+      const x = wx - camX, y = wy - camY; if (x > -50 && y > -50 && x < VW + 50 && y < VH + 50) ctx.drawImage(GLOW.mist, x - 44, y - 44);
+    }
+  }
+  for (const a of S.acorns) { ctx.save(); ctx.translate(Math.round(a.x - camX), Math.round(a.y - camY)); ctx.rotate(a.rot); ctx.drawImage(IMG.eikel, -3, -3); ctx.restore(); }
+  for (const e of S.fx) {
+    if (e.spark) { ctx.globalAlpha = 1 - e.t / .7; ctx.fillStyle = e.col; ctx.fillRect(Math.round(e.x - camX), Math.round(e.y - camY), 2, 2); ctx.globalAlpha = 1; continue; }
+    const yy = Math.round(e.y - camY - e.t * 18); ctx.globalAlpha = Math.min(1, 2 - e.t * 2);
+    if (e.img) ctx.drawImage(e.img, Math.round(e.x - camX - e.img.width / 2 - (e.txt ? 5 : 0)), yy - e.img.height);
+    if (e.txt) { ctx.font = 'bold 9px sans-serif'; ctx.fillStyle = '#2b1d10'; ctx.fillText(e.txt, Math.round(e.x - camX) + 1 - (e.img ? 0 : e.txt.length * 2.5), yy + 1); ctx.fillStyle = '#fff'; ctx.fillText(e.txt, Math.round(e.x - camX) - (e.img ? 0 : e.txt.length * 2.5), yy); }
+    ctx.globalAlpha = 1;
+  }
+}
+
+let last = 0;
+function frame(ts){ const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts; update(dt); draw(); requestAnimationFrame(frame); }
+
+const blurred = fn => e => { e.currentTarget.blur(); fn(); };
+$('start').addEventListener('click', blurred(startPlay));
+$('next').addEventListener('click', blurred(() => { newGame(LV + 1); showIntro(); }));
+$('again').addEventListener('click', blurred(() => { newGame(LV); startPlay(); }));
+$('menu').addEventListener('click', blurred(() => { newGame(LV); showIntro(); }));
+$('menu2').addEventListener('click', blurred(() => { newGame(LV); showIntro(); }));
+$('restart').addEventListener('click', blurred(() => { newGame(LV); startPlay(); }));
+$('mute').addEventListener('click', e => { muted = !muted; e.currentTarget.textContent = 'Geluid: ' + (muted ? 'uit' : 'aan'); e.currentTarget.blur(); });
+
+// Begin bij het eerste level dat nog niet gehaald is
+newGame(Math.max(0, LEVELS.findIndex((_, i) => !isGehaald(i))));
+showIntro();
+requestAnimationFrame(frame);
+</script>

@@ -1,0 +1,1924 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>de mormel game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Grandstander:wght@700;900&family=Lexend:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: titel, speelscherm met HUD erin, knoppen eronder */
+:root{
+  --bg:#1c1420; --panel:#2e2234; --ink:#f6efe6; --dim:#c2b4c4;
+  --red:#e23a3a; --blue:#3561d6; --sun:#ffd66b; --acorn:#c98a3c; --bolt:#7fd7ff; --leaf:#8fd16a;
+  --display:"Grandstander", "Comic Sans MS", system-ui, sans-serif;
+  --body:"Lexend", system-ui, sans-serif;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{margin:0}
+body{background:radial-gradient(ellipse at 50% -10%, #3a2440 0%, var(--bg) 65%) fixed, var(--bg); color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.4; padding-inline:16px; box-sizing:border-box}
+.wrap{display:flex; flex-direction:column; align-items:center; gap:10px; padding-block:12px; max-width:800px; margin:0 auto}
+header{display:flex; flex-direction:column; align-items:center; gap:2px}
+h1{margin:0; font-family:var(--display); font-weight:900; font-size:clamp(26px,5.5vw,40px); color:var(--red); letter-spacing:.01em; text-align:center; text-shadow:0 3px 0 #22408f}
+.zone{margin:0; color:var(--dim); font-size:14px; letter-spacing:.12em; text-transform:uppercase}
+.screen{position:relative; aspect-ratio:4/3; max-width:100%; width:min(100%, calc((100dvh - 210px) * 4 / 3)); min-width:min(100%, 280px); background:#000; border:4px solid #22408f; border-radius:14px; box-shadow:0 0 0 3px #a8222a, 0 12px 30px rgba(0,0,0,.5); overflow:hidden; touch-action:none; user-select:none; -webkit-user-select:none}
+.screen canvas#cv{position:absolute; inset:0; width:100%; height:100%; image-rendering:pixelated; image-rendering:crisp-edges}
+.hud{position:absolute; inset:6px 6px auto 6px; display:flex; flex-wrap:wrap; gap:6px; justify-content:space-between; pointer-events:none; font-weight:600; font-size:clamp(11px,2.2vw,15px)}
+.hud .left{display:flex; gap:6px; flex-wrap:wrap}
+.hud .right{display:flex; flex-direction:column; align-items:flex-end; gap:6px}
+button.pill{font:inherit; color:inherit; cursor:pointer; pointer-events:auto}
+button.pill:disabled{cursor:default}
+button.pill .nu{background:#e23a3a; color:#fff; border-radius:999px; padding:0 7px; margin-left:2px}
+button.pill:focus-visible{outline:3px solid var(--sun); outline-offset:2px}
+.pill.alarm{border-color:#ff7a5c; background:rgba(120,20,20,.8)}
+.toolbtn{position:absolute; right:6px; bottom:6px; font:inherit; font-weight:600; font-size:clamp(11px,2.1vw,14px); color:var(--ink); display:flex; align-items:center; gap:4px; background:rgba(28,20,32,.75); border:1px solid rgba(255,255,255,.18); border-radius:10px; padding:3px 8px; cursor:pointer}
+.toolbtn img{width:1.4em; height:1.4em; image-rendering:pixelated}
+.toolbtn kbd,.saldo kbd{font:inherit; font-size:.8em; color:var(--dim); border:1px solid rgba(255,255,255,.25); border-radius:4px; padding:0 3px}
+.card img.toren{width:24px; height:40px}
+#bouwItems{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+#bouwItems .buy{white-space:normal; max-width:9em; text-align:center}
+.pill{display:flex; align-items:center; gap:5px; background:rgba(28,20,32,.75); border:1px solid rgba(255,255,255,.14); border-radius:999px; padding:3px 9px; font-variant-numeric:tabular-nums}
+.pill img{width:1.35em; height:1.35em; image-rendering:pixelated}
+.pill .off{opacity:.25}
+.dranken{position:absolute; left:6px; bottom:6px; display:flex; gap:5px}
+.dranken button{font:inherit; font-weight:600; font-size:clamp(11px,2.1vw,14px); color:var(--ink); display:flex; align-items:center; gap:3px; background:rgba(28,20,32,.75); border:1px solid rgba(255,255,255,.18); border-radius:10px; padding:3px 7px; cursor:pointer; font-variant-numeric:tabular-nums}
+.dranken button img{width:1.3em; height:1.3em; image-rendering:pixelated}
+.dranken button[data-n="0"]{opacity:.45}
+.dranken kbd{font:inherit; font-size:.8em; color:var(--dim); border:1px solid rgba(255,255,255,.25); border-radius:4px; padding:0 3px}
+.boss{position:absolute; left:50%; bottom:8px; transform:translateX(-50%); width:min(46%,240px); pointer-events:none; text-align:center; font-family:var(--display); font-size:clamp(12px,2.4vw,16px); color:var(--ink); text-shadow:0 2px 0 #000}
+.bar{height:10px; border-radius:6px; background:rgba(0,0,0,.6); border:2px solid #2a0f1a; overflow:hidden; margin-top:2px}
+.bar i{display:block; height:100%; background:linear-gradient(#c98aff,#7a35c8); transition:width .2s}
+.toast{position:absolute; left:50%; top:20%; transform:translateX(-50%); max-width:86%; background:rgba(28,20,32,.88); border:2px solid var(--sun); color:var(--ink); padding:6px 14px; border-radius:12px; font-weight:600; font-size:clamp(12px,2.4vw,16px); text-align:center; pointer-events:none; transition:opacity .25s}
+.banner{position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; font-family:var(--display); font-weight:900; font-size:clamp(22px,5.5vw,42px); color:var(--sun); text-shadow:0 3px 0 #a8222a, 0 0 18px rgba(0,0,0,.6); text-align:center; padding:16px}
+.bubble{position:absolute; transform:translate(-50%,calc(-100% - 8px)); max-width:55%; background:#fffaf0; color:#2a0f1a; border:2px solid #2a0f1a; border-radius:12px; padding:4px 9px; font-weight:600; font-size:clamp(11px,2.1vw,14px); line-height:1.3; text-align:center; pointer-events:none}
+.bubble::after{content:""; position:absolute; left:50%; bottom:-8px; transform:translateX(-50%); border:7px solid transparent; border-top-color:#2a0f1a; border-bottom:0}
+.overlay{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:16px; background:rgba(24,16,28,.93); text-align:center; overflow:auto}
+.overlay h2{margin:0; font-family:var(--display); font-weight:900; color:var(--red); font-size:clamp(24px,5.5vw,40px); text-shadow:0 3px 0 #22408f}
+.overlay p{margin:0; max-width:46ch; color:var(--ink); font-size:clamp(13px,2.4vw,16px)}
+.overlay ul{margin:0; padding:0; list-style:none; display:grid; gap:3px; font-size:clamp(12px,2.2vw,15px); color:var(--dim); max-width:48ch}
+.overlay ul b{color:var(--ink); font-weight:600}
+.kies{display:flex; align-items:center; gap:10px}
+.kies canvas{width:72px; height:72px; image-rendering:pixelated; background:rgba(255,255,255,.06); border-radius:12px}
+.kies .naam{font-family:var(--display); font-weight:700; font-size:clamp(16px,3vw,20px); min-width:7em}
+.btn{font:inherit; font-family:var(--display); font-weight:700; font-size:clamp(16px,3vw,20px); color:#fff; background:var(--red); border:0; border-radius:12px; padding:9px 26px; box-shadow:0 4px 0 #8a1a22; cursor:pointer}
+.btn:active{transform:translateY(3px); box-shadow:0 1px 0 #8a1a22}
+.btn:focus-visible,.small:focus-visible,.buy:focus-visible,.tab:focus-visible,.pad button:focus-visible,.dranken button:focus-visible{outline:3px solid var(--sun); outline-offset:2px}
+.btns{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center}
+.row{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:center; color:var(--dim); font-size:14px}
+.row b{color:var(--ink); font-weight:600}
+.small{font:inherit; font-size:13px; color:var(--ink); background:var(--panel); border:1px solid rgba(255,255,255,.15); border-radius:8px; padding:4px 10px; cursor:pointer}
+/* winkel */
+.shop{justify-content:flex-start; gap:8px}
+.shophead{display:flex; align-items:center; gap:12px}
+.shophead canvas{width:64px; height:64px; image-rendering:pixelated}
+.saldo{display:flex; align-items:center; gap:6px; font-weight:600; font-size:clamp(14px,2.6vw,18px)}
+.saldo img{width:1.4em; height:1.4em; image-rendering:pixelated}
+.tabs{display:flex; gap:6px}
+.tab{font:inherit; font-family:var(--display); font-weight:700; font-size:clamp(13px,2.4vw,16px); color:var(--ink); background:var(--panel); border:2px solid rgba(255,255,255,.18); border-radius:10px; padding:4px 14px; cursor:pointer}
+.tab[aria-pressed="true"]{border-color:var(--sun); background:#4a3050}
+.items{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:6px; width:100%; max-width:640px}
+#kraamItems{grid-template-columns:1fr; max-width:340px}
+.card{display:flex; align-items:center; gap:8px; text-align:left; background:var(--panel); border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:6px 8px}
+.card img{width:32px; height:32px; image-rendering:pixelated; flex:none}
+.card div{flex:1; min-width:0; display:flex; flex-direction:column}
+.card b{font-size:clamp(12px,2.2vw,15px)}
+.card .sterren{color:var(--sun); letter-spacing:2px; font-size:clamp(13px,2.4vw,16px)}
+.card small{color:var(--dim); font-size:clamp(11px,1.9vw,13px); line-height:1.25}
+.buy{font:inherit; font-weight:600; font-size:clamp(11px,2vw,14px); color:#2a0f1a; background:var(--sun); border:0; border-radius:8px; padding:4px 8px; cursor:pointer; white-space:nowrap; display:flex; align-items:center; gap:3px; flex:none}
+.buy img{width:1.1em!important; height:1.1em!important}
+.buy:disabled{background:#5a4a5e; color:var(--dim); cursor:default}
+.buy.aan{background:var(--leaf)}
+.buy.ok{background:transparent; color:var(--leaf)}
+/* touch */
+.pad{display:none; width:100%; max-width:520px; justify-content:space-between; align-items:center; gap:16px}
+.dpad{display:grid; grid-template-columns:repeat(3,56px); grid-template-rows:repeat(3,56px); gap:4px}
+.pad button{font:inherit; font-size:22px; color:var(--ink); background:var(--panel); border:2px solid rgba(255,255,255,.15); border-radius:12px; touch-action:none; user-select:none; -webkit-user-select:none}
+.pad button.on{background:#4a3050}
+.dpad .u{grid-area:1/2} .dpad .l{grid-area:2/1} .dpad .r{grid-area:2/3} .dpad .d{grid-area:3/2}
+.acts{display:flex; align-items:center; gap:10px}
+.acts .klein{display:flex; flex-direction:column; gap:8px}
+.acts .klein button{font-size:15px; padding:8px 10px; font-weight:600}
+.fire{width:92px; height:92px; border-radius:50%!important; font-family:var(--display)!important; font-weight:700; font-size:17px!important; background:#22408f!important; color:var(--bolt)!important}
+@media (pointer:coarse){ .pad{display:flex} .keys{display:none} .dranken kbd,.toolbtn kbd{display:none} }
+@media (prefers-reduced-motion:reduce){ .toast{transition:none} }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>de mormel game</h1>
+    <p class="zone" id="zonetxt">Mormeldorp</p>
+  </header>
+
+  <div class="screen" id="screen">
+    <canvas id="cv" width="256" height="192"></canvas>
+    <div class="hud">
+      <div class="left">
+        <div class="pill" id="harten" title="Hartjes"></div>
+        <div class="pill" id="eikels" title="Eikels"></div>
+        <div class="pill" id="hout" title="Hout"></div>
+        <div class="pill" id="effect" hidden></div>
+      </div>
+      <div class="right">
+        <div class="pill" id="bevrijd" title="Bevrijde mormels"></div>
+        <button class="pill" id="aanval" type="button" title="Klik om de griesels nu te laten aanvallen (toets N)"></button>
+      </div>
+    </div>
+    <div class="dranken" id="dranken"></div>
+    <button class="toolbtn" id="toolbtn" type="button" aria-label="Wissel tussen toverstaf en bijl"></button>
+    <div class="boss" id="boss" hidden><span id="bossnaam">De koning-griesel</span><div class="bar"><i id="bossbar"></i></div></div>
+    <div class="bubble" id="bubble" hidden></div>
+    <div class="toast" id="toast" style="opacity:0"></div>
+    <div class="banner" id="banner" hidden></div>
+
+    <div class="overlay" id="intro">
+      <h2>de mormel game</h2>
+      <p>De griesels lopen overal in het eikenbos. Ze hebben mormels in kooien gestopt! Versla de griesels, verzamel eikels en bevrijd de mormels.</p>
+      <ul>
+        <li><b>Lopen:</b> pijltjes of W A S D</li>
+        <li><b>Bliksem schieten:</b> spatie (ingedrukt houden mag)</li>
+        <li><b>Eikels:</b> loop erover. Koop er spullen mee in de winkel en open er poorten mee.</li>
+        <li><b>Kooi:</b> schiet er 3 keer op om een mormel te bevrijden</li>
+        <li><b>Bijl:</b> wissel met Q. Hak een boom 3 keer om voor hout.</li>
+        <li><b>Toren bouwen:</b> druk op B, rond het dorp. De griesels vallen soms het dorp aan!</li>
+        <li><b>Klaar voor een aanval?</b> Druk op N of op "Nu!" rechtsboven.</li>
+        <li><b>Drankjes:</b> toets 1, 2 en 3</li>
+        <li><b>Upgrades:</b> in de Eikelwinkel maak je je bliksem, bijl, hartjes, torens en huizen sterker.</li>
+      </ul>
+      <div class="kies">
+        <button class="small" id="prevKar" type="button" aria-label="Vorige mormel">◀</button>
+        <canvas id="karcv" width="20" height="22"></canvas>
+        <span class="naam" id="karnaam"></span>
+        <button class="small" id="nextKar" type="button" aria-label="Volgende mormel">▶</button>
+      </div>
+      <button class="btn" id="start" type="button">Spelen!</button>
+    </div>
+
+    <div class="overlay shop" id="shop" hidden>
+      <div class="shophead">
+        <canvas id="shopcv" width="20" height="22"></canvas>
+        <div>
+          <h2>De Eikelwinkel</h2>
+          <div class="saldo"><img id="saldoimg" alt=""><span><b id="saldo">0</b> eikels</span></div>
+        </div>
+      </div>
+      <div class="tabs">
+        <button class="tab" type="button" data-tab="spul" aria-pressed="true">Spullen</button>
+        <button class="tab" type="button" data-tab="kleren" aria-pressed="false">Kleren</button>
+        <button class="tab" type="button" data-tab="up" aria-pressed="false">Upgrades</button>
+      </div>
+      <div class="items" id="items"></div>
+      <button class="btn" id="shopClose" type="button">Terug naar buiten</button>
+    </div>
+
+    <div class="overlay shop" id="kraam" hidden>
+      <div class="shophead">
+        <canvas id="kraamcv" width="20" height="22"></canvas>
+        <div>
+          <h2>Het Houtkraampje</h2>
+          <div class="saldo"><img id="kraamEikImg" alt=""><span><b id="kraamEik">0</b> eikels</span> <img id="kraamHoutImg" alt=""><span><b id="kraamHout">0</b> hout</span></div>
+        </div>
+      </div>
+      <p>Geen zin om te hakken? Ruil je eikels voor boomstammen.</p>
+      <div class="items" id="kraamItems"></div>
+      <button class="btn" id="kraamClose" type="button">Terug naar buiten</button>
+    </div>
+
+    <div class="overlay shop" id="bouw" hidden>
+      <h2>Toren bouwen</h2>
+      <div class="saldo"><img id="bouwEikImg" alt=""><span><b id="bouwEik">0</b> eikels</span> <img id="bouwHoutImg" alt=""><span><b id="bouwHout">0</b> hout</span></div>
+      <p>De toren komt op de plek voor je te staan.</p>
+      <div class="items" id="bouwItems"></div>
+      <button class="btn" id="bouwClose" type="button">Toch niet</button>
+    </div>
+
+    <div class="overlay" id="win" hidden>
+      <h2>Hoera!</h2>
+      <p id="winText"></p>
+      <ul id="stats"></ul>
+      <p id="winNext" style="color:var(--dim)"></p>
+      <button class="btn" id="verder" type="button">Verder spelen</button>
+    </div>
+  </div>
+
+  <div class="pad" id="pad">
+    <div class="dpad">
+      <button class="u" data-k="up" type="button" aria-label="Omhoog">▲</button>
+      <button class="l" data-k="left" type="button" aria-label="Links">◀</button>
+      <button class="r" data-k="right" type="button" aria-label="Rechts">▶</button>
+      <button class="d" data-k="down" type="button" aria-label="Omlaag">▼</button>
+    </div>
+    <div class="acts">
+      <div class="klein">
+        <button type="button" data-act="wissel">Wissel</button>
+        <button type="button" data-act="bouw">Bouw</button>
+      </div>
+      <button class="fire" data-k="fire" type="button" aria-label="Bliksem schieten of hakken">⚡<br>Actie</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <span class="keys"><b>Pijltjes</b> lopen · <b>Spatie</b> bliksem of hakken · <b>Q</b> wissel · <b>B</b> bouwen · <b>N</b> aanval nu · <b>1 2 3</b> drankjes</span>
+    <button class="small" id="mute" type="button">Geluid: aan</button>
+    <button class="small" id="reset" type="button">Alles opnieuw</button>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+//  BOUWDOOS: hier kun je de game makkelijk aanpassen
+// =====================================================================
+
+// Speelbare mormels. Een nieuwe toevoegen? Zet er een regel bij met een
+// naam en kleuren, dan kun je hem op het startscherm kiezen.
+const KARAKTERS = [
+  { naam:"Grote Quin", lijf:"#e23a3a", lijfDonker:"#a8222a", benen:"#3561d6", benenDonker:"#22408f" },
+];
+
+// De wereld. Elke letter is één vakje.
+//  T boom   O eikenboom   D donkere boom   . gras   , bloemen   * paddenstoel
+//  = pad    : dorpsplein  W water   B brug  b struik  R rots   f hek
+//  h mormelhuis (2x2)  S winkel (2x2)  L houtkraam (2x2)  m muur van de burcht  # vloer van de burcht
+//  1 2 poorten (kosten eikels)   3 ijspoort (gaat open na De Grote Verdediging)
+//  J ijs   k ijsblok (muur van het IJspaleis)   n sneeuwpop
+//  P hier begin je   w winkel-mormel   x hout-mormel   M mormel in het dorp   c kooi met een mormel
+//  a eikel   A hoopje eikels
+//  q kleine griesel   Q grote griesel   G gooi-griesel   Z dief-griesel   K koning-griesel
+//  N sneeuw-griesel   I ijs-griesel   U de IJsreus
+const KAART = [
+  "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+  "TDDDDD..a..DDDDD*..DDDDDD..a.DDTTTmmmmmmmmmmmmmmmmmmmmmTTDD...kkkkkkkkkkkkkkkkkkk.DDT",
+  "TDD.*....q....DD....c....*...DDTTTm###################mTTD....kJJJJJJJJJJJJJJJJJk..DT",
+  "TD...DD.....a.....DD...Q....a.DTTTm#m###############m#mTT..n..kJJJJJJJJJJJJJJJJJk...T",
+  "TD.a.DD..DDD...*..DD.......DDDDTTTm###################mTTD....kJJkJJJJJJJJJJJkJJk.n.T",
+  "TD...*...DDD..G.......a...q...DTTTm###################mTT.....kJJJJJJJJUJJJJJJJJk..DT",
+  "TDD.....Z.....==...DDD........DTTTm#########K#########mTTD....kJJJJJJJJJJJJJJJJJk...T",
+  "TD..DD........====================2###################mTT..D..kJJkJJJJJJJJJJJkJJk.D.T",
+  "TD..DD..c.....=======a============2#####G#######G#####mTT.....kJJJJJJJJJJJJJJJJJk...T",
+  "TD.q.......DD.==.DD...G....DDDDTTTm###################mTTDD...kJJJJJJJJAJJJJJJJJk.DDT",
+  "TDD...a....DD.==.DD.*.....DD..DTTTm#m###############m#mTT.....kkkkkkkkJJJkkkkkkkk...T",
+  "TD.....Q......==...a....q.....DTTTm###################mTT..N....D.............D.N.DDT",
+  "TDD*..DDD.....==.DDD..DD...A..DTTTm####A#########A####mTTD...DD....n.....DD........DT",
+  "TD....DDD.....==...Z......*...DTTTm###################mTT....DD..a....I.....a...DD..T",
+  "TDDD.a........==...a.......DDDDTTTmmmmmmmmmmmmmmmmmmmmmTT.D.......DDD.......DDD..a..T",
+  "TTTTTTTTTTTTTT11TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..a..O...DDD..N.......O....T",
+  "TO..a...O.....==....O.....a....O......O..a....O.....aO.TTD.....q.........a....DD....T",
+  "T...O.....q...==.........O.......q.........O......O....TT...DD.....n.......q..DD..I.T",
+  "T.O....,,.....==...a..,.....O.........G........a...,...TT...DD..O......DDD.........DT",
+  "T..a.O.,,c....========================.......O...O.....TT.a.........a..DDD..N....a..T",
+  "T......,,.....,.....O.......a....O....=....q...........3..........q.........a.......T",
+  "T.O..q.....O........,,,.........,,....=.....O....c..O..3.......a........O.....DD....T",
+  "T....a....b.bb........a......q.......=..O........a.....TT..O.......DD.........DD..c.T",
+  "TWWWWWWWWBBWWWWWWWWWWWWWWWWWWWWWWWWWWBBWWWWWWWWWWWWWWW.TT.....n....DD...a....I......T",
+  "TWWWWWWWWBBWWWWWWWWWWWWWWWWWWWWWWWWWWBBWWWWWWWWWWWWWWW.TTD...a..........N.........DDT",
+  "T..O.....=...O.......a.......O......=.....Z......O.....TT...DD......JJJJJJJJ....a..DT",
+  "T.a......=..q.....,,,....G..........=..........a....O..TT...DD....JJJJJJJJJJJJ......T",
+  "T...O....=........,,,...........O...=....O.....q.......TT.a......JJJJJJJAJJJJJJ..O..T",
+  "T..q.....=====================......=.......a..........TT....q...JJJJJJJJJJJJJJ.....T",
+  "T.O.......a.........O.....q.=========..O.......A..O....TTD.......JJJJJJJJJJJJJ...N..T",
+  "T....A......O...........a...==......,,......O..........TT..O......JJJJJJJJJJJ...DD..T",
+  "T.O.....O.......O..O........==.......O........q....O...TT...........JJJJJJJ.....DD.DT",
+  "T..O..a....O....fffffffffff::fffffffffff..O...a...O....TT.n...I....a........a.......T",
+  "T..a....O...,...f::::::::::::::::::::::f.....O.........TTDD.....DD.......O.....q....T",
+  "T.O...a....O....f:hh::hh::::::::hh::SS:f..a......O.....TT.......DD..N.........n...a.T",
+  "T...O.......a...f:hh::hh::::::::hh::SS:f.......a.......TT..a...........DD...........T",
+  "T......O........f:::::::::M:::::::::w::f..O............TT....O...a.....DD....I...D..T",
+  "T.O..a......O...f::::::::::::::::::::::f......O...a....TTD.........n..........a..DD.T",
+  "T.......O.......f:hh:::::::P:::::::M:::f.a.......O.....TT...DD...q.....N.......O....T",
+  "T...a.......a...f:hh::LL::::::::::hh:::f.....O.........TT...DD..........a...DD....A.T",
+  "T..O....O.......f:::::LL::::::::::hh:::f..a......O.....TT.a....O....DD......DD..N...T",
+  "T.O.....a....O..f::::::x:::::::::::::::f.........a..O..TTD.......A..DD...........c..T",
+  "T...O.......O...ffffffffffffffffffffffff..O.....O......TTDD..a........D.....a.....DDT",
+  "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+];
+
+// Gebieden (in vakjes). De bovenste die past, telt.
+const GEBIEDEN = [
+  { naam:"Mormeldorp",       x0:16, y0:32, x1:39, y1:42 },
+  { naam:"De Grieselburcht", x0:34, y0:0,  x1:55, y1:14, tint:"rgba(40,10,50,.28)", burcht:true },
+  { naam:"Het Diepe Bos",    x0:0,  y0:0,  x1:33, y1:14, tint:"rgba(40,10,60,.2)" },
+  { naam:"Het Eikenbos",     x0:0,  y0:15, x1:55, y1:43 },
+  { naam:"Het IJspaleis",    x0:62, y0:1,  x1:80, y1:10, tint:"rgba(80,150,255,.16)", paleis:true },
+  { naam:"Het Sneeuwbos",    x0:56, y0:0,  x1:84, y1:43, tint:"rgba(170,210,255,.1)", sneeuw:true },
+];
+
+const POORTEN = {
+  1: { naam:"Het Diepe Bos",    prijs:20 },
+  2: { naam:"de Grieselburcht", prijs:40 },
+  3: { naam:"Het Sneeuwbos",    prijs:0, slot:true }, // gaat vanzelf open als je De Grote Verdediging wint
+};
+
+const SPEL = {
+  snelheid: 70,          // zo snel loopt een mormel
+  schoenenSnelheid: 92,  // zo snel met de snelle schoenen
+  harten: 3,             // zoveel hartjes heb je (zonder upgrades)
+  eikelsKwijt: 3,        // zoveel eikels raak je kwijt als je geraakt wordt
+  onkwetsbaar: 1.5,      // zoveel seconden kan je na een tik niet geraakt worden
+  bliksemSnelheid: 230,
+  bliksemTijd: .45,      // hoe lang een bliksem vliegt
+  bliksemWacht: .36,     // tijd tussen twee bliksems
+  terugNa: 45,           // na zoveel seconden komt een verslagen griesel terug
+  eikelTerugNa: 90,      // na zoveel seconden ligt er weer een eikel
+  modderTijd: 2.5,       // zo lang ben je langzaam na een modderbal
+  drankTijd: 20,         // zo lang werkt een snelheids- of krachtdrankje
+  kooiLeven: 3,          // zo vaak moet je een kooi raken
+  koningLeven: 40,
+  bijlWacht: .35,        // tijd tussen twee keer hakken
+  boomHakken: 3,         // zo vaak moet je een boom raken
+  boomStronk: 60,        // na zoveel seconden komt er een klein boompje
+  boomTerug: 120,        // na zoveel seconden is de boom weer helemaal terug
+  maxTorens: 12,
+  eersteAanval: 150,     // na zoveel seconden komt de eerste aanval op het dorp
+  aanvalElke: 180,       // en daarna steeds na zoveel seconden
+  huisLeven: 8,          // zo vaak moeten griesels op een huis slaan
+  huisMaken: 3,          // zoveel hout kost het om een kapot huis te maken
+  torenLeven: 10,        // zo vaak moet een grote griesel op een toren slaan
+  reusErbij: 15,         // zoveel leven krijgt de reuzen-griesel er elke aanval bij
+  aanvalSterker: .25,    // griesels bij een aanval zijn taaier, en elke aanval nog wat meer
+  huisErbij: 4,          // zoveel extra leven krijgt een huis per upgrade
+  torenErbij: 5,         // zoveel extra leven krijgt een toren per upgrade
+  eindVoorbereiding: 300, // na de koning: zoveel seconden om je klaar te maken voor De Grote Verdediging
+  eindPauze: 75,         // pauze tussen twee grote aanvallen
+  eindBeloning: 100,     // extra eikels als je alle grote aanvallen tegenhoudt
+};
+
+// De Grote Verdediging: na de koning komen deze grote aanvallen, de een na de ander
+const GROTE_AANVALLEN = [
+  { griesels:14, reuzen:1 },
+  { griesels:18, reuzen:1 },
+  { griesels:22, reuzen:2 },
+  { griesels:26, reuzen:2 },
+  { griesels:32, reuzen:3 },
+];
+
+// Upgrades koop je in de Eikelwinkel. Elke prijs is een level.
+const UPGRADES = [
+  { id:"kracht", naam:"Sterkere bliksem", uitleg:"Je bliksem doet 1 meer pijn.",              prijzen:[30, 50, 80, 120, 170], icoon:"staf3" },
+  { id:"vlug",   naam:"Snellere bliksem", uitleg:"Je schiet sneller achter elkaar.",          prijzen:[25, 45, 70, 100], icoon:"staf2" },
+  { id:"bijl",   naam:"Scherpere bijl",   uitleg:"Minder klappen per boom, en harder hakken.", prijzen:[20, 45], icoon:"bijl" },
+  { id:"hart",   naam:"Extra hartje",     uitleg:"Voor altijd een hartje erbij.",             prijzen:[40, 80, 130], icoon:"hart" },
+  { id:"toren",  naam:"Sterkere torens",  uitleg:"Al je torens schieten harder en sneller, en kunnen meer hebben.", prijzen:[40, 80, 130], icoon:"toren_bliksem" },
+  { id:"huis",   naam:"Sterkere huizen",  uitleg:"De huizen kunnen meer klappen hebben.",     prijzen:[30, 60, 90], icoon:"huis" },
+];
+const lvl = id => SV.up[id] || 0;
+const maxHarten = () => SPEL.harten + lvl('hart');
+const huisMax = () => SPEL.huisLeven + SPEL.huisErbij * lvl('huis');
+const torenMax = () => SPEL.torenLeven + SPEL.torenErbij * lvl('toren');
+const bijlHakken = () => Math.max(1, SPEL.boomHakken - lvl('bijl'));
+const bliksemWacht = () => SPEL.bliksemWacht * (1 - .12 * lvl('vlug'));
+const eind = () => SV.koning && !SV.eindGewonnen; // bezig met De Grote Verdediging
+const wachtTijd = () => eind() ? (SV.eindGolf ? SPEL.eindPauze : SPEL.eindVoorbereiding) : SPEL.aanvalElke;
+
+// Torens bouw je met hout en eikels (toets B)
+const TORENS = [
+  { id:"eikel",   naam:"Eikel-toren",   uitleg:"Schiet snel kleine eikels.", hout:5, eikels:5, bereik:72, wacht:.7, schade:1 },
+  { id:"modder",  naam:"Modder-toren",  uitleg:"Gooit modder. Griesels worden langzaam.", hout:6, eikels:10, bereik:72, wacht:1.4, schade:0, traag:3 },
+  { id:"bliksem", naam:"Bliksem-toren", uitleg:"Sterke blauwe bliksem.", hout:8, eikels:20, bereik:90, wacht:1, schade:3 },
+  { id:"kanon",   naam:"Kanon-toren",   uitleg:"Grote knal: raakt meerdere griesels tegelijk.", hout:12, eikels:40, bereik:100, wacht:2.6, schade:4, knal:26 },
+];
+const TOREN = Object.fromEntries(TORENS.map(t => [t.id, t]));
+
+// Zo lopen de griesels naar het dorp als ze aanvallen (vakjes)
+const AANVALROUTES = [
+  [[10, 28], [28, 28], [28, 31], [27.5, 34], [27.5, 37]],
+  [[36, 25], [36, 29], [29, 29], [28, 31], [27.5, 34], [27.5, 37]],
+];
+
+const GRIESELS = {
+  q: { naam:"kleine griesel", leven:1, snel:62, ziet:95,  buit:1, r:6 },
+  Q: { naam:"grote griesel",  leven:6, snel:30, ziet:110, buit:4, r:12 },
+  G: { naam:"gooi-griesel",   leven:2, snel:40, ziet:125, buit:2, r:7 },
+  Z: { naam:"dief-griesel",   leven:2, snel:78, ziet:110, buit:2, r:7, steelt:5 },
+  R: { naam:"reuzen-griesel", leven:40, snel:24, ziet:120, buit:15, r:16 }, // komt alleen bij aanvallen op het dorp
+  N: { naam:"sneeuw-griesel", leven:4,  snel:42, ziet:130, buit:3, r:7 },  // gooit sneeuwballen en ijspegels
+  I: { naam:"ijs-griesel",    leven:14, snel:28, ziet:115, buit:6, r:12 },
+  U: { naam:"IJsreus",        leven:220, snel:22, ziet:0, buit:40, r:18 },  // de baas van het IJspaleis
+};
+
+const WINKEL = [
+  { id:"staf2",    naam:"Sterke toverstaf", uitleg:"Je bliksem doet dubbel zoveel pijn.", prijs:25, icoon:"staf2" },
+  { id:"staf3",    naam:"Super toverstaf",  uitleg:"Drie bliksems tegelijk!", prijs:60, icoon:"staf3" },
+  { id:"schoenen", naam:"Snelle schoenen",  uitleg:"Je loopt altijd sneller.", prijs:20, icoon:"schoenen" },
+  { id:"snel",     naam:"Snelheidsdrankje", uitleg:"20 tellen supersnel. Toets 1.", prijs:8, icoon:"drank_snel", drank:true },
+  { id:"kracht",   naam:"Krachtdrankje",    uitleg:"20 tellen dubbel zo sterke bliksem. Toets 2.", prijs:8, icoon:"drank_kracht", drank:true },
+  { id:"hart",     naam:"Hartjesdrankje",   uitleg:"Een hartje erbij, ook een gouden extra. Toets 3.", prijs:8, icoon:"drank_hart", drank:true },
+];
+const KLEREN = [
+  { id:"pet",   naam:"Pet",           plek:"hoed", prijs:10 },
+  { id:"tover", naam:"Tovenaarshoed", plek:"hoed", prijs:15 },
+  { id:"kroon", naam:"Kroon",         plek:"hoed", prijs:30 },
+  { id:"bril",  naam:"Zonnebril",     plek:"bril", prijs:12 },
+  { id:"cape",  naam:"Cape",          plek:"cape", prijs:20 },
+];
+
+// Kleuren van de mormels in het dorp en in de kooien
+const DORPKLEUREN = [
+  { lijf:"#f07aa8", lijfDonker:"#b84a78" }, { lijf:"#8a6a4a", lijfDonker:"#5e4430" },
+];
+const KOOIKLEUREN = [
+  { lijf:"#4cbf4a", lijfDonker:"#2f8a30" }, { lijf:"#f2cf3a", lijfDonker:"#b8961a" },
+  { lijf:"#9a5ad8", lijfDonker:"#6a35a0" }, { lijf:"#f08a2a", lijfDonker:"#b65a12" },
+  { lijf:"#7fd0ee", lijfDonker:"#4a9ec0" }, { lijf:"#eef2f6", lijfDonker:"#b8c4d0" },
+];
+const WINKELKLEUR = { lijf:"#2fb5a8", lijfDonker:"#1d7e75" };
+const HOUTKLEUR = { lijf:"#6a8a2a", lijfDonker:"#45601a" };
+
+// Het houtkraampje: boomstammen kopen voor eikels
+const HOUTKRAAM = [
+  { id:"stam1", naam:"Boomstam",    uitleg:"1 hout",  hout:1, prijs:10 },
+  { id:"stam5", naam:"Stapel hout", uitleg:"5 hout",  hout:5, prijs:50 },
+];
+
+// Wat de mormels in het dorp zeggen
+const PRAAT = [
+  "Ik heb vannacht gedroomd dat ik een eikel was.",
+  "Griesels hebben echt rare krulletjes.",
+  "Mijn hartjes op mijn hoofd jeuken een beetje.",
+  "Eikels zijn geen snoep. Het is geld!",
+  "Ik ben gisteren tegen een boom aan gelopen. Twee keer.",
+  "Mormels zijn de beste wezens van de hele wereld.",
+  "De koning-griesel heeft een troon met wieltjes. Zo oneerlijk!",
+  "Pas op voor de dief-griesel. Die pikt je eikels!",
+  "Modder in je haar? Wij hebben geen haar. Gelukkig.",
+  "Heb je de winkel al gezien? Daar hebben ze hoedjes!",
+  "In het dorp durven de griesels niet te komen.",
+  "Ik kan heel hard boeren. Wil je het horen? Nee? Oké.",
+  "Achter de poort is het bos heel donker.",
+  "Een grote griesel moet je heel vaak raken.",
+  "Met een bijl kan je bomen omhakken. Ze groeien gewoon weer terug.",
+  "Bouw torens rond het dorp, dan zijn we veilig!",
+  "Een kanon-toren maakt zo'n harde knal. BOEM!",
+];
+const PRAAT_AANVAL = ["Help! De griesels komen!", "Mijn huis! Pas op voor mijn huis!", "Snel, Grote Quin, doe iets!", "Ik verstop me onder mijn bed."];
+
+// Plaatjes: elke letter is een kleur, een punt is doorzichtig.
+const MKLEUR = {
+  h:"#ff6f91", H:"#c93a62", o:"#2a0f1a", v:"#1b1d33", w:"#e9f6ff", m:"#ffe1d0",
+  k:"#7a4a22", L:"#7fd7ff",
+};
+const MORMEL = {
+  omlaag:[
+    ".hh.hh....hh.hh.", ".hhhhh....hhhhh.", "..hhh......hhh..", "..oHooooooooHo..",
+    ".orrrrrrrrrrrro.", ".ovvvvvvvvvvvvo.", ".ovwwwvvvvwwwvoL", ".ovvvvvvvvvvvvok",
+    ".orrrrrrrrrrrrok", ".oRrrrrrrrrrrrrk", ".oRrmmmmmrrrrRo.", ".oRrmrmrmrrrrRo.",
+    ".oRrmrmrmrrrrRo.", "..oRRRRRRRRRRo..", "...obbo..obbo...", "...oBBo..oBBo...",
+  ],
+  omhoog:[
+    ".hh.hh....hh.hh.", ".hhhhh....hhhhh.", "..hhh......hhh..", "..oHooooooooHo..",
+    ".orrrrrrrrrrrro.", ".orrrrrrrrrrrro.", ".oRrrrrrrrrrrroL", ".oRrrrrrrrrrrrok",
+    ".oRRRRRRRRRRRRok", ".oRrrrrrrrrrrrrk", ".oRrrrrrrrrrrRo.", ".oRrrrrrrrrrrRo.",
+    ".oRrrrrrrrrrrRo.", "..oRRRRRRRRRRo..", "...obbo..obbo...", "...oBBo..oBBo...",
+  ],
+  opzij:[
+    "..hh.hh..hh.hh..", "..hhhhh..hhhhh..", "...hhh....hhh...", "..ooHoooooHoo...",
+    ".orrrrrrrrrrro..", ".orrrrrrvvvvvvo.", ".orrrrrrvwwwvvoL", ".orrrrrrvvvvvvok",
+    ".orrrrrrrrrrrrok", ".oRrrrrrrrrrrrrk", ".oRrrrrrrrrrrRo.", ".oRrrrrrrrrrrRo.",
+    ".oRrrrrrrrrrrRo.", "..oRRRRRRRRRRo..", "...obbo..obbo...", "...oBBBo.oBBBo..",
+  ],
+};
+
+const GRIESELPLAATJE = [
+  "...k.kk.k...", "..kkkkkkkk..", ".kkffffffkk.", "..ffeffeff..",
+  "..ffffffff..", "..fkffffkf..", "...fkkkkf...", "....ffff....",
+  "c.c..l...c.c", "ccc..l...ccc", ".llllllllll.", ".....ll.....",
+  ".....ll.....", "....l..l....", "...l....l...", "..kk....kk..",
+];
+const DIEFPLAATJE = GRIESELPLAATJE.map((r, i) => i === 3 ? "..mmwmmwmm.." : r);
+const MINIGRIESEL = [
+  "..k.k.k..", ".kkkkkkk.", ".kfffffk.", ".ffefeff.", ".fkfffkf.", "..fkkkf..",
+  "c.c.l.c.c", "ccclllccc", "....l....", "...l.l...", "..l...l..", ".kk...kk.",
+];
+const GRIESELKLEUR = {
+  q:{ k:"#1f2a6b", f:"#e8f0a0", e:"#17171c", l:"#1f2a6b", c:"#141c4a" },
+  Q:{ k:"#3a1f6b", f:"#c9b8e8", e:"#17171c", l:"#3a1f6b", c:"#24124a" },
+  G:{ k:"#7a3410", f:"#f2d0a0", e:"#17171c", l:"#7a3410", c:"#4a1e08" },
+  Z:{ k:"#1c1c24", f:"#bfc7d0", e:"#17171c", l:"#1c1c24", c:"#0e0e14", m:"#111111", w:"#ffffff" },
+  K:{ k:"#5a1a3a", f:"#e8b8c8", e:"#17171c", l:"#5a1a3a", c:"#3a0f24" },
+  R:{ k:"#5a0f12", f:"#e89a8a", e:"#17171c", l:"#6a1418", c:"#3a0808" },
+  N:{ k:"#3d8cc4", f:"#eaf6ff", e:"#17171c", l:"#3d8cc4", c:"#24628f" },
+  I:{ k:"#1f6f8f", f:"#bff0ff", e:"#17171c", l:"#1f6f8f", c:"#124a60" },
+  U:{ k:"#2a5a9a", f:"#d8f4ff", e:"#17171c", l:"#2a5a9a", c:"#183a6a" },
+};
+
+const KLEINPLAATJES = {
+  eikel:{kleur:{c:"#6e4524",C:"#9b6a3c",a:"#c98a3c",A:"#eab46a"}, rijen:["..c...",".CCCC.","CcCcCc",".aAaa.",".aAaa.","..aa.."]},
+  roteikel:{kleur:{c:"#1e1410",C:"#3a2a20",a:"#3d3328",A:"#5a4c3c"}, rijen:["..c...",".CCCC.","CcCcCc",".aAaa.",".aAaa.","..aa.."]},
+  hart:{kleur:{h:"#ff4d6d",H:"#ffb3c4"}, rijen:[".hh.hh.","hHhhhhh","hhhhhhh",".hhhhh.","..hhh..","...h..."]},
+  goudhart:{kleur:{h:"#f2b51a",H:"#fff0a0"}, rijen:[".hh.hh.","hHhhhhh","hhhhhhh",".hhhhh.","..hhh..","...h..."]},
+  staf:{kleur:{k:"#7a4a22",L:"#7fd7ff",W:"#ffffff"}, rijen:[
+    ".........L..","........LWL.",".........L..","........k...",".......k....","......k.....",".....k......","....k.......","...k........","..k........."]},
+  staf2:{kleur:{k:"#5a3a8a",L:"#3aa0ff",W:"#ffffff"}, rijen:[
+    "........L.L.",".........L..","........LWL.",".......LLLLL","........LWL.",".......k.L..","......k.....",".....k......","....k.......","...k........","..k........."]},
+  staf3:{kleur:{k:"#f2b51a",L:"#ffd23c",W:"#ffffff",b:"#7fd7ff"}, rijen:[
+    "b.......L..b","........LWL.","......LLWWWL","........LWL.",".b.....k.L..","......k....b",".....k......","....k.......","...k........","..k........."]},
+  schoenen:{kleur:{r:"#e23a3a",R:"#a8222a",w:"#f5f5f2",y:"#ffd23c"}, rijen:[
+    "..rr........","..rry.......","..rrrr......","..rrrrrrr...",".RRRRRRRRR..",".wwwwwwwwww."]},
+  drank_snel:{kleur:{k:"#7a4a22",c:"#cfe8ff",d:"#ffd23c",D:"#fff6b0"}, rijen:["..kk..","..cc..",".cddc.","cdDddc","cdDddc","cddddc",".cccc."]},
+  drank_kracht:{kleur:{k:"#7a4a22",c:"#cfe8ff",d:"#ff7a2a",D:"#ffc08a"}, rijen:["..kk..","..cc..",".cddc.","cdDddc","cdDddc","cddddc",".cccc."]},
+  drank_hart:{kleur:{k:"#7a4a22",c:"#cfe8ff",d:"#ff4d8a",D:"#ffb3cf"}, rijen:["..kk..","..cc..",".cddc.","cdDddc","cdDddc","cddddc",".cccc."]},
+  pet:{kleur:{p:"#3aa0e0",P:"#1f6a9e",w:"#ffffff"}, rijen:["..pppp..",".pwpppp.",".pppppp.","PPPPPPPP"]},
+  tover:{kleur:{p:"#5a3ab8",P:"#3a2380",y:"#ffd23c"}, rijen:["...p...","...p...","..ppp..","..pyp..",".ppppp.",".ppypp.","ppppppp","PPPPPPP"]},
+  kroon:{kleur:{y:"#f2c23a",Y:"#b8861a",r:"#e23a3a",b:"#3a8aff"}, rijen:["y..y..y","yy.y.yy","yyyyyyy","yryybyy","YYYYYYY"]},
+  bril:{kleur:{k:"#111111",w:"#ffffff",g:"#3a3a5a"}, rijen:["kkkkkkkkkkkk","kwggkkkwggk.","kgggk.kgggk.",".kkk...kkk.."]},
+  hout:{kleur:{h:"#a3703c",H:"#7a5028",r:"#e2c08a",R:"#c49a5c"}, rijen:[".HHHHHHrr.","HhhhhhhrRr","HhhhHhhRrR","HhhhhhhrRr",".HHHHHHrr."]},
+  bijl:{kleur:{g:"#8d929c",G:"#d0d4da",k:"#7a4a22"}, rijen:["..ggg....",".gGGgg...",".gGGGgk..","..ggGk...","....k....","...k.....","..k......",".k.......","k........"]},
+  cape:{kleur:{p:"#7b3fd0",P:"#5a2aa0",y:"#f2c23a"}, rijen:["..yyyyyy..",".pyppppyp.",".pppppppp.","pppppppppp","pPppppppPp","pPppppppPp","PPPPPPPPPP"]},
+};
+
+// =====================================================================
+//  Hieronder zit de motor van de game
+// =====================================================================
+const TS = 16, VW = 256, VH = 192;
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+const $ = id => document.getElementById(id);
+
+// --- plaatjes omzetten naar canvasjes (ook gespiegeld) ---
+function bake(rows, pal){
+  const h = rows.length, w = Math.max(...rows.map(r => r.length));
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d');
+  rows.forEach((r, y) => [...r].forEach((ch, i) => { if (ch !== '.' && pal[ch]) { x.fillStyle = pal[ch]; x.fillRect(i, y, 1, 1); } }));
+  return c;
+}
+function flip(c){ const f = document.createElement('canvas'); f.width = c.width; f.height = c.height; const x = f.getContext('2d'); x.translate(c.width, 0); x.scale(-1, 1); x.drawImage(c, 0, 0); return f; }
+const IMG = {};
+const both = (name, c) => { IMG[name] = c; IMG[name + 'L'] = flip(c); };
+for (const [k, d] of Object.entries(KLEINPLAATJES)) IMG[k] = bake(d.rijen, d.kleur);
+for (const [t, pal] of Object.entries(GRIESELKLEUR)) {
+  both('gr_' + t, bake(t === 'Z' ? DIEFPLAATJE : GRIESELPLAATJE, pal));
+}
+both('gr_mini', bake(MINIGRIESEL, GRIESELKLEUR.q));
+
+// Mormel-plaatjes per kleur, worden gemaakt als ze nodig zijn
+const MCACHE = {};
+function mormelImgs(k){
+  const key = k.lijf + (k.benen || '');
+  if (!MCACHE[key]) {
+    const pal = {...MKLEUR, r:k.lijf, R:k.lijfDonker, b:k.benen || KARAKTERS[0].benen, B:k.benenDonker || KARAKTERS[0].benenDonker};
+    // de toverstaf of bijl wordt los getekend, dus die halen we uit het plaatje
+    const zonder = rows => rows.map(r => r.replace(/[kL]/g, '.'));
+    MCACHE[key] = { omlaag:bake(zonder(MORMEL.omlaag), pal), omhoog:bake(zonder(MORMEL.omhoog), pal), opzij:bake(zonder(MORMEL.opzij), pal) };
+  }
+  return MCACHE[key];
+}
+
+// --- kleuren voor de tegels ---
+const C = {gras:'#5fb34a', gras2:'#4f9e3e', gras3:'#7dcc63', pad:'#dcbc7a', pad2:'#c4a160', water:'#3b80d8', water2:'#7ab8f5', water3:'#2a62b4', schuim:'#d6efff',
+  blad:'#2f7a32', blad2:'#46a046', blad3:'#62bd57', bladD:'#235e27', eik:'#3d8a2e', eik2:'#5aa83f', stam:'#6b4426', rots:'#8d929c', rots2:'#bfc4cc', rots3:'#5f646d',
+  den:'#1f4f3a', den2:'#2f6f4c', denD:'#143a28', hout:'#a3703c', hout2:'#7a5028',
+  plein:'#d9c7a2', plein2:'#c2ad86', plein3:'#e8dabb', muur:'#4a4058', muur2:'#2e2738', muur3:'#5f5470', vloer:'#5a5266', vloer2:'#4b4456'};
+const R = (c, x, y, w, h, col) => { c.fillStyle = col; c.fillRect(x, y, w, h); };
+const hash = (x, y, s = 0) => { let h = (x * 374761393 + y * 668265263 + s * 2147483647) | 0; h = (h ^ (h >>> 13)) * 1274126177 | 0; return (h ^ (h >>> 16)) >>> 0; };
+
+let map, MW, MH;
+const tile = (x, y) => (x < 0 || y < 0 || x >= MW || y >= MH) ? 'T' : map[y][x];
+const OOST = 56; // vanaf deze kolom ligt Het Sneeuwbos
+const SOLID = new Set(['T','O','D','W','b','R','f','h','S','L','m','c','1','2','3','k','n','Y']);
+const SHOT_SOLID = new Set(['T','O','D','b','R','f','h','S','L','m','c','1','2','3','k','n','Y']);
+
+function drawGrass(c, ox, oy, x, y){
+  if (x >= OOST) { // sneeuw
+    R(c, ox, oy, 16, 16, '#eef4fb');
+    for (let i = 0; i < 3; i++) R(c, ox + hash(x, y, i) % 15, oy + hash(x, y, i + 7) % 15, 2, 1, '#d8e4f0');
+    R(c, ox + hash(x, y, 20) % 15, oy + hash(x, y, 21) % 15, 1, 1, '#ffffff'); return;
+  }
+  R(c, ox, oy, 16, 16, C.gras);
+  for (let i = 0; i < 4; i++) R(c, ox + hash(x, y, i) % 15, oy + hash(x, y, i + 7) % 14, 1, 2, C.gras2);
+  R(c, ox + hash(x, y, 20) % 15, oy + hash(x, y, 21) % 15, 1, 1, C.gras3);
+}
+function drawPlein(c, ox, oy, x, y){
+  R(c, ox, oy, 16, 16, C.plein2);
+  for (let r = 0; r < 4; r++) { const off = (r % 2) * 4; for (let k = -1; k < 3; k++) { const sx = ox + k * 8 + off, sy = oy + r * 4; const x0 = Math.max(ox, sx + 1), x1 = Math.min(ox + 16, sx + 8); if (x1 > x0) { R(c, x0, sy, x1 - x0, 3, (hash(x, y, r * 4 + k + 9) % 3) ? C.plein : C.plein3); } } }
+}
+function drawFloor(c, ox, oy, x, y){
+  R(c, ox, oy, 16, 16, C.vloer); R(c, ox, oy, 16, 1, C.vloer2); R(c, ox, oy, 1, 16, C.vloer2); R(c, ox + 8, oy + 8, 8, 1, C.vloer2); R(c, ox + 8, oy, 1, 8, C.vloer2);
+  if (hash(x, y) % 7 === 0) { R(c, ox + 3, oy + 4, 3, 1, C.vloer2); R(c, ox + 5, oy + 5, 2, 1, C.vloer2); }
+}
+function drawTree(c, ox, oy, a, b){
+  R(c, ox + 2, oy + 13, 12, 2, 'rgba(0,0,0,.18)'); R(c, ox + 6, oy + 10, 4, 5, C.stam);
+  R(c, ox + 2, oy + 1, 12, 10, a); R(c, ox + 1, oy + 3, 14, 7, a); R(c, ox + 3, oy, 10, 1, a);
+  R(c, ox + 4, oy + 2, 4, 3, b); R(c, ox + 5, oy + 3, 2, 1, C.blad3); R(c, ox + 2, oy + 10, 12, 1, C.bladD);
+}
+function drawIjs(c, ox, oy, x, y){
+  R(c, ox, oy, 16, 16, '#bfe6f5');
+  for (let i = 0; i < 2; i++) R(c, ox + hash(x, y, i) % 12, oy + hash(x, y, i + 9) % 15, 4, 1, '#e8f8ff');
+  if (hash(x, y, 5) % 5 === 0) { R(c, ox + 5, oy + 6, 1, 3, '#8cc8e0'); R(c, ox + 6, oy + 8, 2, 1, '#8cc8e0'); R(c, ox + 8, oy + 9, 1, 2, '#8cc8e0'); }
+}
+function sneeuwKap(c, ox, oy, ch){
+  const w = '#f8fbff';
+  if (ch === 'D') { R(c, ox + 6, oy, 4, 1, w); R(c, ox + 4, oy + 2, 4, 1, w); R(c, ox + 9, oy + 2, 2, 1, w); R(c, ox + 3, oy + 5, 4, 1, w); R(c, ox + 10, oy + 5, 2, 1, w); R(c, ox + 2, oy + 8, 5, 1, w); R(c, ox + 9, oy + 8, 4, 1, w); }
+  else if (ch === 'v') { R(c, ox + 5, oy + 3, 6, 1, w); R(c, ox + 4, oy + 4, 3, 1, w); }
+  else { R(c, ox + 3, oy, 10, 1, w); R(c, ox + 2, oy + 1, 12, 1, w); R(c, ox + 1, oy + 3, 4, 1, w); R(c, ox + 10, oy + 3, 5, 1, w); }
+}
+// Wat ligt er onder een gebouw of poppetje? Kijk naar de buren.
+function groundOf(ch, x, y){
+  if ('hSLPwxM'.includes(ch)) return ':';
+  if (ch === 'K') return '#';
+  const n = {}; for (const [a, b] of [[1,0],[-1,0],[0,1],[0,-1]]) { const t = tile(x + a, y + b); if ('.#:=J'.includes(t)) n[t] = (n[t] || 0) + 1; }
+  let best = '.', bn = 0; for (const k in n) if (n[k] > bn) { best = k; bn = n[k]; } return best;
+}
+function drawTile(c, ch, x, y, ox, oy){
+  switch (ch) {
+    case ',': { drawGrass(c, ox, oy, x, y); const cols = ['#ff6b81','#ffe15a','#ffffff','#c99bff'];
+      for (let i = 0; i < 3; i++) { const fx = ox + 2 + hash(x, y, i + 30) % 11, fy = oy + 2 + hash(x, y, i + 40) % 11; R(c, fx, fy + 2, 1, 2, C.gras2); R(c, fx - 1, fy, 3, 2, cols[hash(x, y, i + 50) % 4]); R(c, fx, fy, 1, 1, '#f4c542'); } break; }
+    case '=': { const path = '=123B'; R(c, ox, oy, 16, 16, C.pad); for (let i = 0; i < 4; i++) R(c, ox + hash(x, y, i) % 14, oy + hash(x, y, i + 9) % 14, 2, 1, C.pad2);
+      if (!path.includes(tile(x, y - 1))) R(c, ox, oy, 16, 1, C.gras2); if (!path.includes(tile(x, y + 1))) R(c, ox, oy + 15, 16, 1, C.pad2);
+      if (!path.includes(tile(x - 1, y))) R(c, ox, oy, 1, 16, C.gras2); if (!path.includes(tile(x + 1, y))) R(c, ox + 15, oy, 1, 16, C.pad2); break; }
+    case ':': drawPlein(c, ox, oy, x, y); break;
+    case '#': drawFloor(c, ox, oy, x, y); break;
+    case 'T': drawGrass(c, ox, oy, x, y); drawTree(c, ox, oy, C.blad, C.blad2); break;
+    case 'O': drawGrass(c, ox, oy, x, y); drawTree(c, ox, oy, C.eik, C.eik2);
+      R(c, ox + 9, oy + 5, 2, 2, '#c98a3c'); R(c, ox + 9, oy + 4, 2, 1, '#6e4524'); R(c, ox + 4, oy + 7, 2, 2, '#c98a3c'); R(c, ox + 4, oy + 6, 2, 1, '#6e4524'); break;
+    case 'D': drawGrass(c, ox, oy, x, y); R(c, ox + 2, oy + 13, 12, 2, 'rgba(0,0,0,.2)'); R(c, ox + 7, oy + 12, 2, 3, C.stam);
+      R(c, ox + 6, oy, 4, 2, C.den); R(c, ox + 4, oy + 2, 8, 3, C.den); R(c, ox + 3, oy + 5, 10, 3, C.den); R(c, ox + 2, oy + 8, 12, 4, C.den);
+      R(c, ox + 6, oy + 1, 2, 1, C.den2); R(c, ox + 4, oy + 3, 2, 1, C.den2); R(c, ox + 3, oy + 6, 3, 1, C.den2); R(c, ox + 2, oy + 9, 3, 1, C.den2); R(c, ox + 2, oy + 11, 12, 1, C.denD); break;
+    case '*': drawGrass(c, ox, oy, x, y); R(c, ox + 7, oy + 9, 2, 4, '#efe6d0'); R(c, ox + 5, oy + 6, 6, 3, '#d9433a'); R(c, ox + 6, oy + 5, 4, 1, '#d9433a');
+      R(c, ox + 6, oy + 6, 1, 1, '#fff'); R(c, ox + 9, oy + 7, 1, 1, '#fff'); R(c, ox + 3, oy + 12, 1, 2, '#efe6d0'); R(c, ox + 2, oy + 11, 3, 1, '#e8823a'); break;
+    case 'b': drawGrass(c, ox, oy, x, y); R(c, ox + 2, oy + 5, 12, 9, C.blad); R(c, ox + 1, oy + 7, 14, 5, C.blad); R(c, ox + 4, oy + 6, 3, 2, C.blad3); R(c, ox + 2, oy + 13, 12, 1, C.bladD);
+      if (hash(x, y) % 2) { R(c, ox + 9, oy + 8, 1, 1, '#e2475a'); R(c, ox + 5, oy + 10, 1, 1, '#e2475a'); R(c, ox + 11, oy + 11, 1, 1, '#e2475a'); } break;
+    case 'R': drawGrass(c, ox, oy, x, y); R(c, ox + 2, oy + 4, 12, 10, C.rots); R(c, ox + 1, oy + 6, 14, 7, C.rots); R(c, ox + 3, oy + 4, 6, 2, C.rots2); R(c, ox + 2, oy + 6, 2, 3, C.rots2); R(c, ox + 2, oy + 13, 12, 2, C.rots3); R(c, ox + 12, oy + 7, 2, 6, C.rots3); break;
+    case 'f': { const inDorp = tile(x, y + 1) === ':' || tile(x, y - 1) === ':' || tile(x + 1, y) === ':' || tile(x - 1, y) === ':';
+      if (inDorp && (tile(x, y - 1) === ':' || tile(x - 1, y) === ':' && tile(x + 1, y) !== ':')) drawPlein(c, ox, oy, x, y); else drawGrass(c, ox, oy, x, y);
+      const hor = tile(x - 1, y) === 'f' || tile(x + 1, y) === 'f';
+      if (hor) { R(c, ox, oy + 6, 16, 2, C.hout); R(c, ox, oy + 11, 16, 2, C.hout); R(c, ox, oy + 8, 16, 1, C.hout2); R(c, ox, oy + 13, 16, 1, C.hout2); }
+      if (tile(x, y - 1) === 'f' || tile(x, y + 1) === 'f') { R(c, ox + 6, oy, 2, 16, C.hout); R(c, ox + 8, oy, 1, 16, C.hout2); }
+      R(c, ox + 6, oy + 3, 3, 12, C.hout); R(c, ox + 6, oy + 3, 3, 1, '#c99a5c'); R(c, ox + 8, oy + 4, 1, 11, C.hout2); break; }
+    case 'm': R(c, ox, oy, 16, 16, C.muur2);
+      for (let r = 0; r < 4; r++) for (let k = 0; k < 3; k++) { const bx = ox + k * 8 - (r % 2) * 4; const x0 = Math.max(ox, bx), x1 = Math.min(ox + 16, bx + 7); if (x1 > x0) { R(c, x0, oy + r * 4, x1 - x0, 3, C.muur); R(c, x0, oy + r * 4, x1 - x0, 1, C.muur3); } }
+      break;
+    case '1': case '2': case '3': {
+      if (ch === '3') { drawGrass(c, ox, oy, x, y); R(c, ox, oy, 16, 16, '#a8d8ee'); for (let k = 0; k < 4; k++) R(c, ox + 1 + k * 4, oy, 2, 16, '#e8f8ff'); R(c, ox, oy + 5, 16, 1, '#7fb8d8'); R(c, ox, oy + 11, 16, 1, '#7fb8d8'); R(c, ox + 3, oy + 13, 1, 3, '#ffffff'); R(c, ox + 12, oy + 13, 1, 2, '#ffffff'); }
+      else if (ch === '1') { drawGrass(c, ox, oy, x, y); R(c, ox, oy + 1, 16, 15, C.hout); for (let k = 0; k < 4; k++) R(c, ox + k * 4, oy + 1, 1, 15, C.hout2); R(c, ox, oy + 4, 16, 2, C.hout2); R(c, ox, oy + 11, 16, 2, C.hout2); }
+      else { drawFloor(c, ox, oy, x, y); R(c, ox, oy, 16, 16, '#2a2433'); for (let k = 0; k < 4; k++) R(c, ox + 1 + k * 4, oy, 2, 16, '#8d8a96'); R(c, ox, oy + 5, 16, 2, '#8d8a96'); R(c, ox, oy + 11, 16, 2, '#8d8a96'); }
+      // slot op de poort
+      R(c, ox + 5, oy + 6, 6, 6, '#f2c23a'); R(c, ox + 6, oy + 4, 4, 2, '#b8861a'); R(c, ox + 6, oy + 4, 1, 3, '#b8861a'); R(c, ox + 9, oy + 4, 1, 3, '#b8861a'); R(c, ox + 7, oy + 8, 2, 2, '#4a3010'); R(c, ox + 7, oy + 10, 1, 1, '#4a3010');
+      break; }
+    case 'u': drawGrass(c, ox, oy, x, y); // boomstronk
+      R(c, ox + 4, oy + 12, 9, 2, 'rgba(0,0,0,.18)'); R(c, ox + 4, oy + 8, 8, 6, C.stam); R(c, ox + 4, oy + 7, 8, 2, '#e2c08a'); R(c, ox + 6, oy + 7, 4, 1, '#c49a5c'); R(c, ox + 3, oy + 12, 2, 2, C.stam); R(c, ox + 11, oy + 12, 2, 2, C.stam); break;
+    case 'v': drawGrass(c, ox, oy, x, y); // klein boompje
+      R(c, ox + 7, oy + 9, 2, 5, C.stam); R(c, ox + 4, oy + 4, 8, 6, C.blad); R(c, ox + 5, oy + 3, 6, 1, C.blad); R(c, ox + 5, oy + 5, 2, 2, C.blad2); R(c, ox + 4, oy + 9, 8, 1, C.bladD); break;
+    case 'W': case 'B': break; // getekend in drawWater (beweegt)
+    case 'J': drawIjs(c, ox, oy, x, y); break;
+    case 'k': R(c, ox, oy, 16, 16, '#7fb8d8'); R(c, ox + 1, oy + 1, 14, 14, '#a8d8ee'); R(c, ox + 2, oy + 2, 5, 2, '#e8f8ff'); R(c, ox + 2, oy + 4, 2, 3, '#e8f8ff');
+      R(c, ox + 1, oy + 14, 14, 1, '#5f9ec4'); R(c, ox + 14, oy + 2, 1, 12, '#5f9ec4'); break;
+    case 'n': drawGrass(c, ox, oy, x, y); // sneeuwpop
+      R(c, ox + 3, oy + 13, 10, 2, 'rgba(0,0,0,.12)'); R(c, ox + 4, oy + 8, 8, 6, '#ffffff'); R(c, ox + 3, oy + 9, 10, 4, '#ffffff'); R(c, ox + 10, oy + 9, 2, 4, '#d5e3f0');
+      R(c, ox + 5, oy + 3, 6, 5, '#ffffff'); R(c, ox + 6, oy, 4, 2, '#2a2433'); R(c, ox + 5, oy + 2, 6, 1, '#2a2433');
+      R(c, ox + 6, oy + 4, 1, 1, '#17171c'); R(c, ox + 9, oy + 4, 1, 1, '#17171c'); R(c, ox + 8, oy + 5, 2, 1, '#f08a2a');
+      R(c, ox + 5, oy + 7, 6, 1, '#e23a3a'); R(c, ox + 8, oy + 10, 1, 1, '#17171c'); R(c, ox + 8, oy + 12, 1, 1, '#17171c'); break;
+    default: drawGrass(c, ox, oy, x, y);
+  }
+  if (x >= OOST && 'TODv'.includes(ch)) sneeuwKap(c, ox, oy, ch);
+}
+function drawHouse(c, ox, oy, x){
+  R(c, ox + 3, oy + 29, 27, 3, 'rgba(0,0,0,.18)');
+  R(c, ox + 3, oy + 13, 26, 17, '#2a0f1a'); R(c, ox + 4, oy + 14, 24, 15, '#e8705e'); R(c, ox + 4, oy + 26, 24, 3, '#c4503f');
+  for (let r = 0; r < 6; r++) R(c, ox + 1 + r, oy + 13 - r * 2, 30 - r * 2, 2, r % 2 ? '#26408f' : '#3561d6');
+  R(c, ox + 1, oy + 13, 30, 1, '#2a0f1a');
+  // hartjes op het dak, net als bij een mormel
+  for (const hx of [5, 22]) { R(c, ox + hx, oy, 2, 2, '#ff6f91'); R(c, ox + hx + 3, oy, 2, 2, '#ff6f91'); R(c, ox + hx, oy + 1, 5, 2, '#ff6f91'); R(c, ox + hx + 1, oy + 3, 3, 1, '#ff6f91'); R(c, ox + hx + 2, oy + 4, 1, 1, '#c93a62'); }
+  R(c, ox + 13, oy + 19, 7, 10, '#3a2010'); R(c, ox + 14, oy + 20, 5, 9, '#6b4426'); R(c, ox + 17, oy + 24, 1, 1, '#ffd23c');
+  const lamp = hash(x, 3) % 2 ? '#ffe9a0' : '#bfe4ff';
+  R(c, ox + 6, oy + 17, 5, 5, '#2a0f1a'); R(c, ox + 7, oy + 18, 3, 3, lamp); R(c, ox + 22, oy + 17, 5, 5, '#2a0f1a'); R(c, ox + 23, oy + 18, 3, 3, lamp);
+}
+function drawRuin(c, ox, oy){
+  R(c, ox + 3, oy + 29, 27, 3, 'rgba(0,0,0,.18)');
+  R(c, ox + 3, oy + 20, 26, 10, '#2a0f1a'); R(c, ox + 4, oy + 21, 24, 8, '#c4503f');
+  R(c, ox + 4, oy + 16, 6, 5, '#e8705e'); R(c, ox + 21, oy + 14, 7, 7, '#e8705e'); R(c, ox + 13, oy + 18, 4, 3, '#e8705e');
+  R(c, ox + 2, oy + 24, 9, 3, '#3561d6'); R(c, ox + 17, oy + 25, 7, 2, '#26408f'); R(c, ox + 9, oy + 13, 6, 2, '#3561d6'); R(c, ox + 23, oy + 10, 4, 2, '#26408f');
+  R(c, ox + 6, oy + 27, 3, 2, '#8d929c'); R(c, ox + 25, oy + 27, 3, 2, '#8d929c'); R(c, ox + 14, oy + 26, 2, 2, '#6b4426');
+  R(c, ox + 22, oy + 18, 2, 2, '#ff6f91'); R(c, ox + 25, oy + 18, 2, 2, '#ff6f91'); R(c, ox + 22, oy + 19, 5, 2, '#ff6f91'); R(c, ox + 23, oy + 21, 3, 1, '#ff6f91');
+}
+function drawTower(c, x, y, soort, t = 0){
+  const steen = soort === 'bliksem' || soort === 'kanon';
+  const a = steen ? '#9aa0a8' : '#a3703c', b = steen ? '#6c7178' : '#7a5028', l = steen ? '#c4c8cf' : '#c99a5c';
+  R(c, x + 2, y + 14, 12, 2, 'rgba(0,0,0,.22)');
+  R(c, x + 3, y - 4, 10, 18, a); R(c, x + 3, y - 4, 1, 18, l); R(c, x + 12, y - 4, 1, 18, b);
+  for (let r = 0; r < 4; r++) R(c, x + 3, y - 1 + r * 4, 10, 1, b);
+  if (!steen) for (let k = 0; k < 2; k++) R(c, x + 6 + k * 3, y - 4, 1, 18, b);
+  R(c, x + 6, y + 8, 4, 6, '#2a1a10');
+  R(c, x + 1, y - 8, 14, 4, a); R(c, x + 1, y - 8, 14, 1, l); R(c, x + 1, y - 5, 14, 1, b);
+  for (let k = 0; k < 4; k++) R(c, x + 1 + k * 4, y - 10, 2, 2, a);
+  const p = Math.floor(t * 4) % 2;
+  if (soort === 'eikel') { c.drawImage(IMG.eikel, x + 5, y - 15); R(c, x + 13, y - 17, 1, 9, '#5a3a20'); R(c, x + 10, y - 17, 3, 3, '#e23a3a'); }
+  if (soort === 'modder') { R(c, x + 4, y - 13, 8, 5, '#6b4426'); R(c, x + 4, y - 13, 8, 1, '#3a2614'); R(c, x + 5, y - 15, 6, 2, '#6b4423'); R(c, x + 6, y - 16, 3, 1, '#9a6a3c'); }
+  if (soort === 'bliksem') { R(c, x + 5, y - 16, 6, 6, '#3aa0ff'); R(c, x + 6, y - 17, 4, 8, '#3aa0ff'); R(c, x + 6, y - 15, 2, 2, '#ffffff'); if (p) R(c, x + 4, y - 18, 1, 1, '#bff0ff'), R(c, x + 11, y - 12, 1, 1, '#bff0ff'); }
+  if (soort === 'kanon') { R(c, x + 3, y - 14, 11, 4, '#2a2433'); R(c, x + 12, y - 15, 3, 6, '#2a2433'); R(c, x + 4, y - 14, 8, 1, '#5f5470'); R(c, x + 4, y - 11, 4, 3, '#6b4426'); R(c, x + 5, y - 10, 2, 1, '#3a2614'); }
+}
+function drawShop(c, ox, oy){
+  R(c, ox + 2, oy + 29, 28, 3, 'rgba(0,0,0,.18)');
+  R(c, ox + 3, oy + 10, 26, 10, '#3a2010');
+  R(c, ox + 3, oy + 8, 2, 12, C.hout2); R(c, ox + 27, oy + 8, 2, 12, C.hout2);
+  for (let k = 0; k < 8; k++) R(c, ox + k * 4, oy + 3, 4, 7, k % 2 ? '#ffd66b' : '#e23a3a');
+  for (let k = 0; k < 8; k++) R(c, ox + k * 4 + 1, oy + 10, 2, 2, k % 2 ? '#ffd66b' : '#e23a3a');
+  R(c, ox, oy + 2, 32, 1, '#a8222a');
+  R(c, ox + 2, oy + 19, 28, 11, C.hout); R(c, ox + 2, oy + 19, 28, 2, '#c99a5c'); R(c, ox + 2, oy + 29, 28, 1, C.hout2);
+  c.drawImage(IMG.eikel, ox + 13, oy + 22); c.drawImage(IMG.drank_hart, ox + 6, oy + 12); c.drawImage(IMG.drank_snel, ox + 21, oy + 12);
+}
+function drawHoutkraam(c, ox, oy){
+  R(c, ox + 2, oy + 29, 28, 3, 'rgba(0,0,0,.18)');
+  R(c, ox + 3, oy + 10, 26, 10, '#3a2010');
+  R(c, ox + 3, oy + 8, 2, 12, C.hout2); R(c, ox + 27, oy + 8, 2, 12, C.hout2);
+  for (let k = 0; k < 8; k++) R(c, ox + k * 4, oy + 3, 4, 7, k % 2 ? '#e8d9a8' : '#4c9a3a');
+  for (let k = 0; k < 8; k++) R(c, ox + k * 4 + 1, oy + 10, 2, 2, k % 2 ? '#e8d9a8' : '#4c9a3a');
+  R(c, ox, oy + 2, 32, 1, '#2f6a24');
+  R(c, ox + 2, oy + 19, 28, 11, C.hout); R(c, ox + 2, oy + 19, 28, 2, '#c99a5c'); R(c, ox + 2, oy + 29, 28, 1, C.hout2);
+  // stapel boomstammen op de toonbank en in de kraam
+  for (const [lx, ly] of [[6, 21], [16, 21], [11, 16]]) { R(c, lx, ly, 10, 4, C.hout); R(c, lx, ly, 10, 1, '#c99a5c'); R(c, lx + 9, ly, 2, 4, '#e2c08a'); R(c, lx + 9, ly + 1, 1, 2, C.hout2); }
+  c.drawImage(IMG.eikel, ox + 22, oy + 12);
+}
+function drawWater(c, x, y, ox, oy, t){
+  R(c, ox, oy, 16, 16, C.water);
+  for (let i = 0; i < 2; i++) { const yy = 3 + hash(x, y, i) % 11; const xx = (hash(x, y, i + 5) % 16 + Math.floor(t * 5 + i * 7)) % 16; R(c, ox + xx, oy + yy, Math.min(4, 16 - xx), 1, C.water2); if (xx > 12) R(c, ox, oy + yy, xx - 12, 1, C.water2); }
+  const land = (a, b) => !'WB'.includes(tile(a, b));
+  if (land(x, y - 1)) { R(c, ox, oy, 16, 3, C.water3); R(c, ox, oy + 3, 16, 1, C.schuim); }
+  if (land(x, y + 1)) R(c, ox, oy + 15, 16, 1, C.schuim);
+  if (land(x - 1, y)) R(c, ox, oy, 1, 16, C.schuim);
+  if (land(x + 1, y)) R(c, ox + 15, oy, 1, 16, C.schuim);
+  if (tile(x, y) === 'B') { R(c, ox, oy + 2, 16, 12, C.hout); for (let k = 0; k < 4; k++) R(c, ox + k * 4, oy + 2, 1, 12, C.hout2); R(c, ox, oy + 1, 16, 2, C.hout2); R(c, ox, oy + 13, 16, 2, C.hout2); }
+}
+
+// --- een mormel tekenen (met kleren) ---
+function drawTool(c, x, y, tool, swing){
+  if (tool === 'bijl') {
+    if (swing > 0) { R(c, x + 13, y + 9, 5, 1, '#7a4a22'); R(c, x + 17, y + 7, 2, 5, '#8d929c'); R(c, x + 18, y + 7, 1, 5, '#e8ecf0'); R(c, x + 19, y + 6, 1, 1, '#ffffff'); R(c, x + 19, y + 12, 1, 1, '#ffffff'); }
+    else { R(c, x + 15, y + 5, 1, 6, '#7a4a22'); R(c, x + 16, y + 4, 2, 4, '#8d929c'); R(c, x + 17, y + 4, 1, 4, '#d0d4da'); }
+  } else { R(c, x + 15, y + 6, 1, 1, '#7fd7ff'); R(c, x + 15, y + 7, 1, 3, '#7a4a22'); }
+}
+function drawMormel(c, x, y, dir, kleur, kleren = {}, t = 0, tool = 'staf', swing = 0){
+  const imgs = mormelImgs(kleur);
+  const side = dir === 'left' || dir === 'right';
+  c.save();
+  if (dir === 'left') { c.translate(2 * x + 16, 0); c.scale(-1, 1); }
+  const cape = '#7b3fd0', cape2 = '#5a2aa0', goud = '#f2c23a';
+  if (kleren.cape) {
+    if (dir === 'down') { R(c, x, y + 9, 16, 7, cape); R(c, x - 1, y + 12, 18, 4, cape2); }
+    else if (side) { const fl = Math.round(Math.sin(t * 12)); R(c, x - 1 + fl, y + 8, 6, 8, cape); R(c, x - 2 + fl, y + 12, 4, 4, cape2); }
+  }
+  c.drawImage(side ? imgs.opzij : dir === 'up' ? imgs.omhoog : imgs.omlaag, x, y);
+  drawTool(c, x, y, tool, swing);
+  if (kleren.cape && dir === 'up') { R(c, x + 2, y + 8, 12, 7, cape); R(c, x + 1, y + 11, 14, 4, cape2); R(c, x + 3, y + 8, 10, 1, goud); }
+  if (kleren.bril && dir !== 'up') {
+    if (side) { R(c, x + 8, y + 5, 7, 3, '#111'); R(c, x + 9, y + 5, 2, 1, '#fff'); }
+    else { R(c, x + 2, y + 5, 12, 3, '#111'); R(c, x + 3, y + 5, 2, 1, '#fff'); R(c, x + 10, y + 5, 2, 1, '#fff'); }
+  }
+  if (kleren.hoed) { const h = IMG[kleren.hoed]; c.drawImage(h, x + (side ? 7 : 8) - Math.floor(h.width / 2), y + 4 - h.height); }
+  c.restore();
+}
+
+// --- geluid ---
+let AC = null, muted = false;
+function beep(f, dur = .1, type = 'square', vol = .06, f2 = null, delay = 0){
+  if (muted) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return; }
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur); o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + .02);
+}
+const SFX = {
+  zap:   () => beep(1400, .09, 'sawtooth', .03, 300),
+  raak:  () => { beep(900, .1, 'square', .045, 450); beep(500, .08, 'triangle', .05, 300, .05); },
+  plof:  () => beep(170, .14, 'triangle', .09, 60),
+  pak:   () => { beep(880, .05, 'square', .035); beep(1320, .08, 'square', .035, null, .05); },
+  au:    () => beep(500, .25, 'sawtooth', .05, 150),
+  splat: () => beep(220, .16, 'triangle', .08, 80),
+  gooi:  () => beep(400, .08, 'triangle', .035, 250),
+  steel: () => { beep(700, .08, 'square', .04, 900); beep(900, .1, 'square', .04, 400, .08); },
+  kooi:  () => beep(300, .06, 'square', .05, 200),
+  kaching:() => [988, 1319, 1568].forEach((f, i) => beep(f, .1, 'square', .045, null, i * .07)),
+  poort: () => [392, 523, 659, 784].forEach((f, i) => beep(f, .14, 'triangle', .07, null, i * .1)),
+  red:   () => [784, 988, 1175, 1568].forEach((f, i) => beep(f, .14, 'square', .045, null, i * .09)),
+  drink: () => { beep(500, .12, 'sine', .07, 1100); beep(800, .12, 'sine', .05, 1500, .1); },
+  baas:  () => [196, 185, 175, 165].forEach((f, i) => beep(f, .25, 'sawtooth', .05, null, i * .2)),
+  win:   () => [523, 659, 784, 659, 784, 1047].forEach((f, i) => beep(f, .16, 'square', .05, null, i * .12)),
+  moe:   () => [392, 330, 262, 196].forEach((f, i) => beep(f, .2, 'triangle', .07, null, i * .16)),
+  hak:   () => { beep(240, .06, 'square', .06, 140); beep(600, .03, 'triangle', .03, null, .02); },
+  zwiep: () => beep(500, .07, 'triangle', .025, 900),
+  val:   () => { beep(320, .35, 'triangle', .08, 70); beep(110, .2, 'square', .05, 60, .3); },
+  bouw:  () => [523, 659, 784, 1047].forEach((f, i) => beep(f, .1, 'triangle', .07, null, i * .07)),
+  hoorn: () => [196, 196, 262, 196].forEach((f, i) => beep(f, i === 2 ? .45 : .22, 'sawtooth', .06, null, i * .25)),
+  bonk:  () => beep(130, .08, 'square', .05, 90),
+  boem:  () => { beep(150, .35, 'sawtooth', .09, 35); beep(80, .3, 'square', .06, 40, .05); },
+  pief:  () => beep(1000, .04, 'triangle', .02, 600),
+  gered: () => [523, 784, 659, 1047, 1319].forEach((f, i) => beep(f, .14, 'square', .045, null, i * .1)),
+};
+
+// --- opslaan: eikels, spullen, kleren, bevrijde mormels en poorten blijven bewaard ---
+const SAVE_KEY = 'mormel-game';
+const NIEUW = () => ({ eikels:0, staf:1, schoenen:false, drank:{snel:0, kracht:0, hart:0}, kast:[], aan:{hoed:null, bril:false, cape:false},
+  bevrijd:[], poorten:[], koning:false, kar:0, verslagen:0, hout:0, torens:[], kapot:[], up:{}, eindGolf:0, eindGewonnen:false, ijsreusWeg:false, ijsstaf:false });
+let SV = NIEUW();
+try { SV = Object.assign(NIEUW(), JSON.parse(localStorage.getItem(SAVE_KEY) || '{}')); } catch (e) {}
+SV.kar = Math.min(KARAKTERS.length - 1, SV.kar || 0);
+let dirty = false;
+const saveSoon = () => { dirty = true; };
+function saveNow(){ dirty = false; try { localStorage.setItem(SAVE_KEY, JSON.stringify(SV)); } catch (e) {} }
+const held = () => KARAKTERS[SV.kar];
+
+// --- spelstatus ---
+let S, P;
+function newWorld(){
+  MH = KAART.length; MW = Math.max(...KAART.map(r => r.length));
+  map = KAART.map(r => r.padEnd(MW, 'T').split(''));
+  S = { t:0, dir:'down', moving:false, harten:maxHarten(), cool:0, snel:0, kracht:0, modder:0, knock:null,
+        enemies:[], shots:[], bolts:[], fx:[], acorns:[], cages:[], npcs:[], dorpTegels:[], gates:{1:[], 2:[], 3:[]}, ijsreus:null,
+        king:null, bossOn:false, start:null, winkelier:null, houtman:null, kraamReady:true, shopReady:true, talk:null, zone:null, tint:0, tintCol:'rgba(0,0,0,0)',
+        state:'intro', banner:0, winT:0, dead:0,
+        tool:'staf', swing:0, chop:{}, regrow:[], tshots:[], huizen:[], aanvalT:eind() ? wachtTijd() : SPEL.eersteAanval, golf:0, wave:null, gewaarschuwd:false };
+  let cageId = 0, dorpN = 0; const kooien = [], laterKooien = [];
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+    const ch = map[y][x], px = x * TS, py = y * TS;
+    if (ch === ':') S.dorpTegels.push({x, y});
+    if ('123'.includes(ch)) S.gates[ch].push({x, y});
+    if (ch === 'P') { S.start = {x:px, y:py}; map[y][x] = ':'; }
+    else if (ch === 'w') { S.winkelier = {x:px, y:py}; map[y][x] = ':'; }
+    else if (ch === 'x') { S.houtman = {x:px, y:py}; map[y][x] = ':'; }
+    else if (ch === 'M') { S.npcs.push(makeNpc(px, py, DORPKLEUREN[dorpN++ % DORPKLEUREN.length])); map[y][x] = ':'; }
+    else if (ch === 'c') (x < OOST ? kooien : laterKooien).push({x, y}); // de nieuwe kooien krijgen de laatste nummers
+    else if (ch === 'a' || ch === 'A') { S.acorns.push({x:px + 5, y:py + 5, n:ch === 'A' ? 5 : 1, vaste:true, weg:0, ph:hash(x, y) % 10}); map[y][x] = groundOf(ch, x, y); }
+    else if (GRIESELS[ch]) {
+      if (ch !== 'U' || !SV.ijsreusWeg) { const e = makeGriesel(ch, px, py); S.enemies.push(e); if (ch === 'U') S.ijsreus = e; }
+      map[y][x] = groundOf(ch, x, y); }
+    else if (ch === 'K') { map[y][x] = '#'; S.kingHome = {x:px + 8, y:py + 8};
+      if (!SV.koning) S.king = {x:px + 8, y:py + 8, hp:SPEL.koningLeven, tx:px + 8, ty:py + 8, mt:0, throwT:2, sumT:6, hurt:0, seen:false, dead:false, face:1}; }
+  }
+  for (const k of [...kooien, ...laterKooien]) { const id = cageId++, free = SV.bevrijd.includes(id);
+    S.cages.push({id, x:k.x * TS, y:k.y * TS, hp:SPEL.kooiLeven, free, kleur:KOOIKLEUREN[id % KOOIKLEUREN.length], shake:0});
+    if (free) map[k.y][k.x] = groundOf('c', k.x, k.y); }
+  // huizen (2x2): onthoud de linkerbovenhoek
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (map[y][x] === 'h' && tile(x - 1, y) !== 'h' && tile(x, y - 1) !== 'h') {
+    const id = S.huizen.length; const kapot = SV.kapot.includes(id);
+    S.huizen.push({id, x, y, hp:kapot ? 0 : huisMax(), kapot});
+  }
+  if (SV.eindGewonnen && !SV.poorten.includes(3)) SV.poorten.push(3);
+  for (const id of SV.poorten) openGateTiles(id);
+  for (const t of SV.torens) { map[t.y][t.x] = 'Y'; t.cool = 0; t.shake = 0; t.hp = torenMax(); }
+  // bevrijde mormels wonen nu in het dorp
+  for (const cg of S.cages) if (cg.free) S.npcs.push(dorpNpc(cg.kleur));
+  P = {x:S.start.x, y:S.start.y, blink:0, walk:0};
+  buildStatic(); updateHud();
+}
+function makeNpc(x, y, kleur){ return {x, y, kleur, dir:'down', wt:Math.random() * 2, mx:0, my:0, walk:0, first:null}; }
+function dorpNpc(kleur){
+  for (let i = 0; i < 50; i++) { const t = S.dorpTegels[hash(i, S.npcs.length, 3) % S.dorpTegels.length]; const n = makeNpc(t.x * TS, t.y * TS, kleur); if (npcFree(n.x, n.y)) return n; }
+  return makeNpc(S.start.x + 16, S.start.y, kleur);
+}
+function makeGriesel(type, x, y){ const T = GRIESELS[type]; return {type, x, y, home:{x, y}, hp:T.leven, max:T.leven, dead:false, respawn:0, face:1, wd:0, wt:0, hurt:0, kx:0, ky:0, throwT:1 + Math.random(), loot:0, state:'zoek', st:0, cool:0, walk:0}; }
+function openGateTiles(id){ for (const g of S.gates[id]) map[g.y][g.x] = '='; }
+
+let layer;
+function buildStatic(){
+  layer = document.createElement('canvas'); layer.width = MW * TS; layer.height = MH * TS;
+  const c = layer.getContext('2d');
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+    const ch = map[y][x];
+    drawTile(c, 'hSLcY'.includes(ch) ? groundOf(ch === 'c' ? '.' : ch, x, y) : ch, x, y, x * TS, y * TS);
+  }
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+    const ch = map[y][x];
+    if (ch === 'S' && tile(x - 1, y) !== ch && tile(x, y - 1) !== ch) drawShop(c, x * TS, y * TS);
+    if (ch === 'L' && tile(x - 1, y) !== ch && tile(x, y - 1) !== ch) drawHoutkraam(c, x * TS, y * TS);
+  }
+  for (const h of S.huizen) h.kapot ? drawRuin(c, h.x * TS, h.y * TS) : drawHouse(c, h.x * TS, h.y * TS, h.x);
+  if (SV.koning && S.kingHome) { const kx = S.kingHome.x, ky = S.kingHome.y; // kapotte troon
+    R(c, kx - 12, ky - 2, 8, 5, '#6a2a8a'); R(c, kx + 4, ky + 3, 10, 4, '#6a2a8a'); R(c, kx - 2, ky + 6, 5, 5, '#2a2433'); R(c, kx - 8, ky + 8, 6, 2, '#f2c23a'); R(c, kx + 6, ky - 4, 3, 3, '#f2c23a'); }
+}
+
+// Eén vakje (of een huis) opnieuw tekenen, zonder de hele wereld opnieuw te maken
+function redrawTile(x, y){
+  const c = layer.getContext('2d'), ch = map[y][x];
+  drawTile(c, ch === 'Y' ? groundOf('Y', x, y) : ch, x, y, x * TS, y * TS);
+}
+function redrawHouse(h){
+  const c = layer.getContext('2d');
+  for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) drawPlein(c, (h.x + a) * TS, (h.y + b) * TS, h.x + a, h.y + b);
+  h.kapot ? drawRuin(c, h.x * TS, h.y * TS) : drawHouse(c, h.x * TS, h.y * TS, h.x);
+}
+
+// --- botsen ---
+const solidAt = (px, py) => SOLID.has(tile(Math.floor(px / TS), Math.floor(py / TS)));
+function boxFree(x, y){ return !(solidAt(x + 3, y + 9) || solidAt(x + 12, y + 9) || solidAt(x + 3, y + 15) || solidAt(x + 12, y + 15)); }
+function moveBody(b, dx, dy, free = boxFree){
+  let ok = true;
+  if (dx) { if (free(b.x + dx, b.y)) b.x += dx; else ok = false; }
+  if (dy) { if (free(b.x, b.y + dy)) b.y += dy; else ok = false; }
+  return ok;
+}
+// Griesels durven niet op het dorpsplein
+const dorpAt = (px, py) => tile(Math.floor(px / TS), Math.floor(py / TS)) === ':';
+function enemyFree(x, y){ return boxFree(x, y) && !(dorpAt(x + 3, y + 9) || dorpAt(x + 12, y + 9) || dorpAt(x + 3, y + 15) || dorpAt(x + 12, y + 15)); }
+function npcFree(x, y){ return boxFree(x, y) && dorpAt(x + 3, y + 9) && dorpAt(x + 12, y + 9) && dorpAt(x + 3, y + 15) && dorpAt(x + 12, y + 15); }
+const shotSolid = (px, py) => SHOT_SOLID.has(tile(Math.floor(px / TS), Math.floor(py / TS)));
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const pc = () => ({x:P.x + 8, y:P.y + 10});
+const ecx = e => e.x + 8, ecy = e => e.type === 'R' ? e.y - 6 : e.type === 'Q' ? e.y + 4 : e.y + 10;
+function gebiedAt(px, py){ const tx = Math.floor(px / TS), ty = Math.floor(py / TS); return GEBIEDEN.find(g => tx >= g.x0 && tx <= g.x1 && ty >= g.y0 && ty <= g.y1) || GEBIEDEN[3]; }
+
+// --- invoer ---
+const keys = {up:false, down:false, left:false, right:false, fire:false};
+const KEYMAP = {ArrowUp:'up', KeyW:'up', ArrowDown:'down', KeyS:'down', ArrowLeft:'left', KeyA:'left', ArrowRight:'right', KeyD:'right', Space:'fire', KeyJ:'fire', KeyX:'fire'};
+const DRANKKEYS = {Digit1:'snel', Digit2:'kracht', Digit3:'hart', Numpad1:'snel', Numpad2:'kracht', Numpad3:'hart'};
+let firePressed = false;
+addEventListener('keydown', e => {
+  if (S.state === 'shop') { if (e.code === 'Escape') { e.preventDefault(); closeShop(); } return; }
+  if (S.state === 'kraam') { if (e.code === 'Escape') { e.preventDefault(); closeKraam(); } return; }
+  if (S.state === 'bouw') { if (e.code === 'Escape' || e.code === 'KeyB') { e.preventDefault(); closeBouw(); } return; }
+  if (DRANKKEYS[e.code] && S.state === 'play') { e.preventDefault(); useDrank(DRANKKEYS[e.code]); return; }
+  if (e.code === 'KeyQ' && S.state === 'play' && !e.repeat) { e.preventDefault(); wissel(); return; }
+  if (e.code === 'KeyB' && S.state === 'play' && !e.repeat) { e.preventDefault(); openBouw(); return; }
+  if (e.code === 'KeyN' && S.state === 'play' && !e.repeat) { e.preventDefault(); nuAanvallen(); return; }
+  const k = KEYMAP[e.code]; if (!k) return;
+  if (S.state !== 'play') { if (k === 'fire' && S.state === 'intro' && !e.repeat) { e.preventDefault(); startPlay(); } return; }
+  e.preventDefault(); if (k === 'fire' && !keys.fire) firePressed = true; keys[k] = true;
+});
+addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+document.querySelectorAll('.pad button[data-act]').forEach(b => b.addEventListener('click', () => { if (b.dataset.act === 'wissel') wissel(); else openBouw(); }));
+document.querySelectorAll('.pad button[data-k]').forEach(b => {
+  const k = b.dataset.k;
+  const on = e => { e.preventDefault(); b.setPointerCapture?.(e.pointerId); b.classList.add('on'); if (k === 'fire') firePressed = true; keys[k] = true; };
+  const off = () => { b.classList.remove('on'); keys[k] = false; };
+  b.addEventListener('pointerdown', on); b.addEventListener('pointerup', off); b.addEventListener('pointercancel', off); b.addEventListener('lostpointercapture', off);
+});
+
+// --- berichten ---
+let toastT = null;
+function toast(msg, ms = 2400){ const el = $('toast'); el.textContent = msg; el.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => el.style.opacity = 0, ms); }
+let hintT = -9;
+function hint(msg){ if (S.t - hintT > 3) { hintT = S.t; toast(msg); } }
+function banner(msg, sec = 2.2){ $('banner').textContent = msg; $('banner').hidden = false; S.banner = sec; }
+function pop(x, y, txt, col = '#ffffff'){ S.fx.push({x, y, txt, col, t:0}); }
+function sparkles(x, y, col, n = 10){ for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = 20 + Math.random() * 40; S.fx.push({x, y, vx:Math.cos(a) * v, vy:Math.sin(a) * v - 20, col, t:0, spark:true}); } }
+
+// --- HUD ---
+const icon = k => IMG[k].toDataURL();
+const ICON = {eikel:icon('eikel'), hart:icon('hart'), goudhart:icon('goudhart'), drank_snel:icon('drank_snel'), drank_kracht:icon('drank_kracht'), drank_hart:icon('drank_hart'),
+  hout:icon('hout'), bijl:icon('bijl'), staf:icon('staf'), griesel:icon('gr_q')};
+for (const t of TORENS) { const c = document.createElement('canvas'); c.width = 16; c.height = 34; drawTower(c.getContext('2d'), 0, 18, t.id); ICON['toren_' + t.id] = c.toDataURL(); }
+$('bouwEikImg').src = ICON.eikel; $('bouwHoutImg').src = ICON.hout;
+$('kraamEikImg').src = ICON.eikel; $('kraamHoutImg').src = ICON.hout;
+$('toolbtn').addEventListener('click', () => { wissel(); $('toolbtn').blur(); });
+{ const c = document.createElement('canvas'); c.width = 32; c.height = 32; drawHouse(c.getContext('2d'), 0, 0, 1); ICON.huis = c.toDataURL(); }
+{ const c = document.createElement('canvas'); c.width = 16; c.height = 16; drawMormel(c.getContext('2d'), 0, 0, 'down', KOOIKLEUREN[0]); ICON.mormel = c.toDataURL(); }
+$('saldoimg').src = ICON.eikel;
+const DRANKEN = [['snel', '1', 'Snelheidsdrankje'], ['kracht', '2', 'Krachtdrankje'], ['hart', '3', 'Hartjesdrankje']];
+$('dranken').innerHTML = DRANKEN.map(([k, n, naam]) => `<button type="button" data-d="${k}" aria-label="${naam}"><img src="${ICON['drank_' + k]}" alt=""><span></span><kbd>${n}</kbd></button>`).join('');
+$('dranken').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { useDrank(b.dataset.d); b.blur(); }));
+function updateHud(){
+  let h = ''; const n = Math.max(maxHarten(), S.harten);
+  for (let i = 0; i < n; i++) h += `<img src="${i >= maxHarten() ? ICON.goudhart : ICON.hart}" alt="" class="${i < S.harten ? '' : 'off'}">`;
+  $('harten').innerHTML = h;
+  $('eikels').innerHTML = `<img src="${ICON.eikel}" alt="">${SV.eikels}`;
+  $('hout').innerHTML = `<img src="${ICON.hout}" alt="">${SV.hout} hout`;
+  $('toolbtn').innerHTML = S.tool === 'bijl' ? `<img src="${ICON.bijl}" alt="">Bijl <kbd>Q</kbd>` : `<img src="${ICON.staf}" alt="">${SV.ijsstaf ? 'IJsstaf' : 'Toverstaf'} <kbd>Q</kbd>`;
+  hudAanval();
+  $('bevrijd').innerHTML = `<img src="${ICON.mormel}" alt="">${SV.bevrijd.length}/${S.cages.length} bevrijd`;
+  $('dranken').querySelectorAll('button').forEach(b => { const v = SV.drank[b.dataset.d]; b.dataset.n = v; b.querySelector('span').textContent = v; });
+  const eff = [];
+  if (S.snel > 0) eff.push(`<img src="${ICON.drank_snel}" alt="Snel">${Math.ceil(S.snel)}`);
+  if (S.kracht > 0) eff.push(`<img src="${ICON.drank_kracht}" alt="Kracht">${Math.ceil(S.kracht)}`);
+  $('effect').hidden = !eff.length; $('effect').innerHTML = eff.join(' ');
+}
+let aanvalTxt = '';
+function hudAanval(){
+  let txt, alarm = !!S.wave;
+  const groot = S.wave ? S.wave.groot : eind() && SV.eindGolf + 1, naam = groot ? `Grote aanval ${groot}/${GROTE_AANVALLEN.length}` : 'Aanval';
+  if (S.wave) txt = `${naam}! Nog ${S.wave.queue.length + S.enemies.filter(e => e.aanval && !e.dead).length} griesels`;
+  else { const s = Math.max(0, Math.ceil(S.aanvalT)); txt = `${naam} over ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; alarm = s <= 30; }
+  if (txt + alarm === aanvalTxt) return; aanvalTxt = txt + alarm;
+  $('aanval').innerHTML = `<img src="${ICON.griesel}" alt="">${txt}${S.wave ? '' : '<span class="nu">Nu!</span>'}`; $('aanval').classList.toggle('alarm', alarm);
+  $('aanval').disabled = !!S.wave;
+}
+
+// --- startscherm: kies je mormel ---
+function showKar(){
+  const c = $('karcv').getContext('2d'); c.clearRect(0, 0, 20, 22);
+  drawMormel(c, 2, 5, 'down', held(), SV.aan);
+  $('karnaam').textContent = held().naam;
+  const meer = KARAKTERS.length > 1; $('prevKar').hidden = !meer; $('nextKar').hidden = !meer;
+}
+function kiesKar(step){ SV.kar = (SV.kar + step + KARAKTERS.length) % KARAKTERS.length; saveNow(); showKar(); }
+$('prevKar').addEventListener('click', () => kiesKar(-1));
+$('nextKar').addEventListener('click', () => kiesKar(1));
+
+function startPlay(){
+  $('intro').hidden = true; S.state = 'play'; beep(523, .08, 'square', .04);
+  if (eind()) { toast(SV.eindGolf ? `De Grote Verdediging gaat verder: nog ${GROTE_AANVALLEN.length - SV.eindGolf} grote aanvallen!` : 'De Grote Verdediging! Bouw torens en koop upgrades. Het griesel-leger komt eraan!', 3800); return; }
+  toast(SV.eikels || SV.poorten.length ? 'Welkom terug in het Mormeldorp!' : 'Loop het dorp uit en zoek eikels. Pas op voor de griesels!', 3200);
+}
+
+// --- de winkel ---
+let shopTab = 'spul';
+function openShop(){
+  S.state = 'shop'; for (const k in keys) keys[k] = false;
+  $('shop').hidden = false; SFX.kaching(); renderShop();
+  $('shopClose').focus({preventScroll:true});
+}
+function closeShop(){ $('shop').hidden = true; S.state = 'play'; S.shopReady = false; saveNow(); updateHud(); }
+function priceBtn(it, extra = ''){
+  const arm = SV.eikels < it.prijs;
+  return `<button class="buy" type="button" data-id="${it.id}" ${arm ? 'disabled' : ''}>${arm ? `Nog ${it.prijs - SV.eikels}` : 'Koop'} <img src="${ICON.eikel}" alt="eikels">${it.prijs}${extra}</button>`;
+}
+function renderShop(){
+  $('saldo').textContent = SV.eikels;
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-pressed', t.dataset.tab === shopTab));
+  let html = '';
+  if (shopTab === 'spul') for (const it of WINKEL) {
+    let knop;
+    if (it.drank) knop = priceBtn(it);
+    else if (it.id === 'staf2' && SV.staf >= 2 || it.id === 'staf3' && SV.staf >= 3 || it.id === 'schoenen' && SV.schoenen) knop = `<button class="buy ok" type="button" disabled>✓ Heb je</button>`;
+    else if (it.id === 'staf3' && SV.staf < 2) knop = `<button class="buy" type="button" disabled>Eerst de sterke staf</button>`;
+    else knop = priceBtn(it);
+    const uitleg = it.drank ? `${it.uitleg} Je hebt er ${SV.drank[it.id]}.` : it.uitleg;
+    html += `<div class="card"><img src="${icon(it.icoon)}" alt=""><div><b>${it.naam}</b><small>${uitleg}</small></div>${knop}</div>`;
+  } else if (shopTab === 'kleren') for (const it of KLEREN) {
+    const heb = SV.kast.includes(it.id);
+    const aan = it.plek === 'hoed' ? SV.aan.hoed === it.id : SV.aan[it.plek];
+    const knop = heb ? `<button class="buy ${aan ? 'aan' : ''}" type="button" data-id="${it.id}">${aan ? 'Uitdoen' : 'Aandoen'}</button>` : priceBtn(it);
+    html += `<div class="card"><img src="${icon(it.id)}" alt=""><div><b>${it.naam}</b><small>${heb ? (aan ? 'Heb je aan' : 'In je kast') : 'Voor je mormel'}</small></div>${knop}</div>`;
+  }
+  if (shopTab === 'up') for (const it of UPGRADES) {
+    const n = lvl(it.id), max = it.prijzen.length;
+    const knop = n >= max ? `<button class="buy ok" type="button" disabled>✓ Klaar</button>` : priceBtn({id:'up_' + it.id, prijs:it.prijzen[n]});
+    html += `<div class="card"><img ${it.icoon.startsWith('toren') ? 'class="toren" ' : ''}src="${ICON[it.icoon] || icon(it.icoon)}" alt=""><div><b>${it.naam}</b><small>${it.uitleg}</small>
+      <small class="sterren" aria-label="Level ${n} van ${max}">${'★'.repeat(n)}<span style="opacity:.25">${'★'.repeat(max - n)}</span></small></div>${knop}</div>`;
+  }
+  $('items').innerHTML = html;
+  $('items').querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', () => shopClick(b.dataset.id)));
+  const c = $('shopcv').getContext('2d'); c.clearRect(0, 0, 20, 22); drawMormel(c, 2, 5, 'down', held(), SV.aan);
+}
+function shopClick(id){
+  if (id.startsWith('up_')) { koopUpgrade(id.slice(3)); return; }
+  const it = WINKEL.find(i => i.id === id) || KLEREN.find(i => i.id === id);
+  const kleren = KLEREN.includes(it);
+  if (kleren && SV.kast.includes(id)) { // aan- of uitdoen
+    if (it.plek === 'hoed') SV.aan.hoed = SV.aan.hoed === id ? null : id; else SV.aan[it.plek] = !SV.aan[it.plek];
+    beep(660, .06, 'square', .04);
+  } else {
+    if (SV.eikels < it.prijs) return;
+    SV.eikels -= it.prijs; SFX.kaching();
+    if (kleren) { SV.kast.push(id); if (it.plek === 'hoed') SV.aan.hoed = id; else SV.aan[it.plek] = true; }
+    else if (it.drank) SV.drank[id]++;
+    else if (id === 'staf2') SV.staf = Math.max(SV.staf, 2);
+    else if (id === 'staf3') SV.staf = 3;
+    else if (id === 'schoenen') SV.schoenen = true;
+  }
+  saveNow(); renderShop(); updateHud();
+  $('items').querySelector(`button[data-id="${id}"]`)?.focus({preventScroll:true});
+}
+function koopUpgrade(id){
+  const it = UPGRADES.find(u => u.id === id), n = lvl(id), prijs = it.prijzen[n];
+  if (prijs === undefined || SV.eikels < prijs) return;
+  SV.eikels -= prijs; SV.up[id] = n + 1; SFX.kaching();
+  if (id === 'hart') S.harten++;
+  if (id === 'huis') for (const h of S.huizen) if (!h.kapot) h.hp += SPEL.huisErbij;
+  if (id === 'toren') for (const t of SV.torens) t.hp += SPEL.torenErbij;
+  saveNow(); renderShop(); updateHud();
+  $('items').querySelector(`button[data-id="up_${id}"]`)?.focus({preventScroll:true});
+}
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { shopTab = t.dataset.tab; renderShop(); }));
+$('shopClose').addEventListener('click', closeShop);
+
+// --- het houtkraampje ---
+function openKraam(){
+  S.state = 'kraam'; for (const k in keys) keys[k] = false;
+  $('kraam').hidden = false; SFX.kaching(); renderKraam();
+  $('kraamClose').focus({preventScroll:true});
+}
+function closeKraam(){ $('kraam').hidden = true; S.state = 'play'; S.kraamReady = false; saveNow(); updateHud(); }
+function renderKraam(){
+  $('kraamEik').textContent = SV.eikels; $('kraamHout').textContent = SV.hout;
+  $('kraamItems').innerHTML = HOUTKRAAM.map(it => `<div class="card"><img src="${ICON.hout}" alt=""><div><b>${it.naam}</b><small>${it.uitleg}</small></div>${priceBtn(it)}</div>`).join('');
+  $('kraamItems').querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', () => kraamClick(b.dataset.id)));
+  const c = $('kraamcv').getContext('2d'); c.clearRect(0, 0, 20, 22); drawMormel(c, 2, 5, 'down', HOUTKLEUR, {}, 0, 'bijl');
+}
+function kraamClick(id){
+  const it = HOUTKRAAM.find(i => i.id === id);
+  if (SV.eikels < it.prijs) return;
+  SV.eikels -= it.prijs; SV.hout += it.hout; SFX.kaching();
+  saveNow(); renderKraam(); updateHud();
+  $('kraamItems').querySelector(`button[data-id="${id}"]`)?.focus({preventScroll:true});
+}
+$('kraamClose').addEventListener('click', closeKraam);
+
+// --- drankjes ---
+function useDrank(k){
+  if (S.state !== 'play') return;
+  const naam = {snel:'snelheidsdrankje', kracht:'krachtdrankje', hart:'hartjesdrankje'}[k];
+  if (!SV.drank[k]) { hint(`Je hebt geen ${naam}. Koop er een in de winkel!`); return; }
+  if (k === 'hart' && S.harten >= maxHarten() + 2) { hint('Je hebt al heel veel hartjes!'); return; }
+  SV.drank[k]--; SFX.drink(); saveSoon();
+  if (k === 'snel') { S.snel = SPEL.drankTijd; toast('Zoeffff! Je bent supersnel.'); }
+  if (k === 'kracht') { S.kracht = SPEL.drankTijd; toast('Je bliksem is dubbel zo sterk!'); }
+  if (k === 'hart') { S.harten++; toast(S.harten > maxHarten() ? 'Een gouden extra hartje!' : 'Een hartje erbij!'); }
+  sparkles(P.x + 8, P.y + 6, k === 'snel' ? '#ffd23c' : k === 'kracht' ? '#ff7a2a' : '#ff4d8a', 12);
+  updateHud();
+}
+
+// --- poorten ---
+function nearGate(){
+  const c = pc();
+  for (const id in S.gates) { if (SV.poorten.includes(+id)) continue;
+    for (const g of S.gates[id]) if (Math.hypot(c.x - (g.x * TS + 8), c.y - (g.y * TS + 8)) < 24) return +id; }
+  return 0;
+}
+function payGate(id){
+  const p = POORTEN[id];
+  if (SV.eikels < p.prijs) { toast(`Je hebt ${p.prijs} eikels nodig. Je hebt er nu ${SV.eikels}.`); return; }
+  SV.eikels -= p.prijs; SV.poorten.push(id); saveNow();
+  openGateTiles(id); buildStatic(); SFX.poort();
+  for (const g of S.gates[id]) sparkles(g.x * TS + 8, g.y * TS + 8, '#f2c23a', 10);
+  banner('De poort is open!'); updateHud();
+}
+
+// --- bijl en hakken ---
+let bijlUitgelegd = false;
+function wissel(){
+  if (S.state !== 'play') return;
+  S.tool = S.tool === 'staf' ? 'bijl' : 'staf'; beep(S.tool === 'bijl' ? 440 : 880, .06, 'square', .04);
+  if (S.tool === 'bijl' && !bijlUitgelegd) { bijlUitgelegd = true; toast('Bijl! Sta voor een boom en druk op spatie. Q is terug naar je toverstaf.', 3200); }
+  updateHud();
+}
+// De bomen aan de rand en bij de poorten zijn te dik, anders kan je om de poorten heen
+const dikkeBoom = (x, y) => x <= 0 || y <= 0 || x >= MW - 1 || y >= MH - 1 || y === 15 || (y < 15 && x >= 31 && x <= 33) || x === OOST - 1;
+function swingAxe(){
+  S.cool = SPEL.bijlWacht; S.swing = .18;
+  const d = DIRV[S.dir], fx = P.x + 8 + d[0] * 12, fy = P.y + 12 + d[1] * 12;
+  const hit = {x:fx, y:fy, vx:d[0], vy:d[1], dmg:(1 + lvl('bijl')) * (S.kracht > 0 ? 2 : 1)};
+  const e = S.enemies.find(e => !e.dead && Math.hypot(fx - ecx(e), fy - ecy(e)) < GRIESELS[e.type].r + 8);
+  if (e) { hitEnemy(e, hit); return; }
+  const K = S.king;
+  if (K && !K.dead && S.bossOn && Math.hypot(fx - K.x, fy - (K.y - 4)) < 20) { hitKing(hit); return; }
+  const tx = Math.floor(fx / TS), ty = Math.floor(fy / TS), ch = tile(tx, ty);
+  const cg = S.cages.find(k => !k.free && k.x / TS === tx && k.y / TS === ty);
+  if (cg) { hitCage(cg); return; }
+  if ('TOD'.includes(ch)) chopTree(tx, ty, ch);
+  else if (ch === 'Y') chopTower(tx, ty);
+  else SFX.zwiep();
+}
+function chopTree(x, y, ch){
+  if (dikkeBoom(x, y)) { SFX.bonk(); hint('Deze boom is veel te dik. Die kan je niet omhakken.'); return; }
+  const k = x + ',' + y; S.chop[k] = (S.chop[k] || 0) + 1; SFX.hak();
+  sparkles(x * TS + 8, y * TS + 10, '#c49a5c', 5);
+  const nog = bijlHakken() - S.chop[k];
+  if (nog > 0) { pop(x * TS + 8, y * TS, `Nog ${nog}`); return; }
+  delete S.chop[k]; map[y][x] = 'u'; redrawTile(x, y); SFX.val();
+  S.regrow.push({x, y, orig:ch, t:0});
+  sparkles(x * TS + 8, y * TS + 6, ch === 'D' ? '#2f6f4c' : '#46a046', 14);
+  dropAcorns(x * TS + 8, y * TS + 8, 1, 'hout');
+  if (ch === 'O') dropAcorns(x * TS + 8, y * TS + 8, 2);
+}
+function chopTower(x, y){
+  const t = SV.torens.find(t => t.x === x && t.y === y); if (!t) return;
+  const k = 'Y' + x + ',' + y; S.chop[k] = (S.chop[k] || 0) + 1; SFX.hak(); t.shake = .2;
+  const nog = bijlHakken() - S.chop[k];
+  if (nog > 0) { pop(x * TS + 8, y * TS - 12, `Afbreken? Nog ${nog}`); return; }
+  delete S.chop[k]; SV.torens.splice(SV.torens.indexOf(t), 1);
+  map[y][x] = groundOf('Y', x, y); redrawTile(x, y);
+  SV.hout += TOREN[t.soort].hout; saveNow(); SFX.val(); sparkles(x * TS + 8, y * TS, '#c49a5c', 14);
+  toast(`Toren afgebroken. Je krijgt ${TOREN[t.soort].hout} hout terug.`); updateHud();
+}
+function updateRegrow(dt){
+  for (const r of S.regrow) {
+    r.t += dt; const ch = map[r.y][r.x];
+    if (ch === 'u' && r.t > SPEL.boomStronk) { map[r.y][r.x] = 'v'; redrawTile(r.x, r.y); }
+    else if (ch === 'v' && r.t > SPEL.boomTerug) {
+      // niet laten groeien als er iemand op staat
+      const bx = r.x * TS, by = r.y * TS, op = b => b.x + 12 > bx && b.x + 3 < bx + TS && b.y + 15 > by && b.y + 9 < by + TS;
+      if (op(P) || S.enemies.some(e => !e.dead && op(e))) continue;
+      map[r.y][r.x] = r.orig; redrawTile(r.x, r.y); r.klaar = true;
+    } else if (ch !== 'u' && ch !== 'v') r.klaar = true; // er staat nu een toren
+  }
+  S.regrow = S.regrow.filter(r => !r.klaar);
+}
+
+// --- torens bouwen ---
+function buildSpot(){
+  const d = DIRV[S.dir], x = Math.floor((P.x + 8 + d[0] * 14) / TS), y = Math.floor((P.y + 12 + d[1] * 12) / TS);
+  if (x < 9 || x > 46 || y < 25 || y > 42) return {err:'Torens bouw je rond het dorp. Ga dichter bij het dorp staan.'};
+  if (x >= 26 && x <= 29 && y >= 30 && y <= 33) return {err:'Hier niet, dan zit de ingang van het dorp dicht.'};
+  const ch = tile(x, y);
+  if (ch === '=') return {err:'Niet op het pad, daar moet je over kunnen lopen.'};
+  if (!'.,:uv'.includes(ch)) return {err:'Hier staat iets in de weg. Kijk naar een leeg plekje.'};
+  if (S.winkelier && x === S.winkelier.x / TS && y === S.winkelier.y / TS || S.houtman && x === S.houtman.x / TS && y === S.houtman.y / TS || x === S.start.x / TS && y === S.start.y / TS) return {err:'Hier staat iemand. Kies een ander plekje.'};
+  const bx = x * TS, by = y * TS, op = b => b.x + 12 > bx && b.x + 3 < bx + TS && b.y + 15 > by && b.y + 9 < by + TS;
+  if (S.enemies.some(e => !e.dead && op(e)) || S.npcs.some(op)) return {err:'Hier staat iemand. Kies een ander plekje.'};
+  if (SV.torens.length >= SPEL.maxTorens) return {err:`Je hebt al ${SPEL.maxTorens} torens. Meer passen er niet.`};
+  return {x, y};
+}
+let bouwSpot = null;
+function openBouw(){
+  if (S.state !== 'play') return;
+  const spot = buildSpot();
+  if (spot.err) { toast(spot.err); return; }
+  bouwSpot = spot; S.state = 'bouw'; for (const k in keys) keys[k] = false;
+  $('bouw').hidden = false; renderBouw(); $('bouwClose').focus({preventScroll:true});
+}
+function closeBouw(){ $('bouw').hidden = true; S.state = 'play'; }
+function renderBouw(){
+  $('bouwEik').textContent = SV.eikels; $('bouwHout').textContent = SV.hout;
+  $('bouwItems').innerHTML = TORENS.map(t => {
+    const mistH = Math.max(0, t.hout - SV.hout), mistE = Math.max(0, t.eikels - SV.eikels);
+    const label = mistH || mistE ? `Nog ${[mistH && mistH + ' hout', mistE && mistE + ' eikels'].filter(Boolean).join(' en ')}` : 'Bouw!';
+    return `<div class="card"><img class="toren" src="${ICON['toren_' + t.id]}" alt=""><div><b>${t.naam}</b><small>${t.uitleg}</small>
+      <small><img src="${ICON.hout}" alt="" style="width:1.1em;height:1.1em;vertical-align:middle"> ${t.hout} hout · <img src="${ICON.eikel}" alt="" style="width:1.1em;height:1.1em;vertical-align:middle"> ${t.eikels} eikels</small></div>
+      <button class="buy" type="button" data-id="${t.id}" ${mistH || mistE ? 'disabled' : ''}>${label}</button></div>`;
+  }).join('');
+  $('bouwItems').querySelectorAll('button[data-id]').forEach(b => b.addEventListener('click', () => bouwToren(b.dataset.id)));
+}
+function bouwToren(id){
+  const T = TOREN[id]; if (SV.hout < T.hout || SV.eikels < T.eikels || !bouwSpot) return;
+  SV.hout -= T.hout; SV.eikels -= T.eikels;
+  const t = {x:bouwSpot.x, y:bouwSpot.y, soort:id, cool:0, shake:0, hp:torenMax()};
+  SV.torens.push(t); map[t.y][t.x] = 'Y'; redrawTile(t.x, t.y); saveNow();
+  closeBouw(); SFX.bouw(); sparkles(t.x * TS + 8, t.y * TS, '#ffd66b', 16);
+  toast(`${T.naam} gebouwd!`); updateHud();
+}
+$('bouwClose').addEventListener('click', closeBouw);
+
+function updateTowers(dt){
+  for (const t of SV.torens) {
+    if (t.shake > 0) t.shake -= dt;
+    const T = TOREN[t.soort]; t.cool -= dt; if (t.cool > 0) continue;
+    const cx = t.x * TS + 8, cy = t.y * TS - 6;
+    let best = null, bd = T.bereik;
+    for (const e of S.enemies) if (!e.dead) { const d = Math.hypot(ecx(e) - cx, ecy(e) - cy); if (d < bd) { bd = d; best = e; } }
+    if (!best) continue;
+    t.cool = T.wacht * (1 - .12 * lvl('toren'));
+    S.tshots.push({x:cx, y:cy, e:best, tx:ecx(best), ty:ecy(best), soort:t.soort, v:t.soort === 'kanon' ? 130 : t.soort === 'bliksem' ? 280 : 180, life:2, d0:bd});
+    t.soort === 'kanon' ? SFX.boem() : SFX.pief();
+  }
+  for (const s of S.tshots) {
+    if (!s.e.dead) { s.tx = ecx(s.e); s.ty = ecy(s.e); }
+    const dx = s.tx - s.x, dy = s.ty - s.y, d = Math.hypot(dx, dy), m = s.v * dt;
+    s.life -= dt;
+    if (d > m) { s.x += dx / d * m; s.y += dy / d * m; continue; }
+    s.x = s.tx; s.y = s.ty; s.life = 0;
+    const T = TOREN[s.soort], hit = {x:s.x, y:s.y, vx:dx || 1, vy:dy, dmg:T.schade * (1 + .5 * lvl('toren'))};
+    if (s.soort === 'kanon') {
+      SFX.boem(); sparkles(s.x, s.y, '#ffb347', 14); sparkles(s.x, s.y, '#5f646d', 8);
+      for (const e of S.enemies) if (!e.dead && Math.hypot(ecx(e) - s.x, ecy(e) - s.y) < T.knal) hitEnemy(e, hit, true);
+    } else if (s.soort === 'modder') { if (!s.e.dead) { s.e.traag = T.traag; s.e.ijs = false; sparkles(s.x, s.y, '#6b4423', 6); } }
+    else if (!s.e.dead) hitEnemy(s.e, hit, true);
+  }
+  S.tshots = S.tshots.filter(s => s.life > 0);
+}
+
+// --- huizen repareren ---
+function nearRuin(){ const c = pc(); return S.huizen.find(h => h.kapot && Math.hypot(c.x - (h.x * TS + 16), c.y - (h.y * TS + 16)) < 30); }
+function repair(h){
+  if (SV.hout < SPEL.huisMaken) { toast(`Je hebt ${SPEL.huisMaken} hout nodig om het huis te maken. Je hebt er ${SV.hout}.`); return; }
+  SV.hout -= SPEL.huisMaken; h.kapot = false; h.hp = huisMax(); SV.kapot = SV.kapot.filter(i => i !== h.id); saveNow();
+  redrawHouse(h); SFX.bouw(); sparkles(h.x * TS + 16, h.y * TS + 16, '#ffd66b', 18); toast('Het huis is weer heel!'); updateHud();
+}
+
+// --- aanvallen op het dorp ---
+function startAanval(){
+  if (eind()) { startGroteAanval(); return; }
+  S.golf++; const n = Math.min(14, 3 + 2 * S.golf), queue = [];
+  for (let i = 0; i < n; i++) {
+    const type = i % 4 === 3 ? 'Q' : i % 3 === 2 ? 'G' : 'q';
+    queue.push({t:i * 1.2, type, route:AANVALROUTES[i % AANVALROUTES.length]});
+  }
+  // de reuzen-griesel komt als laatste, met een paar kleintjes erbij
+  queue.push({t:n * 1.2 + 2, type:'R', route:AANVALROUTES[S.golf % AANVALROUTES.length]});
+  for (let i = 0; i < 2; i++) queue.push({t:n * 1.2 + 3 + i, type:'q', route:AANVALROUTES[S.golf % AANVALROUTES.length]});
+  S.wave = {queue, t:0, sterk:S.golf};
+  SFX.hoorn(); banner('De griesels vallen het dorp aan!', 2.6);
+  toast('Bescherm de huizen! Je torens helpen mee.', 3200); updateHud();
+}
+function startGroteAanval(){
+  const nr = SV.eindGolf + 1, G = GROTE_AANVALLEN[SV.eindGolf], laatste = nr === GROTE_AANVALLEN.length, queue = [], tussen = .8;
+  for (let i = 0; i < G.griesels; i++) {
+    const type = i % 4 === 3 ? 'Q' : i % 3 === 2 ? 'G' : 'q';
+    queue.push({t:i * tussen, type, route:AANVALROUTES[i % AANVALROUTES.length]});
+  }
+  // de reuzen-griesels komen verspreid, de laatste aan het eind
+  for (let r = 0; r < G.reuzen; r++) queue.push({t:(r + 1) * G.griesels * tussen / G.reuzen + 2, type:'R', route:AANVALROUTES[(r + nr) % AANVALROUTES.length]});
+  queue.sort((a, b) => a.t - b.t);
+  S.wave = {queue, t:0, sterk:3 + nr, groot:nr};
+  SFX.hoorn(); banner(laatste ? 'De laatste grote aanval!' : `Grote aanval ${nr} van ${GROTE_AANVALLEN.length}!`, 2.8);
+  toast(laatste ? 'Het hele griesel-leger komt eraan. Hou vol!' : `${G.griesels} griesels en ${G.reuzen === 1 ? 'een reuzen-griesel' : G.reuzen + ' reuzen-griesels'}. Bescherm het dorp!`, 3400); updateHud();
+}
+function eindeGroteAanval(W, heel){
+  if (W.verloren) {
+    S.aanvalT = SPEL.eindPauze; SFX.val(); banner('Het dorp is verloren...', 2.6);
+    toast(`Maak de huizen weer heel. Grote aanval ${W.groot} komt nog een keer!`, 3800); updateHud(); return;
+  }
+  const beloning = 10 + 10 * W.groot + heel.length * 2;
+  SV.eindGolf = W.groot; SV.eikels += beloning;
+  if (SV.eindGolf >= GROTE_AANVALLEN.length) {
+    SV.eindGewonnen = true; SV.eikels += SPEL.eindBeloning; SV.poorten.push(3); saveNow(); openGateTiles(3); buildStatic();
+    S.aanvalT = SPEL.aanvalElke; SFX.win(); banner('Mormeldorp is gered!', 3); S.winSoort = 'eind'; S.winT = 3; updateHud(); return;
+  }
+  saveNow(); S.aanvalT = SPEL.eindPauze; SFX.gered(); banner(`Grote aanval ${W.groot} tegengehouden!`, 2.6);
+  const nog = GROTE_AANVALLEN.length - SV.eindGolf;
+  toast(`+${beloning} eikels! Koop upgrades en maak je torens klaar. Nog ${nog === 1 ? '1 aanval' : nog + ' aanvallen'}.`, 3800); updateHud();
+}
+// De knop "Nu!" of toets N: de griesels komen meteen
+function nuAanvallen(){
+  if (S.state !== 'play' || S.wave) return;
+  S.aanvalT = 0; S.gewaarschuwd = true; startAanval();
+}
+$('aanval').addEventListener('click', () => { nuAanvallen(); $('aanval').blur(); });
+function updateAanval(dt){
+  if (!S.wave) {
+    const was = Math.ceil(S.aanvalT); S.aanvalT -= dt;
+    if (Math.ceil(S.aanvalT) !== was) hudAanval();
+    if (S.aanvalT <= 30 && !S.gewaarschuwd) { S.gewaarschuwd = true; toast(eind() ? `Pas op! Over 30 tellen komt grote aanval ${SV.eindGolf + 1}!` : 'Pas op! Over 30 tellen komen de griesels naar het dorp.', 3200); }
+    if (S.aanvalT <= 0) startAanval();
+    return;
+  }
+  const W = S.wave; W.t += dt;
+  while (W.queue.length && W.queue[0].t <= W.t) {
+    const q = W.queue.shift(), p = q.route[0];
+    const e = makeGriesel(q.type, p[0] * TS, p[1] * TS);
+    e.aanval = true; e.route = q.route.map(([x, y]) => ({x:x * TS + 8, y:y * TS + 8})); e.ri = 1; e.slaT = 1;
+    e.hp = Math.round(GRIESELS[q.type].leven * (1.5 + SPEL.aanvalSterker * W.sterk));
+    if (q.type === 'R') { e.hp = e.max = GRIESELS.R.leven + SPEL.reusErbij * (W.sterk - 1); SFX.baas(); banner('Pas op! Een reuzen-griesel!', 2.4); toast('Hij slaat ook torens kapot. Raak hem heel vaak!', 3200); }
+    S.enemies.push(e); sparkles(ecx(e), ecy(e), '#c9b8e8', 6); hudAanval();
+  }
+  if (!W.queue.length && !S.enemies.some(e => e.aanval && !e.dead)) {
+    const heel = S.huizen.filter(h => !h.kapot);
+    for (const h of heel) h.hp = huisMax();
+    for (const t of SV.torens) t.hp = torenMax();
+    S.wave = null; S.gewaarschuwd = false;
+    if (W.groot) { eindeGroteAanval(W, heel); return; }
+    const beloning = heel.length * 2; SV.eikels += beloning; saveNow();
+    S.aanvalT = wachtTijd();
+    SFX.gered(); banner('Het dorp is gered!', 2.4);
+    toast(beloning ? `${heel.length} huizen zijn nog heel: +${beloning} eikels!` : 'Alle huizen zijn kapot. Maak ze weer heel met hout!', 3400);
+    updateHud();
+  }
+}
+function huisPlek(h){ return {x:h.x * TS + 16, y:(h.y >= 37 ? h.y - 1 : h.y + 2) * TS + 8}; }
+function kiesHuis(e){
+  let best = null, bd = 1e9;
+  for (const h of S.huizen) if (!h.kapot) { const p = huisPlek(h), d = Math.hypot(p.x - ecx(e), p.y - (e.y + 10)); if (d < bd) { bd = d; best = h; } }
+  return best;
+}
+function breakTower(t){
+  SV.torens.splice(SV.torens.indexOf(t), 1);
+  map[t.y][t.x] = groundOf('Y', t.x, t.y); redrawTile(t.x, t.y);
+  const terug = Math.floor(TOREN[t.soort].hout / 2); dropAcorns(t.x * TS + 8, t.y * TS + 8, terug, 'hout'); saveNow();
+  SFX.val(); sparkles(t.x * TS + 8, t.y * TS, '#c49a5c', 18);
+  toast(`Oh nee! Je ${TOREN[t.soort].naam.toLowerCase()} is kapot geslagen. Raap het hout snel op!`, 3200);
+}
+function breakHouse(h){
+  h.kapot = true; h.hp = 0; SV.kapot.push(h.id); saveNow(); redrawHouse(h);
+  SFX.val(); sparkles(h.x * TS + 16, h.y * TS + 16, '#e8705e', 20);
+  toast(`Oh nee! Een huis is kapot. Maak het weer heel met ${SPEL.huisMaken} hout.`, 3200);
+}
+function updateAanvaller(e, dt, c, d, dx, dy){
+  const T = GRIESELS[e.type];
+  let doel = null;
+  const sloper = e.type === 'Q' || e.type === 'R';
+  const toren = sloper && !e.weg && SV.torens.find(t => Math.hypot(t.x * TS + 8 - ecx(e), t.y * TS + 8 - (e.y + 10)) < (e.type === 'R' ? 40 : 24));
+  if (d < 36 && S.dead <= 0) doel = c; // te dichtbij: vechten met Grote Quin
+  else if (toren) { // eerst die toren kapot slaan
+    e.slaT -= dt; e.face = toren.x * TS + 8 > ecx(e) ? 1 : -1;
+    if (e.slaT <= 0) { e.slaT = e.type === 'R' ? .8 : 1; toren.hp -= e.type === 'R' ? 3 : 1; toren.shake = .2; SFX.bonk(); sparkles(toren.x * TS + 8, toren.y * TS, '#c49a5c', 5); e.walk += .12;
+      if (toren.hp <= 0) breakTower(toren); }
+  }
+  else if (e.ri < e.route.length) { doel = e.route[e.ri]; if (Math.hypot(doel.x - ecx(e), doel.y - (e.y + 10)) < 6) e.ri++; }
+  else if (e.weg) { e.dead = true; } // terug in het bos: weg
+  else if (!e.huis || e.huis.kapot) {
+    e.huis = kiesHuis(e);
+    if (!e.huis) { // alles is kapot: de griesels gaan er vandoor
+      if (S.wave) S.wave.verloren = true;
+      const terug = AANVALROUTES[hash(e.home.x, e.home.y) % AANVALROUTES.length].slice().reverse();
+      e.route = [{x:27.5 * TS + 8, y:37 * TS + 8}, ...terug.map(([x, y]) => ({x:x * TS + 8, y:y * TS + 8}))]; e.ri = 0; e.weg = true;
+      pop(ecx(e), ecy(e) - 16, 'Hihihi!', '#c9b8e8');
+    }
+    if (e.huis) { e.route = [{x:27.5 * TS + 8, y:37 * TS + 8}, {x:e.huis.x * TS + 16, y:37 * TS + 8}, huisPlek(e.huis)]; e.ri = 0;
+      // sla stukken over die al achter je liggen
+      if (Math.abs(e.y + 10 - (37 * TS + 8)) < 10) e.ri = 1; }
+  } else {
+    e.slaT -= dt; e.face = e.huis.x * TS + 16 > ecx(e) ? 1 : -1;
+    if (e.slaT <= 0) { e.slaT = e.type === 'Q' || e.type === 'R' ? .7 : 1; e.huis.hp -= e.type === 'R' ? 4 : e.type === 'Q' ? 2 : 1; SFX.bonk(); sparkles(e.huis.x * TS + 16, e.huis.y * TS + 22, '#e8705e', 4); e.walk += .12;
+      if (e.huis.hp <= 0) breakHouse(e.huis); }
+  }
+  const doelToren = e.type === 'G' && !e.weg && !(d < 110 && S.dead <= 0) && SV.torens.find(t => Math.hypot(t.x * TS + 8 - ecx(e), t.y * TS + 8 - ecy(e)) < 85);
+  if (doelToren) { // blijf staan en gooi stenen naar de toren
+    doel = null; e.face = doelToren.x * TS + 8 > ecx(e) ? 1 : -1; e.throwT -= dt;
+    if (e.throwT <= 0) { throwAt({x:ecx(e), y:ecy(e) - 4}, {x:doelToren.x * TS + 8, y:doelToren.y * TS + 6}, 'steen'); SFX.gooi(); e.throwT = 1.6 + Math.random() * .5; }
+  } else if (e.type === 'G' && d < 110 && S.dead <= 0) { e.throwT -= dt; if (e.throwT <= 0) { throwAt({x:ecx(e), y:ecy(e) - 4}, c); SFX.gooi(); e.throwT = 2 + Math.random(); } }
+  if (doel) {
+    let mx = doel.x - ecx(e), my = doel.y - (e.y + 10); const md = Math.hypot(mx, my) || 1; mx /= md; my /= md;
+    if (e.jit > 0) { e.jit -= dt; [mx, my] = [-my * e.jd, mx * e.jd]; }
+    const sp = T.snel * (e.traag > 0 ? .45 : 1), ox = e.x, oy = e.y;
+    moveBody(e, mx * sp * dt, my * sp * dt);
+    // vast? even opzij stappen
+    if (Math.hypot(e.x - ox, e.y - oy) < sp * dt * .3) { e.vast = (e.vast || 0) + dt; if (e.vast > .6) { e.vast = 0; e.jit = .5; e.jd = Math.random() < .5 ? 1 : -1; } } else e.vast = 0;
+    if (Math.abs(mx) > .2) e.face = mx > 0 ? 1 : -1; e.walk += dt;
+  }
+  if (d < T.r + 5) hurt({x:ecx(e), y:ecy(e)});
+}
+
+// --- schieten en geraakt worden ---
+const DIRV = {up:[0,-1], down:[0,1], left:[-1,0], right:[1,0]};
+function shoot(){
+  const d = DIRV[S.dir], base = Math.atan2(d[1], d[0]);
+  const dmg = ((SV.staf >= 2 ? 2 : 1) + lvl('kracht')) * (S.kracht > 0 ? 2 : 1);
+  for (const a of SV.staf >= 3 ? [-.22, 0, .22] : [0])
+    S.bolts.push({x:P.x + 8 + d[0] * 6, y:P.y + 9 + d[1] * 6, vx:Math.cos(base + a) * SPEL.bliksemSnelheid, vy:Math.sin(base + a) * SPEL.bliksemSnelheid, life:SPEL.bliksemTijd, dmg, big:S.kracht > 0, ijs:SV.ijsstaf});
+  S.cool = bliksemWacht(); SFX.zap();
+}
+function hurt(src){
+  if (P.blink > 0 || S.state !== 'play' || S.dead > 0) return;
+  S.harten--; SFX.au();
+  const n = Math.min(SPEL.eikelsKwijt, SV.eikels); SV.eikels -= n; saveSoon();
+  for (let i = 0; i < n; i++) { const a = Math.random() * 6.28; S.fx.push({x:P.x + 8, y:P.y + 6, vx:Math.cos(a) * 50, vy:-40 - Math.random() * 30, img:'eikel', t:0, spark:true, grav:true}); }
+  P.blink = SPEL.onkwetsbaar;
+  const a = Math.atan2(P.y + 10 - src.y, P.x + 8 - src.x); S.knock = {vx:Math.cos(a) * 160, vy:Math.sin(a) * 160, t:.15};
+  if (S.harten <= 0) { knockOut(); return; }
+  toast(n ? `Au! Een hartje en ${n} eikels kwijt.` : 'Au! Een hartje kwijt.');
+  updateHud();
+}
+function knockOut(){
+  SFX.moe(); banner(`Oei! ${held().naam} is moe...`, 2.4); S.dead = 1.2;
+}
+function backToVillage(){
+  P.x = S.start.x; P.y = S.start.y; P.blink = 2; S.dir = 'down';
+  S.harten = maxHarten(); S.modder = 0; S.snel = 0; S.kracht = 0; S.shots = []; S.bolts = []; S.knock = null;
+  for (const e of S.enemies) { if (e.summoned) e.dead = true; else if (e.type === 'U') { if (!e.dead) { e.x = e.home.x; e.y = e.home.y; } } else if (!e.aanval) reviveEnemy(e); }
+  S.enemies = S.enemies.filter(e => !e.summoned);
+  if (S.king && !S.king.dead) { S.king.x = S.kingHome.x; S.king.y = S.kingHome.y; S.king.seen = false; }
+  toast('Je bent terug in het dorp. Je spullen heb je nog!', 3000); updateHud();
+}
+function reviveEnemy(e){ Object.assign(e, {x:e.home.x, y:e.home.y, hp:GRIESELS[e.type].leven, dead:false, hurt:0, loot:0, state:'zoek', cool:0}); }
+
+function dropAcorns(x, y, n, kind = 'eikel'){
+  for (let i = 0; i < n; i++) { const a = Math.random() * 6.28; S.acorns.push({x:x - 3, y:y - 3, vx:Math.cos(a) * 45, vy:Math.sin(a) * 45, n:1, life:kind === 'hout' ? 30 : 15, ph:Math.random() * 10, wait:.35, kind}); }
+}
+function hitEnemy(e, b){
+  const T = GRIESELS[e.type];
+  e.hp -= b.dmg; e.hurt = .18; const a = Math.atan2(b.vy, b.vx); const kb = e.type === 'R' || e.type === 'U' ? 12 : e.type === 'Q' ? 60 : 150; e.kx = Math.cos(a) * kb; e.ky = Math.sin(a) * kb;
+  SFX.raak(); sparkles(b.x, b.y, b.ijs ? '#ffffff' : '#7fd7ff', 6);
+  if (b.ijs && e.type !== 'U') { e.traag = 2.5; e.ijs = true; } // de IJsstaf bevriest
+  if (e.hp <= 0) {
+    e.dead = true; e.respawn = SPEL.terugNa; SV.verslagen++; saveSoon(); SFX.plof();
+    sparkles(ecx(e), ecy(e), '#c9b8e8', 14);
+    dropAcorns(ecx(e), ecy(e), e.summoned ? 1 : T.buit + e.loot);
+    if (e.loot) pop(ecx(e), ecy(e) - 10, 'Je eikels terug!', '#ffd66b');
+    e.loot = 0;
+    if (e.type === 'U') ijsreusVerslagen(e);
+    return;
+  }
+}
+function ijsreusVerslagen(e){
+  SV.ijsreusWeg = true; SV.ijsstaf = true; saveNow();
+  for (const m of S.enemies) if (m.summoned && !m.dead) { m.dead = true; sparkles(ecx(m), ecy(m), '#bff0ff', 8); }
+  for (let i = 0; i < 4; i++) sparkles(ecx(e) + (Math.random() - .5) * 30, ecy(e) + (Math.random() - .5) * 30, ['#bff0ff', '#ffffff', '#5ec8ff', '#ffd66b'][i], 16);
+  SFX.win(); banner('De IJsreus is verslagen!', 2.6);
+  S.winSoort = 'ijsreus'; S.winT = 2.8; updateHud();
+}
+function hitCage(cg){
+  cg.hp--; cg.shake = .2; SFX.kooi(); sparkles(cg.x + 8, cg.y + 8, '#bfc4cc', 5);
+  if (cg.hp > 0) { pop(cg.x + 8, cg.y - 4, `Nog ${cg.hp}!`); return; }
+  cg.free = true; SV.bevrijd.push(cg.id); SV.eikels += 5; saveNow(); SFX.red();
+  map[Math.floor(cg.y / TS)][Math.floor(cg.x / TS)] = groundOf('c', Math.floor(cg.x / TS), Math.floor(cg.y / TS)); buildStatic();
+  sparkles(cg.x + 8, cg.y + 8, '#ffd66b', 20);
+  const npc = dorpNpc(cg.kleur); npc.first = `Dankjewel, ${held().naam}! Je hebt me gered!`; S.npcs.push(npc);
+  S.fx.push({x:cg.x, y:cg.y, mormel:cg.kleur, t:0, runner:true});
+  toast(`Je hebt een mormel bevrijd! Hij rent naar het dorp. +5 eikels`, 3200);
+  if (SV.bevrijd.length === S.cages.length) setTimeout(() => banner('Alle mormels zijn vrij!'), 1200);
+  updateHud();
+}
+function throwAt(from, to, kind, ang = 0, speed = 95){
+  kind = kind || ['steen', 'modder', 'rot'][Math.floor(Math.random() * 3)];
+  const a = Math.atan2(to.y - from.y, to.x - from.x) + ang;
+  S.shots.push({x:from.x, y:from.y, vx:Math.cos(a) * speed, vy:Math.sin(a) * speed, kind, life:2, rot:0});
+}
+
+// ---------- update ----------
+function update(dt){
+  S.t += dt;
+  if (S.banner > 0 && (S.banner -= dt) <= 0) $('banner').hidden = true;
+  for (const f of S.fx) { f.t += dt; if (f.spark) { f.x += f.vx * dt; f.y += f.vy * dt; f.vy += (f.grav ? 160 : 80) * dt; } }
+  S.fx = S.fx.filter(f => f.t < (f.runner ? 1.4 : f.txt ? 1.1 : .7));
+  if (S.state !== 'play') return;
+  if (S.dead > 0) { if ((S.dead -= dt) <= 0) backToVillage(); return; }
+  if (S.winT > 0 && (S.winT -= dt) <= 0) showWin();
+
+  // speler
+  if (P.blink > 0) P.blink -= dt;
+  for (const k of ['snel', 'kracht', 'modder']) if (S[k] > 0) { const was = Math.ceil(S[k]); S[k] -= dt; if (Math.ceil(S[k]) !== was && k !== 'modder') updateHud(); if (S[k] <= 0 && k !== 'modder') { S[k] = 0; updateHud(); } }
+  let dx = (keys.right ? 1 : 0) - (keys.left ? 1 : 0), dy = (keys.down ? 1 : 0) - (keys.up ? 1 : 0);
+  S.moving = !!(dx || dy);
+  const want = []; if (dx > 0) want.push('right'); if (dx < 0) want.push('left'); if (dy > 0) want.push('down'); if (dy < 0) want.push('up');
+  if (want.length && !want.includes(S.dir)) S.dir = want[0];
+  if (dx && dy) { dx *= .7071; dy *= .7071; }
+  const sp = (SV.schoenen ? SPEL.schoenenSnelheid : SPEL.snelheid) * (S.snel > 0 ? 1.5 : 1) * (S.modder > 0 ? .55 : 1);
+  if (S.knock) { moveBody(P, S.knock.vx * dt, S.knock.vy * dt); if ((S.knock.t -= dt) <= 0) S.knock = null; }
+  else moveBody(P, dx * sp * dt, dy * sp * dt);
+  if (S.moving) P.walk += dt;
+
+  // gebied
+  const g = gebiedAt(P.x + 8, P.y + 10);
+  if (g !== S.zone) { const eerste = !S.zone; S.zone = g; $('zonetxt').textContent = g.naam; if (!eerste) toast(g.naam); }
+  S.tintCol = g.tint || S.tintCol; S.tint += ((g.tint ? 1 : 0) - S.tint) * Math.min(1, dt * 3);
+
+  // schieten of een poort betalen
+  S.cool -= dt;
+  const gate = nearGate();
+  if (gate && POORTEN[gate].slot) {
+    hint('Deze poort zit dicht met dik ijs. Win eerst De Grote Verdediging!');
+    if (firePressed) SFX.bonk();
+  } else if (gate) {
+    const p = POORTEN[gate];
+    hint(SV.eikels >= p.prijs ? `Poort naar ${p.naam}: ${p.prijs} eikels. Druk op spatie om te betalen.` : `Poort naar ${p.naam}: je hebt ${p.prijs} eikels nodig. Je hebt er ${SV.eikels}.`);
+    if (firePressed) payGate(gate);
+  } else if (nearRuin()) {
+    hint(`Dit huis is kapot. Druk op spatie om het te maken: ${SPEL.huisMaken} hout.`);
+    if (firePressed) repair(nearRuin());
+  } else if (keys.fire && S.cool <= 0) S.tool === 'bijl' ? swingAxe() : shoot();
+  firePressed = false;
+  if (S.swing > 0) S.swing -= dt;
+  updateRegrow(dt); updateTowers(dt); updateAanval(dt);
+
+  // winkel
+  if (S.winkelier) { const d = dist(pc(), {x:S.winkelier.x + 8, y:S.winkelier.y + 10});
+    if (d < 22 && S.shopReady) { openShop(); return; }
+    if (d > 40) S.shopReady = true; }
+  if (S.houtman) { const d = dist(pc(), {x:S.houtman.x + 8, y:S.houtman.y + 10});
+    if (d < 22 && S.kraamReady) { openKraam(); return; }
+    if (d > 40) S.kraamReady = true; }
+
+  // eikels oprapen
+  const c = pc();
+  for (const a of S.acorns) {
+    if (a.vaste) { if (a.weg > 0) { a.weg -= dt; continue; } }
+    else { a.life -= dt; a.wait -= dt; if (a.vx) { moveBody(a, 0, 0); const nx = a.x + a.vx * dt, ny = a.y + a.vy * dt; if (!shotSolid(nx + 3, ny + 3)) { a.x = nx; a.y = ny; } a.vx *= .9; a.vy *= .9; if (Math.abs(a.vx) < 1) a.vx = a.vy = 0; } if (a.wait > 0) continue; }
+    if (Math.hypot(c.x - (a.x + 3), c.y - (a.y + 3)) < 11) {
+      if (a.kind === 'hout') { SV.hout += a.n; pop(a.x + 3, a.y - 4, `+${a.n} hout`, '#e2c08a'); }
+      else { SV.eikels += a.n; pop(a.x + 3, a.y - 4, '+' + a.n, '#ffd66b'); }
+      saveSoon(); SFX.pak();
+      if (a.vaste) a.weg = SPEL.eikelTerugNa * (a.n > 1 ? 1.5 : 1); else a.life = 0;
+      updateHud();
+    }
+  }
+  S.acorns = S.acorns.filter(a => a.vaste || a.life > 0);
+
+  // bliksems
+  for (const b of S.bolts) {
+    b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt;
+    const cg = S.cages.find(k => !k.free && Math.abs(b.x - (k.x + 8)) < 9 && Math.abs(b.y - (k.y + 8)) < 9);
+    if (cg) { hitCage(cg); b.life = 0; continue; }
+    const e = S.enemies.find(e => !e.dead && Math.hypot(b.x - ecx(e), b.y - ecy(e)) < GRIESELS[e.type].r + 4);
+    if (e) { hitEnemy(e, b); b.life = 0; continue; }
+    const K = S.king;
+    if (K && !K.dead && S.bossOn && Math.hypot(b.x - K.x, b.y - (K.y - 4)) < 17) { hitKing(b); b.life = 0; continue; }
+    if (shotSolid(b.x, b.y)) { b.life = 0; sparkles(b.x, b.y, '#7fd7ff', 3); }
+  }
+  S.bolts = S.bolts.filter(b => b.life > 0);
+
+  // gegooide spullen van griesels
+  for (const s of S.shots) {
+    s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt; s.rot += dt * 10;
+    if (shotSolid(s.x, s.y)) { s.life = 0; sparkles(s.x, s.y, s.kind === 'modder' ? '#6b4423' : s.kind === 'sneeuw' || s.kind === 'ijspegel' ? '#e8f6ff' : '#8d929c', 4);
+      const tt = SV.torens.find(t => t.x === Math.floor(s.x / TS) && t.y === Math.floor(s.y / TS));
+      if (tt) { tt.hp--; tt.shake = .15; SFX.bonk(); if (tt.hp <= 0) breakTower(tt); }
+      continue; }
+    if (Math.hypot(s.x - c.x, s.y - c.y) < 8 && P.blink <= 0) {
+      s.life = 0;
+      if (s.kind === 'modder' || s.kind === 'sneeuw') { const sn = s.kind === 'sneeuw'; S.modder = SPEL.modderTijd; S.koud = sn; SFX.splat(); sparkles(c.x, c.y, sn ? '#ffffff' : '#6b4423', 8); hint(sn ? 'Brrr, sneeuw! Je bent even langzaam.' : 'Modder! Je bent even langzaam.'); }
+      else hurt(s);
+    }
+  }
+  S.shots = S.shots.filter(s => s.life > 0);
+
+  for (const e of S.enemies) updateEnemy(e, dt);
+  S.enemies = S.enemies.filter(e => !((e.summoned || e.aanval) && e.dead));
+  updateKing(dt); updateBossBar();
+  for (const cg of S.cages) if (cg.shake > 0) cg.shake -= dt;
+
+  // mormels in het dorp
+  let near = null, nd = 30;
+  for (const n of S.npcs) {
+    n.wt -= dt;
+    if (n.wt <= 0) { n.wt = 1 + Math.random() * 2.5; const a = Math.random() * 6.28; const go = Math.random() < .55; n.mx = go ? Math.cos(a) : 0; n.my = go ? Math.sin(a) : 0; }
+    if (n.mx || n.my) { if (!moveBody(n, n.mx * 22 * dt, n.my * 22 * dt, npcFree)) n.wt = 0; n.walk += dt;
+      n.dir = Math.abs(n.mx) > Math.abs(n.my) ? (n.mx > 0 ? 'right' : 'left') : (n.my > 0 ? 'down' : 'up'); }
+    const d = dist(c, {x:n.x + 8, y:n.y + 10}); if (d < nd) { nd = d; near = n; }
+  }
+  if (near !== S.talk) { S.talk = near; if (near) { const lijst = S.wave ? PRAAT_AANVAL : PRAAT; near.text = near.first || lijst[Math.floor(Math.random() * lijst.length)]; near.first = null; beep(700 + Math.random() * 300, .05, 'square', .03); } }
+
+  if (dirty && Math.floor(S.t) !== Math.floor(S.t - dt)) saveNow();
+}
+
+function updateEnemy(e, dt){
+  const T = GRIESELS[e.type];
+  if (e.dead) { if (!e.summoned && !e.aanval && e.type !== 'U') { e.respawn -= dt; if (e.respawn <= 0 && dist(P, e.home) > 170) reviveEnemy(e); } return; }
+  const c = pc(), ec = {x:ecx(e), y:ecy(e)};
+  const dx = c.x - ec.x, dy = c.y - ec.y, d = Math.hypot(dx, dy) || 1;
+  const sees = d < T.ziet && !dorpAt(c.x, c.y) && S.dead <= 0;
+  if (e.traag > 0) e.traag -= dt;
+  if (e.hurt > 0) { e.hurt -= dt; moveBody(e, e.kx * dt, e.ky * dt, e.aanval ? boxFree : enemyFree); e.kx *= .85; e.ky *= .85; return; }
+  if (e.aanval) { updateAanvaller(e, dt, c, d, dx, dy); return; }
+  let mx = 0, my = 0, sp = T.snel * (e.traag > 0 ? .45 : 1);
+  const wander = () => {
+    e.wt -= dt;
+    if (e.wt <= 0) { const hd = dist(e, e.home);
+      e.wd = hd > 64 ? Math.atan2(e.home.y - e.y, e.home.x - e.x) : Math.random() * 6.28;
+      e.still = hd <= 64 && Math.random() < .3; e.wt = 1 + Math.random() * 1.5; }
+    if (!e.still) { mx = Math.cos(e.wd); my = Math.sin(e.wd); } sp *= .5;
+  };
+  if (e.type === 'Z') {
+    e.cool -= dt;
+    if (e.state === 'vlucht') { mx = -dx / d; my = -dy / d; sp *= 1.1; if ((e.st -= dt) <= 0) e.state = 'zoek'; }
+    else if (sees && e.cool <= 0) { mx = dx / d; my = dy / d; }
+    else wander();
+    if (d < T.r + 6 && e.state !== 'vlucht' && e.cool <= 0 && P.blink <= 0 && S.state === 'play') {
+      const n = Math.min(T.steelt, SV.eikels);
+      if (n > 0) { SV.eikels -= n; e.loot += n; saveSoon(); SFX.steel(); toast(`De dief-griesel pikt ${n} eikels! Raak hem om ze terug te krijgen.`, 3000); pop(ec.x, ec.y - 14, '-' + n, '#ff9a6b'); }
+      else toast('De dief-griesel wil eikels pikken, maar je hebt er geen. Ha!');
+      e.state = 'vlucht'; e.st = 2.5; e.cool = 4; updateHud();
+    }
+  } else if (e.type === 'U') { // de IJsreus: alleen als je in zijn paleis bent
+    const ziet = S.zone?.paleis && S.dead <= 0;
+    if (ziet && !e.seen) { e.seen = true; SFX.baas(); banner('De IJsreus!', 2.4); toast('Pas op voor zijn ijspegels. Raak hem heel vaak!', 3200); e.throwT = 2; }
+    if (ziet) {
+      e.face = dx > 0 ? 1 : -1; if (d > 30) { mx = dx / d; my = dy / d; }
+      const boos = e.hp <= e.max / 2;
+      e.throwT -= dt;
+      if (e.throwT <= 0) { for (const a of [-.5, -.25, 0, .25, .5]) throwAt({x:ec.x, y:ec.y - 10}, c, 'ijspegel', a, 85); SFX.gooi(); e.throwT = boos ? 1.5 : 2.4; }
+      if (boos) { // boos: hij roept sneeuw-griesels
+        e.sumT = (e.sumT ?? 3) - dt;
+        if (e.sumT <= 0 && S.enemies.filter(m => m.summoned && !m.dead).length < 4) {
+          e.sumT = 7;
+          for (const kant of [-1, 1]) { const m = makeGriesel('N', e.x + kant * 20, e.y + 8); m.summoned = true; S.enemies.push(m); sparkles(ecx(m), ecy(m), '#bff0ff', 8); }
+          pop(ec.x, ec.y - 52, 'Sneeuwvrienden, help!', '#bff0ff');
+        }
+      }
+    } else wander();
+  } else if (e.type === 'G' || e.type === 'N') {
+    if (sees) {
+      e.face = dx > 0 ? 1 : -1;
+      if (d < 60) { mx = -dx / d; my = -dy / d; } else if (d > 95) { mx = dx / d; my = dy / d; }
+      e.throwT -= dt;
+      if (e.throwT <= 0 && d < 140) { throwAt({x:ec.x + e.face * 5, y:ec.y - 4}, c, e.type === 'N' ? (Math.random() < .35 ? 'ijspegel' : 'sneeuw') : null); SFX.gooi(); e.throwT = 1.7 + Math.random() * .8; }
+    } else wander();
+  } else { if (sees) { mx = dx / d; my = dy / d; } else wander(); }
+  if (mx || my) {
+    if (!moveBody(e, mx * sp * dt, my * sp * dt, enemyFree)) e.wt = 0;
+    if (Math.abs(mx) > .1 && e.type !== 'G' || !sees) e.face = mx > 0 ? 1 : -1;
+    e.walk += dt;
+  }
+  if (e.type !== 'Z' && d < T.r + 5) hurt(ec);
+}
+
+// De balk onderin: van de koning in de burcht of van de IJsreus in zijn paleis
+function updateBossBar(){
+  const K = S.king, U = S.ijsreus;
+  let naam = null, deel = 0;
+  if (S.zone?.burcht && K && !K.dead) { naam = 'De koning-griesel'; deel = K.hp / SPEL.koningLeven; }
+  else if (S.zone?.paleis && U && !U.dead) { naam = 'De IJsreus'; deel = U.hp / U.max; }
+  $('boss').hidden = !naam; if (!naam) return;
+  if ($('bossnaam').textContent !== naam) $('bossnaam').textContent = naam;
+  $('bossbar').style.width = (100 * Math.max(0, deel)) + '%';
+}
+
+// ---------- de koning-griesel ----------
+function updateKing(dt){
+  const K = S.king; if (!K || K.dead) return;
+  const inB = !!S.zone?.burcht;
+  S.bossOn = inB;
+  if (!inB) return;
+  if (!K.seen) { K.seen = true; banner('De koning-griesel!'); SFX.baas(); toast('Ontwijk zijn gooi-spullen en schiet bliksem op hem!', 3000); K.throwT = 2.2; }
+  if (K.hurt > 0) K.hurt -= dt;
+  const fase2 = K.hp <= SPEL.koningLeven / 2;
+  const c = pc();
+  // rijden op zijn troon
+  K.mt -= dt;
+  if (K.mt <= 0 || Math.hypot(K.tx - K.x, K.ty - K.y) < 3) {
+    K.mt = 2.5;
+    K.tx = (38 + Math.random() * 13) * TS; K.ty = (3.5 + Math.random() * 8) * TS;
+  }
+  const mdx = K.tx - K.x, mdy = K.ty - K.y, md = Math.hypot(mdx, mdy) || 1, v = (fase2 ? 55 : 35) * dt;
+  K.x += mdx / md * Math.min(v, md); K.y += mdy / md * Math.min(v, md);
+  K.face = c.x > K.x ? 1 : -1;
+  // gooien
+  K.throwT -= dt;
+  if (K.throwT <= 0) {
+    const n = fase2 ? 5 : 3;
+    for (let i = 0; i < n; i++) throwAt({x:K.x, y:K.y - 10}, c, null, (i - (n - 1) / 2) * .28, 90);
+    SFX.gooi(); K.throwT = fase2 ? 1.5 : 2.2;
+  }
+  // kleine griesels roepen
+  K.sumT -= dt;
+  if (K.sumT <= 0) {
+    K.sumT = 10;
+    const hulp = S.enemies.filter(e => e.summoned && !e.dead).length;
+    for (let i = hulp; i < Math.min(3, hulp + 2); i++) {
+      const e = makeGriesel('q', K.x - 8 + (i % 2 ? 22 : -22), K.y);
+      e.summoned = true; S.enemies.push(e); sparkles(e.x + 8, e.y + 10, '#c9b8e8', 8);
+    }
+    pop(K.x, K.y - 34, 'Griesels, help!', '#ffb3c4');
+  }
+  if (Math.hypot(c.x - K.x, c.y - K.y) < 18) hurt({x:K.x, y:K.y});
+}
+function hitKing(b){
+  const K = S.king;
+  K.hp -= b.dmg; K.hurt = .15; SFX.raak(); sparkles(b.x, b.y, '#7fd7ff', 6); updateHud();
+  if (K.hp > 0) return;
+  K.dead = true; SV.koning = true; SV.eikels += 30; saveNow();
+  for (const e of S.enemies) if (e.summoned) { e.dead = true; sparkles(ecx(e), ecy(e), '#c9b8e8', 8); }
+  for (let i = 0; i < 4; i++) sparkles(K.x + (Math.random() - .5) * 30, K.y + (Math.random() - .5) * 30, ['#f2c23a', '#7b3fd0', '#ff6f91', '#7fd7ff'][i], 16);
+  pop(K.x, K.y - 30, '+30 eikels!', '#ffd66b');
+  SFX.win(); banner('De koning-griesel is verslagen!', 2.6); buildStatic();
+  if (!S.wave) { S.aanvalT = SPEL.eindVoorbereiding; S.gewaarschuwd = false; }
+  S.winSoort = 'koning'; S.winT = 2.8; $('boss').hidden = true; updateHud();
+}
+function showWin(){
+  S.state = 'win'; for (const k in keys) keys[k] = false;
+  if (S.winSoort === 'ijsreus') {
+    const rest = S.cages.length - SV.bevrijd.length;
+    $('winText').textContent = `${held().naam} heeft De IJsreus verslagen! In zijn paleis lag een bijzondere toverstaf: de IJsstaf.`;
+    $('stats').innerHTML = `<li><b>IJsstaf:</b> je bliksem bevriest griesels, dan lopen ze heel langzaam</li><li><b>Mormels bevrijd:</b> ${SV.bevrijd.length} van de ${S.cages.length}</li><li><b>Eikels:</b> ${SV.eikels}</li>`;
+    $('winNext').textContent = rest ? `Er ${rest === 1 ? 'zit nog 1 mormel' : `zitten nog ${rest} mormels`} in een kooi. Kun jij ze allemaal vinden?` : 'Alle mormels zijn vrij. Je bent een echte held!';
+    $('win').hidden = false; $('verder').focus({preventScroll:true}); return;
+  }
+  if (S.winSoort === 'eind') {
+    $('winText').textContent = `${held().naam} heeft alle ${GROTE_AANVALLEN.length} grote aanvallen tegengehouden! Het griesel-leger rent huilend terug het bos in. Mormeldorp is gered!`;
+    $('stats').innerHTML = `<li><b>Griesels verslagen:</b> ${SV.verslagen}</li><li><b>Beloning:</b> ${SPEL.eindBeloning} extra eikels</li><li><b>Eikels:</b> ${SV.eikels}</li>`;
+    $('winNext').textContent = 'En kijk: in het oosten van het Eikenbos is het ijs van een oude poort gesmolten. Wat zou daarachter zitten?';
+    $('win').hidden = false; $('verder').focus({preventScroll:true}); return;
+  }
+  $('winText').textContent = `${held().naam} heeft de koning-griesel verslagen! Zijn troon met wieltjes ligt in stukken.`;
+  $('stats').innerHTML = `<li><b>Griesels verslagen:</b> ${SV.verslagen}</li><li><b>Mormels bevrijd:</b> ${SV.bevrijd.length} van de ${S.cages.length}</li><li><b>Eikels:</b> ${SV.eikels}</li>`;
+  const rest = S.cages.length - SV.bevrijd.length;
+  $('winNext').textContent = 'Maar pas op! Het griesel-leger wil wraak. Over 5 minuten begint De Grote Verdediging: 5 grote aanvallen op Mormeldorp. Bouw torens en koop upgrades in de winkel!'
+    + (rest ? ` En er ${rest === 1 ? 'zit nog 1 mormel' : `zitten nog ${rest} mormels`} in een kooi.` : '');
+  $('win').hidden = false; $('verder').focus({preventScroll:true});
+}
+$('verder').addEventListener('click', () => { $('win').hidden = true; S.state = 'play'; });
+
+// ---------- tekenen ----------
+function drawGriesel(e, ox, oy){
+  const T = e.type, flipL = e.face < 0 ? 'L' : '';
+  const bob = (Math.floor(e.walk * 8) % 2);
+  const fx = ecx(e) - ox, base = e.y - oy + 16;
+  if (e.hurt > 0) ctx.filter = 'brightness(3)';
+  ctx.fillStyle = 'rgba(0,0,0,.2)'; { const w = 'RU'.includes(T) ? 28 : 'QI'.includes(T) ? 18 : 10; ctx.fillRect(Math.round(fx - w / 2), Math.round(base - 2), w, 2); }
+  if (T === 'q') ctx.drawImage(IMG['gr_mini' + flipL], Math.round(fx - 4), Math.round(base - 12 - bob));
+  else if (T === 'Q' || T === 'I') ctx.drawImage(IMG['gr_' + T + flipL], Math.round(fx - 12), Math.round(base - 32 - bob), 24, 32);
+  else if (T === 'R' || T === 'U') {
+    ctx.drawImage(IMG['gr_' + T + flipL], Math.round(fx - 18), Math.round(base - 48 - bob), 36, 48);
+    if (T === 'R') { // een knots in zijn klauw
+      const kx = Math.round(fx + e.face * 16), ky = Math.round(base - 30 - bob);
+      R(ctx, kx - 1, ky, 3, 12, '#6b4426'); R(ctx, kx - 3, ky - 5, 7, 7, '#7a5028'); R(ctx, kx - 2, ky - 5, 2, 2, '#a3703c');
+    } else { // een kroon van ijspegels
+      const ky = Math.round(base - 52 - bob), kx = Math.round(fx - 9);
+      R(ctx, kx, ky + 4, 18, 3, '#bff0ff'); R(ctx, kx, ky + 6, 18, 1, '#7fb8d8');
+      for (let i = 0; i < 4; i++) { R(ctx, kx + 1 + i * 5, ky, 2, 4, '#e8f8ff'); R(ctx, kx + 1 + i * 5, ky - (i % 3 ? 1 : 2), 1, 1, '#ffffff'); }
+    }
+    ctx.filter = 'none';
+    const bx = Math.round(fx - 14), by = Math.round(base - 56);
+    R(ctx, bx, by, 28, 4, '#2a0f1a'); R(ctx, bx + 1, by + 1, Math.max(0, Math.round(26 * e.hp / e.max)), 2, '#ff5c5c');
+  }
+  else {
+    if (T === 'Z') { const s = 3 + Math.min(4, Math.ceil(e.loot / 2)); const sx = Math.round(fx - e.face * 7 - s / 2); R(ctx, sx, Math.round(base - 11 - s / 2), s, s + 1, '#9a6a3c'); R(ctx, sx + 1, Math.round(base - 12 - s / 2), s - 2, 1, '#6e4524'); }
+    ctx.drawImage(IMG['gr_' + T + flipL], Math.round(fx - 6), Math.round(base - 16 - bob));
+    if (T === 'G' || T === 'N') R(ctx, Math.round(fx + e.face * 6 - 1), Math.round(base - 9 - bob), 3, 3, T === 'N' ? '#ffffff' : '#8d929c');
+  }
+  if (e.traag > 0) { const tk = e.ijs ? '#bff0ff' : '#6b4423'; R(ctx, Math.round(fx - 4), Math.round(base - 3), 3, 2, tk); R(ctx, Math.round(fx + 2), Math.round(base - 6), 2, 2, tk); R(ctx, Math.round(fx - 1), Math.round(base - 10), 2, 2, tk); }
+  ctx.filter = 'none';
+}
+function drawKing(K, ox, oy){
+  const x = Math.round(K.x - ox), y = Math.round(K.y - oy);
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x - 15, y + 13, 30, 3);
+  if (K.hurt > 0) ctx.filter = 'brightness(2.5)';
+  R(ctx, x - 13, y - 22, 26, 22, '#4a1a6a'); R(ctx, x - 11, y - 20, 22, 18, '#6a2a8a'); R(ctx, x - 13, y - 22, 26, 2, '#f2c23a');
+  R(ctx, x - 3, y - 26, 6, 4, '#f2c23a'); R(ctx, x - 1, y - 28, 2, 2, '#e23a3a');
+  R(ctx, x - 15, y - 2, 30, 10, '#6a2a8a'); R(ctx, x - 15, y - 2, 30, 2, '#f2c23a'); R(ctx, x - 15, y + 7, 30, 1, '#3a0f4a');
+  const wr = Math.floor(S.t * 8) % 2;
+  for (const wx of [-13, 7]) { R(ctx, x + wx, y + 7, 7, 7, '#2a2433'); R(ctx, x + wx + 2, y + 9, 3, 3, '#8d8a96'); R(ctx, x + wx + 3 - wr, y + 10, 1, 1, '#2a2433'); }
+  ctx.drawImage(IMG['gr_K' + (K.face < 0 ? 'L' : '')], x - 12, y - 26, 24, 32);
+  ctx.drawImage(IMG.kroon, x - 4, y - 32 + (Math.floor(S.t * 3) % 2));
+  ctx.filter = 'none';
+}
+function drawCage(cg, ox, oy){
+  const sh = cg.shake > 0 ? Math.round(Math.sin(S.t * 60)) : 0;
+  const x = cg.x - ox + sh, y = cg.y - oy;
+  R(ctx, x, y + 14, 16, 2, 'rgba(0,0,0,.25)');
+  drawMormel(ctx, x, y, 'down', cg.kleur);
+  for (let k = 0; k < 5; k++) R(ctx, x + k * 4 - (k === 4 ? 1 : 0), y + 1, 1, 15, '#5f646d');
+  R(ctx, x - 1, y, 18, 2, '#3f434a'); R(ctx, x - 1, y + 14, 18, 2, '#3f434a');
+  R(ctx, x + 6, y + 6, 4, 4, '#f2c23a'); R(ctx, x + 7, y + 8, 2, 1, '#4a3010');
+}
+function draw(){
+  const camX = Math.round(Math.max(0, Math.min(MW * TS - VW, P.x + 8 - VW / 2)));
+  const camY = Math.round(Math.max(0, Math.min(MH * TS - VH, P.y + 8 - VH / 2)));
+  ctx.drawImage(layer, -camX, -camY);
+  const tx0 = Math.floor(camX / TS), ty0 = Math.floor(camY / TS);
+  for (let y = ty0; y <= ty0 + 12; y++) for (let x = tx0; x <= tx0 + 16; x++) if ('WB'.includes(tile(x, y))) drawWater(ctx, x, y, x * TS - camX, y * TS - camY, S.t);
+
+  // eikels op de grond
+  for (const a of S.acorns) {
+    if (a.vaste && a.weg > 0) continue;
+    if (!a.vaste && a.life < 3 && Math.floor(S.t * 8) % 2) continue;
+    const by = Math.round(Math.sin(S.t * 3 + a.ph) * 1);
+    const ax = Math.round(a.x - camX), ay = Math.round(a.y - camY + by);
+    if (a.n > 1) { ctx.drawImage(IMG.eikel, ax - 4, ay + 1); ctx.drawImage(IMG.eikel, ax + 4, ay + 1); ctx.drawImage(IMG.eikel, ax, ay - 3); }
+    else ctx.drawImage(a.kind === 'hout' ? IMG.hout : IMG.eikel, ax, ay);
+  }
+
+  // alles wat staat of loopt, van achter naar voor
+  const list = [];
+  for (const cg of S.cages) if (!cg.free) list.push([cg.y + 16, () => drawCage(cg, camX, camY)]);
+  for (const n of S.npcs) list.push([n.y + 16, () => drawMormel(ctx, Math.round(n.x - camX), Math.round(n.y - camY - (Math.floor(n.walk * 8) % 2)), n.dir, n.kleur)]);
+  if (S.winkelier) list.push([S.winkelier.y + 16, () => { const x = S.winkelier.x - camX, y = S.winkelier.y - camY; drawMormel(ctx, x, y, 'down', WINKELKLEUR, {hoed:'pet'}); R(ctx, x + 4, y + 10, 8, 4, '#ffd66b'); }]);
+  if (S.houtman) list.push([S.houtman.y + 16, () => drawMormel(ctx, S.houtman.x - camX, S.houtman.y - camY, 'down', HOUTKLEUR, {}, S.t, 'bijl')]);
+  for (const e of S.enemies) if (!e.dead) list.push([e.y + 16, () => drawGriesel(e, camX, camY)]);
+  for (const t of SV.torens) list.push([t.y * TS + 16, () => { const x = t.x * TS - camX + (t.shake > 0 ? Math.round(Math.sin(S.t * 60)) : 0), y = t.y * TS - camY;
+    drawTower(ctx, x, y, t.soort, S.t); for (let i = 0; i < lvl('toren'); i++) R(ctx, x + 4 + i * 3, y + 1, 2, 2, '#ffd23c'); }]);
+  if (S.king && !S.king.dead) list.push([S.king.y + 14, () => drawKing(S.king, camX, camY)]);
+  const showP = !(P.blink > 0 && Math.floor(S.t * 12) % 2) && S.dead <= 0;
+  if (showP) list.push([P.y + 16, () => {
+    const x = Math.round(P.x - camX), y = Math.round(P.y - camY - (S.moving ? Math.floor(P.walk * 8) % 2 : 0));
+    ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(x + 3, Math.round(P.y - camY) + 14, 10, 2);
+    if (S.snel > 0 && S.moving) { ctx.globalAlpha = .35; drawMormel(ctx, x - DIRV[S.dir][0] * 5, y - DIRV[S.dir][1] * 5, S.dir, held(), SV.aan, S.t, S.tool); ctx.globalAlpha = 1; }
+    drawMormel(ctx, x, y, S.dir, held(), SV.aan, S.t, S.tool, S.swing);
+    if (S.modder > 0) { const mk = S.koud ? '#ffffff' : '#6b4423'; R(ctx, x + 3, y + 9, 3, 2, mk); R(ctx, x + 10, y + 11, 3, 2, mk); R(ctx, x + 6, y + 4, 2, 2, mk); }
+    if (S.kracht > 0 && Math.floor(S.t * 6) % 2) R(ctx, x + 15, y + 5, 1, 1, '#ffffff');
+  }]);
+  list.sort((a, b) => a[0] - b[0]).forEach(([, f]) => f());
+
+  // bliksems
+  for (const b of S.bolts) {
+    const len = Math.hypot(b.vx, b.vy), ux = b.vx / len, uy = b.vy / len, nx = -uy, ny = ux;
+    let px = b.x - camX, py = b.y - camY;
+    ctx.fillStyle = b.big ? 'rgba(255,220,120,.4)' : b.ijs ? 'rgba(230,250,255,.55)' : 'rgba(127,215,255,.35)'; ctx.fillRect(Math.round(px - 4), Math.round(py - 4), 8, 8);
+    ctx.fillStyle = b.big ? '#ffe680' : b.ijs ? '#ffffff' : '#bff0ff';
+    for (let i = 0; i < 6; i++) { const j = ((i % 2) ? 2 : -2) * (b.big ? 1.5 : 1); R(ctx, Math.round(px - ux * i * 2 + nx * j * (i % 3 === 1 ? 1 : .3)), Math.round(py - uy * i * 2 + ny * j * (i % 3 === 1 ? 1 : .3)), 2, 2, i < 2 ? '#ffffff' : (b.big ? '#ffd23c' : b.ijs ? '#9fe8ff' : '#5ec8ff')); }
+  }
+  // gooi-spullen
+  for (const s of S.shots) {
+    const x = Math.round(s.x - camX), y = Math.round(s.y - camY);
+    if (s.kind === 'steen') { R(ctx, x - 2, y - 2, 5, 4, '#8d929c'); R(ctx, x - 1, y - 2, 2, 1, '#d0d4da'); R(ctx, x - 2, y + 1, 5, 1, '#5f646d'); }
+    else if (s.kind === 'modder') { R(ctx, x - 3, y - 2, 6, 4, '#6b4423'); R(ctx, x - 2, y - 3, 4, 6, '#6b4423'); R(ctx, x - 1, y - 2, 1, 1, '#9a6a3c'); }
+    else if (s.kind === 'sneeuw') { R(ctx, x - 2, y - 3, 5, 6, '#ffffff'); R(ctx, x - 3, y - 2, 7, 4, '#ffffff'); R(ctx, x + 1, y + 1, 2, 1, '#c9dceb'); }
+    else if (s.kind === 'ijspegel') { R(ctx, x - 2, y - 2, 4, 4, '#bff0ff'); R(ctx, x - 1, y - 1, 2, 2, '#ffffff'); R(ctx, x - 3, y, 1, 1, '#5ec8ff'); R(ctx, x + 2, y - 1, 1, 1, '#5ec8ff'); }
+    else ctx.drawImage(IMG.roteikel, x - 3, y - 3);
+  }
+  // torenschoten
+  for (const s of S.tshots) {
+    const x = Math.round(s.x - camX), y = Math.round(s.y - camY);
+    if (s.soort === 'eikel') ctx.drawImage(IMG.eikel, x - 3, y - 3);
+    else if (s.soort === 'modder') { R(ctx, x - 2, y - 2, 5, 4, '#6b4423'); R(ctx, x - 1, y - 3, 3, 6, '#6b4423'); }
+    else if (s.soort === 'bliksem') { R(ctx, x - 3, y - 3, 6, 6, 'rgba(127,215,255,.4)'); R(ctx, x - 1, y - 2, 2, 2, '#ffffff'); R(ctx, x, y, 2, 2, '#5ec8ff'); R(ctx, x - 2, y + 1, 2, 2, '#5ec8ff'); }
+    else { const k = Math.min(1, Math.hypot(s.tx - s.x, s.ty - s.y) / Math.max(1, s.d0)); const h = Math.round(Math.sin(k * Math.PI) * 14);
+      R(ctx, x - 2, y + 1, 4, 2, 'rgba(0,0,0,.25)'); R(ctx, x - 2, y - 2 - h, 5, 5, '#1c1c24'); R(ctx, x - 1, y - 2 - h, 2, 1, '#8d8a96'); }
+  }
+  for (const t of SV.torens) if (t.hp < torenMax()) {
+    const x = t.x * TS - camX, y = t.y * TS - camY - 16;
+    R(ctx, x, y, 16, 4, '#2a0f1a'); R(ctx, x + 1, y + 1, Math.max(0, Math.round(14 * t.hp / torenMax())), 2, t.hp > torenMax() / 2 ? '#8fd16a' : '#ff7a5c');
+  }
+  for (const h of S.huizen) if (!h.kapot && h.hp < huisMax()) {
+    const x = h.x * TS - camX + 4, y = h.y * TS - camY - 4;
+    R(ctx, x, y, 24, 4, '#2a0f1a'); R(ctx, x + 1, y + 1, Math.round(22 * h.hp / huisMax()), 2, h.hp > huisMax() / 2 ? '#8fd16a' : '#ff7a5c');
+  }
+  // effecten
+  for (const f of S.fx) {
+    if (f.runner) { const k = f.t / 1.4; ctx.globalAlpha = 1 - k; drawMormel(ctx, Math.round(f.x - camX), Math.round(f.y - camY + k * 40 - Math.floor(f.t * 10) % 2), 'down', f.mormel); ctx.globalAlpha = 1; continue; }
+    if (f.spark) { ctx.globalAlpha = Math.max(0, 1 - f.t / .7); if (f.img) ctx.drawImage(IMG[f.img], Math.round(f.x - camX), Math.round(f.y - camY)); else R(ctx, Math.round(f.x - camX), Math.round(f.y - camY), 2, 2, f.col); ctx.globalAlpha = 1; continue; }
+    if (f.txt) { ctx.globalAlpha = Math.max(0, 1 - f.t / 1.1); ctx.font = 'bold 8px Lexend, sans-serif'; ctx.textAlign = 'center';
+      const tx = Math.round(f.x - camX), ty = Math.round(f.y - camY - f.t * 14);
+      ctx.fillStyle = '#000'; ctx.fillText(f.txt, tx + 1, ty + 1); ctx.fillStyle = f.col; ctx.fillText(f.txt, tx, ty); ctx.globalAlpha = 1; }
+  }
+  // sneeuw die valt
+  if (S.zone?.sneeuw) for (let i = 0; i < 45; i++) {
+    const sx = (hash(i, 1) % VW + S.t * (6 + hash(i, 2) % 8) + Math.sin(S.t + i) * 4) % VW, sy = (hash(i, 3) % VH + S.t * (12 + hash(i, 4) % 10)) % VH;
+    R(ctx, Math.round(sx), Math.round(sy), 1, 1, '#ffffff');
+  }
+  // donker bos / burcht
+  if (S.tint > .01) { ctx.globalAlpha = S.tint; ctx.fillStyle = S.tintCol; ctx.fillRect(0, 0, VW, VH); ctx.globalAlpha = 1; }
+
+  // praatwolkje
+  const bub = $('bubble');
+  if (S.talk && S.state === 'play') {
+    bub.hidden = false; if (bub.textContent !== S.talk.text) bub.textContent = S.talk.text;
+    bub.style.left = Math.max(22, Math.min(78, (S.talk.x + 8 - camX) / VW * 100)) + '%';
+    bub.style.top = ((S.talk.y - 2 - camY) / VH * 100) + '%';
+  } else bub.hidden = true;
+}
+
+// ---------- knoppen ----------
+$('start').addEventListener('click', startPlay);
+$('mute').addEventListener('click', () => { muted = !muted; $('mute').textContent = 'Geluid: ' + (muted ? 'uit' : 'aan'); $('mute').blur(); });
+$('reset').addEventListener('click', () => {
+  if (!confirm('Weet je het zeker? Al je eikels, spullen, kleren en bevrijde mormels zijn dan weg.')) return;
+  SV = NIEUW(); saveNow(); $('win').hidden = true; $('shop').hidden = true; $('kraam').hidden = true; newWorld(); showKar(); $('intro').hidden = false;
+});
+
+// ---------- start ----------
+newWorld(); showKar();
+let last = performance.now();
+function frame(now){
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  update(dt); draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+addEventListener('beforeunload', () => { if (dirty) saveNow(); });
+</script>
