@@ -52,14 +52,17 @@ button.pill:focus-visible{outline:3px solid var(--sun); outline-offset:2px}
 .banner{position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; font-family:var(--display); font-weight:900; font-size:clamp(22px,5.5vw,42px); color:var(--sun); text-shadow:0 3px 0 #a8222a, 0 0 18px rgba(0,0,0,.6); text-align:center; padding:16px}
 .bubble{position:absolute; transform:translate(-50%,calc(-100% - 8px)); max-width:55%; background:#fffaf0; color:#2a0f1a; border:2px solid #2a0f1a; border-radius:12px; padding:4px 9px; font-weight:600; font-size:clamp(11px,2.1vw,14px); line-height:1.3; text-align:center; pointer-events:none}
 .bubble::after{content:""; position:absolute; left:50%; bottom:-8px; transform:translateX(-50%); border:7px solid transparent; border-top-color:#2a0f1a; border-bottom:0}
-.overlay{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:16px; background:rgba(24,16,28,.93); text-align:center; overflow:auto}
+.overlay{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:safe center; gap:10px; padding:16px; background:rgba(24,16,28,.93); text-align:center; overflow:auto}
 .overlay h2{margin:0; font-family:var(--display); font-weight:900; color:var(--red); font-size:clamp(24px,5.5vw,40px); text-shadow:0 3px 0 #22408f}
 .overlay p{margin:0; max-width:46ch; color:var(--ink); font-size:clamp(13px,2.4vw,16px)}
 .overlay ul{margin:0; padding:0; list-style:none; display:grid; gap:3px; font-size:clamp(12px,2.2vw,15px); color:var(--dim); max-width:48ch}
 .overlay ul b{color:var(--ink); font-weight:600}
-.kies{display:flex; align-items:center; gap:10px}
-.kies canvas{width:72px; height:72px; image-rendering:pixelated; background:rgba(255,255,255,.06); border-radius:12px}
-.kies .naam{font-family:var(--display); font-weight:700; font-size:clamp(16px,3vw,20px); min-width:7em}
+.kieslabel{font-family:var(--display); font-weight:700; color:var(--sun); font-size:clamp(15px,2.8vw,19px)}
+.kies{display:flex; flex-wrap:wrap; justify-content:center; gap:8px}
+.kar{display:flex; flex-direction:column; align-items:center; gap:2px; font:inherit; font-family:var(--display); font-weight:700; font-size:clamp(13px,2.4vw,16px); color:var(--ink); background:var(--panel); border:2px solid rgba(255,255,255,.15); border-radius:12px; padding:6px 10px; cursor:pointer}
+.kar canvas{width:60px; height:66px; image-rendering:pixelated}
+.kar[aria-pressed="true"]{border-color:var(--sun); background:#4a3050; box-shadow:0 0 0 2px rgba(255,214,107,.35)}
+.kar:focus-visible{outline:3px solid var(--sun); outline-offset:2px}
 .btn{font:inherit; font-family:var(--display); font-weight:700; font-size:clamp(16px,3vw,20px); color:#fff; background:var(--red); border:0; border-radius:12px; padding:9px 26px; box-shadow:0 4px 0 #8a1a22; cursor:pointer}
 .btn:active{transform:translateY(3px); box-shadow:0 1px 0 #8a1a22}
 .btn:focus-visible,.small:focus-visible,.buy:focus-visible,.tab:focus-visible,.pad button:focus-visible,.dranken button:focus-visible{outline:3px solid var(--sun); outline-offset:2px}
@@ -100,6 +103,17 @@ button.pill:focus-visible{outline:3px solid var(--sun); outline-offset:2px}
 .acts .klein button{font-size:15px; padding:8px 10px; font-weight:600}
 .fire{width:92px; height:92px; border-radius:50%!important; font-family:var(--display)!important; font-weight:700; font-size:17px!important; background:#22408f!important; color:var(--bolt)!important}
 @media (pointer:coarse){ .pad{display:flex} .keys{display:none} .dranken kbd,.toolbtn kbd{display:none} }
+/* iPad en telefoon: snel tikken mag niet inzoomen of een menu openen */
+button{touch-action:manipulation; -webkit-tap-highlight-color:transparent}
+.pad button{-webkit-touch-callout:none}
+/* Liggend op een iPad: pijltjes links van het spel, actieknoppen rechts, alles past op het scherm */
+@media (pointer:coarse) and (orientation:landscape){
+  .wrap{display:grid; grid-template-columns:1fr auto 1fr; grid-template-areas:"head head head" "dpad screen acts" "row row row"; align-items:center; justify-items:center; max-width:none; gap:6px 12px; padding-block:6px}
+  header{grid-area:head} .row{grid-area:row}
+  h1{font-size:clamp(20px,3.5vw,30px)}
+  .screen{grid-area:screen; width:min(calc(100vw - 32px - 2 * 190px), calc((100dvh - 110px) * 4 / 3))}
+  .pad{display:contents} .dpad{grid-area:dpad} .acts{grid-area:acts}
+}
 @media (prefers-reduced-motion:reduce){ .toast{transition:none} }
 </style>
 
@@ -133,6 +147,9 @@ button.pill:focus-visible{outline:3px solid var(--sun); outline-offset:2px}
     <div class="overlay" id="intro">
       <h2>de mormel game</h2>
       <p>De griesels lopen overal in het eikenbos. Ze hebben mormels in kooien gestopt! Versla de griesels, verzamel eikels en bevrijd de mormels.</p>
+      <div class="kieslabel" id="kieslabel">Kies je mormel</div>
+      <div class="kies" id="kies" role="group" aria-labelledby="kieslabel"></div>
+      <button class="btn" id="start" type="button">Spelen!</button>
       <ul>
         <li><b>Lopen:</b> pijltjes of W A S D</li>
         <li><b>Bliksem schieten:</b> spatie (ingedrukt houden mag)</li>
@@ -144,13 +161,6 @@ button.pill:focus-visible{outline:3px solid var(--sun); outline-offset:2px}
         <li><b>Drankjes:</b> toets 1, 2 en 3</li>
         <li><b>Upgrades:</b> in de Eikelwinkel maak je je bliksem, bijl, hartjes, torens en huizen sterker.</li>
       </ul>
-      <div class="kies">
-        <button class="small" id="prevKar" type="button" aria-label="Vorige mormel">◀</button>
-        <canvas id="karcv" width="20" height="22"></canvas>
-        <span class="naam" id="karnaam"></span>
-        <button class="small" id="nextKar" type="button" aria-label="Volgende mormel">▶</button>
-      </div>
-      <button class="btn" id="start" type="button">Spelen!</button>
     </div>
 
     <div class="overlay shop" id="shop" hidden>
@@ -232,6 +242,9 @@ button.pill:focus-visible{outline:3px solid var(--sun); outline-offset:2px}
 // naam en kleuren, dan kun je hem op het startscherm kiezen.
 const KARAKTERS = [
   { naam:"Grote Quin", lijf:"#e23a3a", lijfDonker:"#a8222a", benen:"#3561d6", benenDonker:"#22408f" },
+  { naam:"Rif",        lijf:"#f08a2a", lijfDonker:"#b65a12", benen:"#3561d6", benenDonker:"#22408f" },
+  { naam:"Bella",      lijf:"#3a6fe0", lijfDonker:"#2448a8", benen:"#1c2a6b", benenDonker:"#101945" },
+  { naam:"Jet",        lijf:"#7fd0f5", lijfDonker:"#4a9cc8", benen:"#3561d6", benenDonker:"#22408f" },
 ];
 
 // De wereld. Elke letter is één vakje.
@@ -432,7 +445,7 @@ const HOUTKRAAM = [
 const PRAAT = [
   "Ik heb vannacht gedroomd dat ik een eikel was.",
   "Griesels hebben echt rare krulletjes.",
-  "Mijn hartjes op mijn hoofd jeuken een beetje.",
+  "Mijn hartjes-oren jeuken een beetje.",
   "Eikels zijn geen snoep. Het is geld!",
   "Ik ben gisteren tegen een boom aan gelopen. Twee keer.",
   "Mormels zijn de beste wezens van de hele wereld.",
@@ -455,6 +468,9 @@ const MKLEUR = {
   h:"#ff6f91", H:"#c93a62", o:"#2a0f1a", v:"#1b1d33", w:"#e9f6ff", m:"#ffe1d0",
   k:"#7a4a22", L:"#7fd7ff",
 };
+// De hartjes op het hoofd zijn oren: in de kleur van de mormel, met roze binnenin
+const OREN = [".oo.oo....oo.oo.", "orrorro..orrorro", "orhhhro..orhhhro", ".orhroooooorhro."];
+const OREN_ACHTER = OREN.map(r => r.replace(/h/g, 'r'));
 const MORMEL = {
   omlaag:[
     ".hh.hh....hh.hh.", ".hhhhh....hhhhh.", "..hhh......hhh..", "..oHooooooooHo..",
@@ -556,8 +572,8 @@ function mormelImgs(k){
   if (!MCACHE[key]) {
     const pal = {...MKLEUR, r:k.lijf, R:k.lijfDonker, b:k.benen || KARAKTERS[0].benen, B:k.benenDonker || KARAKTERS[0].benenDonker};
     // de toverstaf of bijl wordt los getekend, dus die halen we uit het plaatje
-    const zonder = rows => rows.map(r => r.replace(/[kL]/g, '.'));
-    MCACHE[key] = { omlaag:bake(zonder(MORMEL.omlaag), pal), omhoog:bake(zonder(MORMEL.omhoog), pal), opzij:bake(zonder(MORMEL.opzij), pal) };
+    const zonder = (rows, oren = OREN) => rows.map((r, i) => i < 4 ? oren[i] : r.replace(/[kL]/g, '.'));
+    MCACHE[key] = { omlaag:bake(zonder(MORMEL.omlaag), pal), omhoog:bake(zonder(MORMEL.omhoog, OREN_ACHTER), pal), opzij:bake(zonder(MORMEL.opzij), pal) };
   }
   return MCACHE[key];
 }
@@ -927,6 +943,7 @@ addEventListener('keydown', e => {
   if (e.code === 'KeyB' && S.state === 'play' && !e.repeat) { e.preventDefault(); openBouw(); return; }
   if (e.code === 'KeyN' && S.state === 'play' && !e.repeat) { e.preventDefault(); nuAanvallen(); return; }
   const k = KEYMAP[e.code]; if (!k) return;
+  if (S.state === 'intro' && (k === 'left' || k === 'right')) { e.preventDefault(); kiesKar(k === 'left' ? -1 : 1); return; }
   if (S.state !== 'play') { if (k === 'fire' && S.state === 'intro' && !e.repeat) { e.preventDefault(); startPlay(); } return; }
   e.preventDefault(); if (k === 'fire' && !keys.fire) firePressed = true; keys[k] = true;
 });
@@ -990,15 +1007,16 @@ function hudAanval(){
 }
 
 // --- startscherm: kies je mormel ---
+// Alle mormels naast elkaar, net als bij Pixel Vreter. Je kleren heeft elke mormel aan.
 function showKar(){
-  const c = $('karcv').getContext('2d'); c.clearRect(0, 0, 20, 22);
-  drawMormel(c, 2, 5, 'down', held(), SV.aan);
-  $('karnaam').textContent = held().naam;
-  const meer = KARAKTERS.length > 1; $('prevKar').hidden = !meer; $('nextKar').hidden = !meer;
+  $('kies').innerHTML = KARAKTERS.map((k, i) => `<button class="kar" type="button" data-i="${i}" aria-pressed="${i === SV.kar}"><canvas width="20" height="22"></canvas>${k.naam}</button>`).join('');
+  $('kies').querySelectorAll('.kar').forEach(b => {
+    const c = b.querySelector('canvas').getContext('2d');
+    drawMormel(c, 2, 5, 'down', KARAKTERS[+b.dataset.i], SV.aan);
+    b.addEventListener('click', () => { SV.kar = +b.dataset.i; saveNow(); showKar(); beep(660, .06, 'square', .04); $('kies').querySelector(`[data-i="${SV.kar}"]`).focus({preventScroll:true}); });
+  });
 }
-function kiesKar(step){ SV.kar = (SV.kar + step + KARAKTERS.length) % KARAKTERS.length; saveNow(); showKar(); }
-$('prevKar').addEventListener('click', () => kiesKar(-1));
-$('nextKar').addEventListener('click', () => kiesKar(1));
+function kiesKar(step){ SV.kar = (SV.kar + step + KARAKTERS.length) % KARAKTERS.length; saveNow(); showKar(); beep(660, .06, 'square', .04); }
 
 function startPlay(){
   $('intro').hidden = true; S.state = 'play'; beep(523, .08, 'square', .04);

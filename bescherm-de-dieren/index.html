@@ -86,11 +86,15 @@ h1{margin:0; font-family:var(--display); font-weight:900; font-size:clamp(24px,5
         <li><b>Lopen:</b> pijltjes of W A S D</li>
         <li><b>Eikel gooien:</b> spatie. Je zakje vult vanzelf weer bij.</li>
         <li><b>Oppakken:</b> loop tegen spullen en diertjes aan</li>
-        <li><b>Huisje bouwen:</b> 1 takje, 1 blaadje, 1 steentje en 1 mos. Loop naar een bouwplek in de tuin.</li>
+        <li><b>Huisje bouwen:</b> <span id="recept"></span>. Loop naar een bouwplek in de tuin.</li>
         <li><b>Redden:</b> breng elk diertje naar een leeg huisje</li>
       </ul>
       <div class="levels" id="levels"></div>
-      <button class="btn" id="start" type="button">Spelen!</button>
+      <p id="bewaardTxt" style="color:var(--leaf)" hidden></p>
+      <div class="btns">
+        <button class="btn" id="start" type="button">Spelen!</button>
+        <button class="small" id="fresh" type="button" hidden>Opnieuw beginnen</button>
+      </div>
     </div>
 
     <div class="overlay" id="win" hidden>
@@ -138,12 +142,16 @@ h1{margin:0; font-family:var(--display); font-weight:900; font-size:clamp(24px,5
 //  M modder (daar loop je langzaam)   L waterlelie (daar kun je over het water hoppen)   J riet
 //  I ijs (daar glij je)   Y diepe sneeuw (daar loop je langzaam)   K rotswand
 //  E grotwand   C kristal (geeft licht)   P fakkel (loop ertegenaan om hem aan te steken)   % spinnenweb (plakkerig)
+//  # hek   ~ hooi (daar zit je verstopt)   + moestuin   @ schuur   ! staldeur (daar woont de boze stier)
+//  1 waakhond   2 boze kip
 //  Diertjes:  e egeltje  m muisje  k eekhoorntje  v vogeltje  p kikkertje
 //             r ree-kalfje  d dassenjong  z vleermuisje (hangt onder een boom)
 //             u eendje  a schildpadje  q otterjong  i ijsvogeltje
 //             h sneeuwhaasje  c marmotje  y berggeitje  n sneeuwuiltje  j poolvosje
 //             f molletje  x salamandertje  w glimwormpje (geeft licht)
+//             5 lammetje  6 biggetje  7 kuikentje  8 konijntje met het blauwe jasje
 //  Spullen:   t takje    l blaadje s steentje     o mos
+//             $ het bijzondere spulletje van dit level (zie "spul" bij het level)
 const LEVELS = [
   {
     naam: "De Weide",
@@ -195,6 +203,7 @@ const LEVELS = [
     baasTip: "Ontwijk de rode streep. Gooi eikels, maar onder water kun je haar niet raken!",
     gewonnen: "Alle diertjes van het moeras zijn veilig, en de grote slang is teruggekropen in haar hol.",
     mist: true,
+    spul: "riet", huis: "huisMoeras",
     kleuren: { gras:'#6a9a42', gras2:'#5a8636', gras3:'#86b85a', hoog:'#4f8a36', hoog2:'#8cc060',
       water:'#3d7f7a', water2:'#7ab8a0', water3:'#2c5f5a', schuim:'#cfe8d0' },
     kaart: [
@@ -204,29 +213,29 @@ const LEVELS = [
       "TTWWWW..MMMMM.......................Q..T",
       "TTWWWW.MMMMMMM.....t.....JJoJJJ........T",
       "T.JWWJl.MMMMM............WWWWWWWJ......T",
-      "T..Ju.g......g...S.....JSWWWWWWWWJ.....T",
+      "T..Ju.g......g...S....$JSWWWWWWWWJ.....T",
       "TT...ggg....gpg........WWWWWWWWWWW...s.T",
-      "TT....g......g.....o..WWWWWWWWWWWWWJ...T",
-      "T.T.....T............JWWWWWJ.J.WWWWJ..TT",
+      "TT....g....s.g.....o..WWWWWWWWWWWWWJ...T",
+      "T.T....lT............JWWWWWJ.J.WWWWJ..TT",
       "TT....bbbbbbbbbbb...J=LLLL...a.BBBBB..TT",
       "TT.....b.........b...=WWWWW..JJWWWWWJS.T",
       "T..s...b.X..X..X.bb.J=WWWWWWWWWWWWWWJ.TT",
       "TT.....b.........b...=WWWWWWWWWWWWWJ...T",
-      "TT.R...b.........=====WWWWWWWWWWWWl..t.T",
+      "TT.R.l.b.........=====WWWWWWWWWWWWl..t.T",
       "T......b..H......b....JWWWWWWWWWWW.....T",
       "T......b.....X.X.b.b....WWWWWWWWW......T",
-      "T.l....b.........b.....RJWWWWWWWMMMMMTTT",
+      "T.l....b..X......b.....RJWWWWWWWMMMMMTTT",
       "T......bbbbb.bbbbb.T.....JJJJ..MMMMMMM.T",
-      "T....o......=.................S.MMMMM..T",
-      "TT..J......o=.,,.....g........t.......TT",
+      "T....o......=.............u...S.MMMMM..T",
+      "TT..J......o=$,,.....g$.o.....t.......TT",
       "TT.WW.......=.......ggg...........q....T",
       "TTWWWWJS....=........g...T..........o.TT",
-      "TTWWWW...t..=...s..........,.JJWWW.J..TT",
-      "TT.WW.......===========.....JWLLLLWWJ.TT",
-      "TT......MMM...........=.....JWWWWWWWJ.TT",
+      "TTWWWW...t.o=...s.$........,.JJWWW.J..TT",
+      "TT.WW.......===========....tJWLLLLWWJ.TT",
+      "TT.....tMMM.$....s....=$....JWWWWWWWJ.TT",
       "TTi...MMMMMMM..l...S..=...o..J.WWW.J.lTT",
-      "TT......MMM......t....=......s.........T",
-      "TTT.TT.T.TTTT..TTTT.T...TTT...T......TTT",
+      "TT..$...MMM......t....=......s.........T",
+      "TTT.TT.T.TTTT..TTTT.T...TTT...T$.....TTT",
       "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
     ],
   },
@@ -239,37 +248,38 @@ const LEVELS = [
     baasTip: "Ontwijk de rode kring. Raak de uil als hij op de grond zit!",
     gewonnen: "Alle diertjes van het bos zijn veilig, en de grote uil is teruggevlogen naar zijn nest.",
     schemer: true,
+    spul: "dennenappel", huis: "huisBos",
     kleuren: { gras:'#4f9a48', gras2:'#3f8740', gras3:'#6cb85a', pad:'#c9a96e', pad2:'#ad8e57' },
     kaart: [
       "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
       "TTTTTTDTTTTDDTTDDDDTDTDDWWTTTTTDTDDDDDDT",
       "TDDT...sTTDTTTDTTDDT.,TDTWWDTDTD...TTTTT",
-      "TD...U...DTTTTTTD..T.t..TWWDDD...N..*DTT",
-      "TD....*...t.TTT**.sz..*.DWWTDT.U,*.,.tTT",
+      "TD...U...DTTTTTTD..T.t..TWWDDD...N.s*DTT",
+      "TD....*.t.t.TTT**.sz..*.DWWTDT.U,*.,.tTT",
       "T..tr=================...WWDD....t....TT",
-      "TD......o=.DTTTDT...bU...WWTD...=..*.DDT",
-      "TD,..*...=TTDDDTT...*...DWWDDT..=.*s.DDT",
+      "TD......o=.DTTTDT...bU.$.WWTD...=..*.DDT",
+      "TD,s.*...=TTDDDTT...*...DWWDDTt.=$*s.DDT",
       "TTDD.l*TD=*s...DTTT...TDDWWTTTTT=..DDTTT",
-      "TTDTDTT..=.......DTDDDTDDWWTDDDT=DDDTDDT",
+      "TTDTDTT..=...$...DTDDDTDDWWTDDDT=DDDTDDT",
       "TDDDDDDbb=bbbbbbbbDTTDTTWWTDDDTT=TDDDDTT",
       "TTTDTT.b.........b.TDTTTWWTTTD..=DDDTDTT",
       "TTDTDD.b.X..X..X.b.DTTTTWWTT....=..DDDDT",
-      "TTDTT..b.........b..TDTWW....bl.=...DTDT",
-      "TDDTD..b.........======BB============.TT",
+      "TTDTT..b.........b.oTDTWW....bl.=..sDTDT",
+      "TDDTD..bX........======BB============oTT",
       "TDTTD..b..H......b..=TTWWDT....U.t.T=TTT",
       "TDTTT..b.....X.X.b..=TDWWDDT.o.....D=TTT",
-      "TTDDDT.b.........b.s=.TWWDDTDDT..DTT=TDT",
+      "TTDDDT.b..X......b.s=.TWWDDTDDTl.DTT=TDT",
       "TDDTTD.bbbbb=bbbbb..=.,WWDTTDDDDTDT.=*DT",
-      "TDDTTTTTD...=....b..=..WWDTTTTTTTTl.=..T",
-      "TDDTTTDTTTD.=.*.TDl.=*.WWTTDDDDTTD..=..T",
-      "TDTDDDDDDDDD=.*TDDD.=.TDWWTDD...D...=..T",
+      "TDDTTTTTD...=.o..b..=..WWDTTTTTTTTl.=..T",
+      "TDDTTTDTTTD.=.*.TDl.=*.WWTTDDDDTTD..=m.T",
+      "TDTDDDDDDDDD=.*TDDD.=.TDWWTDD...D..v=..T",
       "TDDDT..DTT.o=....TDD=DTTWWT..U.,....=ebT",
-      "TTT.....T...=.....TT=..*WW.o.........*.T",
-      "TDT.........=*Uo..DT=====BB======s.....T",
+      "TTT.....T...=.....TT=.$*WW.o...l...$.*.T",
+      "TDT...$....t=*Uo..DT=====BB======s.....T",
       "TD...========.....TDTDTTTWW...d........T",
-      "TD*l.k...T.......TDDTTTDDWW.......D...DT",
+      "TD*l.k...T.$.....TDDTTTDDWW$......D$..DT",
       "TTD...o.TDDDb.lTTDTTDTTDDWWTT..T.DTTDDTT",
-      "TTTD.*.DTDTTDDTTDDTTDDDTTWWTTTDDDTTTTDTT",
+      "TTTDl*.DTDTTDDTTDDTTDDDTTWWTTTDDDTTTTDTT",
       "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
     ],
   },
@@ -282,36 +292,37 @@ const LEVELS = [
     baasTip: "Zie je een rode streep? Spring opzij! Na een sprong is de wolf moe: raak hem dan!",
     gewonnen: "Alle diertjes van de berg zijn veilig, en de grote wolf is jankend teruggerend naar zijn grot.",
     sneeuw: true,
+    spul: "sneeuwbal", huis: "iglo",
     kleuren: { gras:'#e9eff6', gras2:'#d3dde8', gras3:'#ffffff', pad:'#c4ccd6', pad2:'#aab4c0',
       water:'#4a8ac8', water2:'#9ccaf0', water3:'#3570a8', schuim:'#eef6ff' },
     kaart: [
       "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
-      "DD.D.DD...D.DDD....KKKKKKKKKKKKKKKKKDDDD",
-      "DD.....t........s....KKKKKKKKKKKKK....DD",
-      "D..IIIII..YYYcY.......KlKKKGKKKKK......D",
-      "DDIIhIIIIYYYYYYY..................D..s.D",
-      "DD.IIIII..YYYYY...t.............o.....DD",
+      "DD.D.DD..tD.DDD....KKKKKKKKKKKKKKKKKDDDD",
+      "DD.....t........s..l.KKKKKKKKKKKKK..c.DD",
+      "D$.IIIII..YYYcY.......KlKKKGKKKKK......D",
+      "DDIIhIIIIYYYYYYY............$.....D..s.D",
+      "DD.IIIII..YYYYY...t..s..........o.o...DD",
       "D........l......Z.....................DD",
-      "DD............D.......R.......O.......DD",
-      "DD.......................Z........ZYYY.D",
-      "DD.R................D.............YYYyYD",
-      "DD.....bbbbbbbbbbb.................YYY.D",
+      "DD............D......lR.......O.....t.DD",
+      "DD.$........o......s.....Z........ZYYY.D",
+      "DD.R...$............D.........t...YYYyYD",
+      "DD$....bbbbbbbbbbb.................YYY.D",
       "D......b.........b......D...tII........D",
-      "D......b.X..X..X.b..o....IIIIIIIII.o...D",
+      "D......b.X..X..X.b..o..h.IIIIIIIII.o.$.D",
       "DDl....b.........b......IIIIIIIIIII...DD",
-      "D......b.........=====..IIIIIIIIIII....D",
-      "DD..D..b..H......b.....IIIIIIInIIIIIt.DD",
-      "D......b.....X.X.b....D.IIIIIIIIIII....D",
-      "DD.....b.........b......IIIIIIIIIII....D",
-      "D..s...bbbbb=bbbbb.......IIIIIIIII.....D",
-      "D...........=...W.........s.III......RDD",
-      "DD....o...D.=...W....Y.......Z...l.....D",
-      "DDD.........============Y..............D",
-      "DD.........o....W.YYYYYYY....D.........D",
+      "D......bX........=====.oIIIIIIIIIII....D",
+      "DD..Ds.b..H......b.....IIIIIIInIIIIIt.DD",
+      "D......b.....X.X.b...oD.IIIIIIIIIII....D",
+      "DD.....b..X.....Xb......IIIIIIIIIII....D",
+      "D..s.y.bbbbb=bbbbb.......IIIIIIIII.....D",
+      "D...........=..$W.........s.III......RDD",
+      "DD....o...D.=...W...sY.......Z...l.....D",
+      "DDD$........============Y..............D",
+      "DD.........o....W.YYYYYYY.l..D......t..D",
       "D....t...........WYYYYYYY........I....DD",
-      "DD....YYZYY......W...Ys.......IIIIIII..D",
+      "DD....YYZYYl.....W..$Ys.......IIIIIII..D",
       "DD...YYYYYYY.l...W..........oIIIIIIIIIDD",
-      "D.....YYYYY......W.D.Z....R...IIIIIjI..D",
+      "D.$...YYYYY......W.D.Z....R...IIIIIjI..D",
       "D........O......W.......t........I...lDD",
       "D....D.D..DDD...WD..DDDD.D.D.DDsDDDD..DD",
       "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
@@ -326,43 +337,87 @@ const LEVELS = [
     baasTip: "Ontwijk haar plakdraden. Zie je een schaduw groeien? Weg daar, ze laat zich vallen!",
     gewonnen: "Alle diertjes van de grot zijn veilig, en de grote spin is hoog weggeklommen in haar web.",
     donker: true,
+    spul: "kristalletje", huis: "huisGrot",
     kleuren: { gras:'#3d3944', gras2:'#322e38', gras3:'#4c4756', pad:'#5a5262', pad2:'#4a4352', rots:'#6a6474', rots2:'#8a8494', rots3:'#4a4552',
       water:'#24467a', water2:'#4a78b0', water3:'#183258', schuim:'#8ab0e0' },
     kaart: [
       "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
       "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
       "EEEE...o.EEEEEEEEEEEEEEEEEEEEE&EEEEEEEEE",
-      "EEECt.A.*.EEEEEEEE...EEEEEE.......EEEEEE",
-      "EE...f..l..EEEEEP...AtEEP...o...%%..EEEE",
-      "EEEs......EEEEEE...w......%%......A..EEE",
-      "EEEE.....PEEEEEE.s....C...l.......t.CEEE",
-      "EEEEEE...EEEEEEE.....E.E.C...........EEE",
-      "EEEEEEE...E.EEE...EEEEEEE....*...s..EEEE",
-      "EEEEEEE...........EEEEEEEEE...%...EEEEEE",
-      "EEEEEE.RRRRRRRRRRREEEEEEEEEEE...EEEEEEEE",
+      "EEECt.A.*.EEEEEEEEl..EEEEEE.....$.EEEEEE",
+      "EE...f..l..EEEEEP...AtEEP.$.o...%%..EEEE",
+      "EEEs......EEEEEE...w......%%....o.A.dEEE",
+      "EEEE.$...PEEEEEE.s....C...l...o...t.CEEE",
+      "EEEEEE...EEEEEEE...t.E.E.C...........EEE",
+      "EEEEEEEs..E.EEE.x.EEEEEEE.o.s*...s..EEEE",
+      "EEEEEEE...l.$.....EEEEEEEEE...%o..EEEEEE",
+      "EEEEEE.RRRRRRRRRRREEEEEEEEEEE$..EEEEEEEE",
       "EEEEE..R.........REEEEEEEEEEE..PEEEEEEEE",
       "EEEE...R.X..X..X.R.EEEEEEEEE...EEEEEEEEE",
-      "EEEE...R.........R.EE.PEE....l....EPEEEE",
-      "EEE....R.........===.........WWW....EEEE",
-      "EEEE...R..H......R..o....A.WWWWWWW..lEEE",
+      "EEEE...R.........R.EE.PEE.t..l....EPEEEE",
+      "EEE....RX........===.........WWWt...EEEE",
+      "EEEE...R..H......R..o....A.WWWWWWWs.lEEE",
       "EEEE...R.....X.X.R..EE.t...BBBBBBB...EEE",
-      "EEEEE..R.........REEEE.....WWWWWWW.d.EEE",
+      "EEEEE..RX.X.....XREEEE.....WWWWWWW.d.EEE",
       "EEEEE..RRRRR=RRRRREEEEEC...s.WW*....EEEE",
-      "EEEEEEE.........EEEEEEEEE.......o.EEEEEE",
-      "EEEEEEEEEEE..EEEEEEEEEEEEEE...EEEEEEEEEE",
+      "EEEEEEE.w......$EEEEEEEEE.......o.EEEEEE",
+      "EEEEEEEEEEE$.EEEEEEEEEEEEEE$..EEEEEEEEEE",
       "EEEEEEEEEE...EEEEEEEEEEEEEE..EEEEEEEEEEE",
-      "EEEEEEEE.E.PEEEEEEEEEEEEE...P.EEEEEEEEEE",
-      "EEEEE.......EEEEEEEEEE...........EEEEEEE",
-      "EEEEC......s..EEE.........s......t.EEEEE",
-      "EEE.l....A.............l.A....x....EEEEE",
-      "EEEE..z...t.*....PEE....*.........CEEEEE",
-      "EEEEE...o...EEEEEEEEEE........o..EEEEEEE",
+      "EEEEEEEE.E.PEEEEEEEEEEEEEl..P.EEEEEEEEEE",
+      "EEEEE....$..EEEEEEEEEE.f.......$.EEEEEEE",
+      "EEEEC..l...s.tEEE....s....s......t.EEEEE",
+      "EEE.l....A.....l.......l.A....x....EEEEE",
+      "EEEE..z...t.*....PEE.$..*.........CEEEEE",
+      "EEEEE...o...EEEEEEEEEE.s....t.o.oEEEEEEE",
       "EEEEEEEE.EEEEEEEEEEEEEEEE.....EEEEEEEEEE",
       "EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE",
     ],
   },
+  {
+    naam: "De Boerderij",
+    verhaal: "Op de boerderij passen waakhonden op. Loop zachtjes langs een slapende hond, anders wordt hij wakker! De kippen zijn boos: zie je een rode streep, dan rent er een kip op je af. Verstop je in het hooi, daar zien ze je niet. En in de moestuin groeien worteltjes...",
+    vijand: "hond", baas: "stier", baasNaam: "De boze stier",
+    startTip: "Sluip langs de honden en verstop je in het hooi!",
+    baasKomt: "De boze stier breekt uit de stal!",
+    baasTip: "Laat de stier tegen een hek rennen. Is hij duizelig? Gooi dan snel eikels!",
+    gewonnen: "Alle diertjes van de boerderij zijn veilig, en de boze stier sjokt mopperend terug naar zijn stal.",
+    spul: "wortel", huis: "huisBoerderij",
+    kleuren: { gras:'#6ab84a', gras2:'#58a23c', gras3:'#8ad064', pad:'#d2b072', pad2:'#b8945a' },
+    kaart: [
+      "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+      "T..T..T..T.###########.T...@@@@@@@@@TTTT",
+      "T.....,.,..#$++++++++#.....@@@@@@@@@.t.T",
+      "T.W.WW.....#++2++8$+$#..$..@@@@@@@@@...T",
+      "ToWWWW...O.#....s....#..T..@@@@@@@@@..oT",
+      "T.WWWWu....#++++++$++#....t@@@@!@@@@...T",
+      "T.WWW..s...#$++$++++$#s.....l..=.l....oT",
+      "T..s....O..#####=#####......~..=..~...TT",
+      "Ts.......s,..~~.================..m...TT",
+      "T....~~t.....l.o...1..=.~~..........~..T",
+      "TT.....###########....=..l.l.#########TT",
+      "TT.....#.........#....=......#MMMMMMM#.T",
+      "T...,o.#.X..X..X.#.~~l=..Ot..#MM6MMMM#TT",
+      "Ts...,.#...X.....#....=......#MMMMMMM#.T",
+      "TT..t..#X........=============MMMMM6M#.T",
+      "T..T...#..H......#....=......#MMMMMMM#.T",
+      "TT.....#.....X.X.#,...=$..,t.#########.T",
+      "T......#X.X.....X#.T..=....~.$.....o..TT",
+      "T...T..#####=#####....=....~..~~....T..T",
+      "T..l........=......t.$=~..o............T",
+      "T......================~.############..T",
+      "T....t.=.t............=..#.......~.l#..T",
+      "T.#####=#####......$..=..#..2l...o..#O.T",
+      "T.#~~......s#..~~l..,.=s.#.....7.2..#..T",
+      "T.#o.....O..#o....1...====..........#..T",
+      "TT#.O5.....s#...t...s....#....2...2.#.TT",
+      "T.#.l....o5.#..e...~.,...#.~~..o...7#.TT",
+      "TT###########s...T.....T.############..T",
+      "TTT.......T.T..TTl....t.TT..TT.TT.T.t..T",
+      "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT",
+    ],
+  },
 ];
-const KOMT_NOG = "Je hebt alle levels gehaald! Heb jij een idee voor level 6?";
+const KOMT_NOG = "Je hebt alle levels gehaald! Heb jij een idee voor level 7?";
 
 const SPEL = {
   snelheid: 76,          // hoe snel het konijntje hopt
@@ -389,6 +444,12 @@ const SPEL = {
   vleerZiet: 72,         // van hoe ver een vleermuis je ziet
   vleerMikken: 0.6,      // zoveel seconden gloeien de oogjes voordat hij duikt
   vastTijd: 1.2,         // zo lang zit je vast in een plakdraad van de spin
+  hondHoort: 60,         // zo dichtbij kun je langs een slapende hond sluipen
+  hondSnelheid: 68,      // een wakkere hond (net iets langzamer dan jij)
+  hondJaag: 4,           // zo lang rent een hond je achterna, dan geeft hij het op
+  kipZiet: 52,           // van hoe ver een kip boos wordt
+  kipMikken: 0.7,        // zoveel seconden zie je de rode streep voordat de kip rent
+  stierDuizelig: 2.6,    // zo lang is de stier duizelig na een botsing
 };
 
 const DIEREN = {
@@ -398,8 +459,12 @@ const DIEREN = {
   u:{naam:"het eendje"}, a:{naam:"het schildpadje"}, q:{naam:"het otterjong"}, i:{naam:"het ijsvogeltje"},
   f:{naam:"het molletje"}, x:{naam:"het salamandertje"}, w:{naam:"het glimwormpje"},
   h:{naam:"het sneeuwhaasje"}, c:{naam:"het marmotje"}, y:{naam:"het berggeitje"}, n:{naam:"het sneeuwuiltje"}, j:{naam:"het poolvosje"},
+  5:{naam:"het lammetje"}, 6:{naam:"het biggetje"}, 7:{naam:"het kuikentje"}, 8:{naam:"het konijntje met het blauwe jasje"},
 };
 const SPULLEN = { t:"takje", l:"blaadje", s:"steentje", o:"mos" };
+// Elk level (behalve het eerste) heeft een eigen spulletje dat je ook nodig hebt voor een huisje.
+const BIJZONDER = { riet:"rietje", dennenappel:"dennenappel", sneeuwbal:"sneeuwbal", kristalletje:"kristalletje", wortel:"worteltje" };
+const ALLESPUL = {...SPULLEN, ...BIJZONDER};
 
 // Plaatjes: elke letter is een kleur, een punt is doorzichtig.
 const KLEUR = {
@@ -522,6 +587,47 @@ Object.assign(DIERPLAATJES, {
     "........bb..",".......bkbb.","..gg..gGbbb.",".gGGggGGgg..","gGGGGGGGg...",".gggggggg...",
   ]},
 });
+// en de diertjes van de boerderij
+Object.assign(DIERPLAATJES, {
+  5:{kleur:{w:"#f8f6f0",W:"#dcd6c8",k:"#2a2a2e",e:"#f8f6f0"}, rijen:[
+    "..wwwww.kk..",".wWwWwwwkkkk","wWwWwWwwkekk","wwWwWwWwkkk.",".wwWwWwWww..","..wwwwwww...","..k.k..k.k..","..k.k..k.k..",
+  ]},
+  6:{kleur:{p:"#f0a0b0",P:"#f8c4cf",k:"#17171c",n:"#d07080"}, rijen:[
+    "p.......pp..",".p.ppppppp..","..pPPPPPPpp.",".pPPPPPPPkpp",".pPPPPPPPpnn","..pPPPPPPpp.","...pppppp...","...p.p.p.p..",
+  ]},
+  7:{kleur:{y:"#ffe04a",Y:"#fff3a8",k:"#17171c",o:"#f08a2a"}, rijen:[
+    "...yyy..","..yyyyy.","..yykyyo","yyyyyyoo","yYYyyyy.",".yYYyy..","..yyyy..","..o..o..",
+  ]},
+  8:{kleur:{b:"#8a5a36",B:"#b07a4e",k:"#17171c",n:"#f0a3b4",j:"#2a5aa8",J:"#4a7ad0",y:"#f2d03a",w:"#f5f5f2"}, rijen:[
+    ".......b.b..",".......bnbn.",".......b.b..","......bbbb..","......bBkBn.","..j...bbbbb.","wjJJJJJJbb..",".jJJyJJJj...",".jJJJJJJj...","..bb...bb...",
+  ]},
+});
+// de waakhond, de boze kip en de boze stier
+const HONDKLEUR = {b:"#5a3a22", B:"#c08a50", w:"#f5efe2", k:"#17171c"};
+const KIPKLEUR = {w:"#f8f6f0", W:"#d8d2c4", r:"#e0303a", k:"#17171c", y:"#f0a020"};
+const STIERKLEUR = {b:"#3a2418", B:"#6a4630", w:"#f0ead8", k:"#17171c", p:"#d89090", o:"#e8c040"};
+const BOERPLAATJES = {
+  hond:[
+    "..........bb....",".........bBBbb..","b........bBkBBb.",".b.......bBBBBBk","..bbbbbbbbBBwww.",
+    "..bBBBBBBBBbw...","..bBwwwwBBBb....","..bBBBBBBBBb....","..bB.bB..bB.bB..","..kk.kk..kk.kk..",
+  ],
+  hondRen:[
+    "..........bb....",".........bBBbb..","b........bBkBBb.",".b.......bBBBBBk","..bbbbbbbbBBwww.",
+    "..bBBBBBBBBbw...","..bBwwwwBBBb....","..bBBBBBBBBb....",".bB...bBbB...bB.","kk....kkkk....kk",
+  ],
+  kip:[
+    ".......rr...","......rwwr..","......wwkwy.","......wwwwyy","w....wwwwr..","ww..wwwwwr..",
+    "wwwwWwwwww..",".wWWWwwwww..","..wwwwwww...","....y..y....","...yy.yy....",
+  ],
+  stier:[
+    "...........w..w.","...........wbbw.","..........bbbbb.","b.........bkbbpp",".bbbbbbbbbbbbbpp",
+    "..bBBBBBBBbbbbo.","..bBBBBBBBBbb...","..bbbbbbbbbbb...","..bb.bb..bb.bb..","..kk.kk..kk.kk..",
+  ],
+  stierRen:[
+    "...........w..w.","...........wbbw.","..........bbbbb.","b.........bkbbpp",".bbbbbbbbbbbbbpp",
+    "..bBBBBBBBbbbbo.","..bBBBBBBBBbb...","..bbbbbbbbbbb...",".bb...bbbb...bb.","kk....kkkk....kk",
+  ],
+};
 // vleermuizen en de grote spin
 const VLEERKLEUR = {v:"#3a2a4a", V:"#6a5084", r:"#ff3a3a"};
 const SPINKLEUR = {s:"#241628", S:"#5a3a6a", k:"#241628", r:"#ff4040", y:"#ffd23c"};
@@ -563,6 +669,43 @@ const SPULPLAATJES = {
     ".DDDDDDDDDDDDDD.","..tTtTtTtTtTtT..","..tTtTtkkTtTtT..","..tTtTkkkkTtTt..","..tTtTkkkkTtTt..","..tTtTkkkkTtTt..",".mmmmmkkkkmmmmm.",
   ]},
   hart:{kleur:{h:"#ff6b8a",H:"#ffb3c4"}, rijen:[".hh.hh.","hHhhhhh","hhhhhhh",".hhhhh.","..hhh..","...h..."]},
+  // de bijzondere spulletjes
+  riet:{kleur:{k:"#5a3a1e",K:"#8a5a2e",g:"#5fa83a"}, rijen:[
+    "....kk....","...kKKk...","...kKKk...","...kKKk...","....kk....",".....g....","..g..g....","...g.g....","....gg....",
+  ]},
+  dennenappel:{kleur:{b:"#6b4426",B:"#b07a40",g:"#3e7a32"}, rijen:[
+    "...gg...","..bBBb..",".bBbbBb.",".BbBBbB.",".bBbbBb.",".BbBBbB.","..bBBb..","...bb...",
+  ]},
+  sneeuwbal:{kleur:{w:"#ffffff",s:"#a8c0dc",o:"#6f8aaa"}, rijen:[
+    "..oooo..",".owwwwo.","owwwwwso","owwwwsso","owwwssso",".osssso.","..oooo..",
+  ]},
+  wortel:{kleur:{o:"#f08a2a",O:"#ffb04a",g:"#4fae3c",G:"#7fd06a"}, rijen:[
+    "...g.g..","..gGgG..","...gg...","..oOoo..","..ooOo..","...oOo..","...oo...","...oO...","....o...",
+  ]},
+  kristalletje:{kleur:{c:"#5ad0f0",C:"#d0f6ff",p:"#9a6ae0",P:"#d8c0ff"}, rijen:[
+    "...c....","..cCc...","..cCcp..",".ccCcpp.",".cCccpP.",".cCcpPp.","..ccpp..","...cp...",
+  ]},
+  // de huisjes van elk level (de deur zit steeds op dezelfde plek, daar kijkt het diertje uit)
+  huisMoeras:{kleur:{L:"#d8b45a",l:"#a8842e",D:"#7a5e20",t:"#8a6a3a",T:"#5a4224",k:"#24160c"}, rijen:[
+    ".......LL.......","......LlLL......",".....LLlLLl.....","....LlLLlLLL....","...LLLlLLLlLL...","..LlLLLLlLLLlL..",
+    ".DDDDDDDDDDDDDD.","..tTtTtTtTtTtT..","..tTtTtkkTtTtT..","..tTtTkkkkTtTt..","..tTtTkkkkTtTt..","..DDDDkkkkDDDD..","..T..T....T..T..",
+  ]},
+  huisBos:{kleur:{L:"#a5703a",l:"#6b4426",D:"#4a2c14",t:"#c4935a",T:"#8a5f36",k:"#24160c",m:"#4f8a36",g:"#3e7a32"}, rijen:[
+    ".......gg.......","......LlLL......",".....lLlLlL.....","....LlLLlLLl....","...lLlLlLlLlL...","..LlLLlLLlLLlL..",
+    ".DDDDDDDDDDDDDD.","..tTtTtTtTtTtT..","..TTTTTkkTTTTT..","..tTtTkkkkTtTt..","..TTTTkkkkTTTT..","..tTtTkkkkTtTt..",".mmmmmkkkkmmmmm.",
+  ]},
+  iglo:{kleur:{w:"#f4f8fc",W:"#b8c8da",k:"#2a3a50",s:"#dfe8f2"}, rijen:[
+    "................","................",".....wwwwww.....","...wwwwWwwwww...","..wWwwwwwwwWww..",".wwwwwWwwwwwwWw.",
+    ".WWWWWWWWWWWWWW.","wwwWwwwkkwwwWwww","wwwwwwkkkkwwwwww","WWWWWWkkkkWWWWWW","wwWwwwkkkkwwWwww","wwwwwwkkkkwwwwww",".ssssskkkksssss.",
+  ]},
+  huisBoerderij:{kleur:{L:"#6a6470",l:"#8a8494",w:"#f5efe2",r:"#c8402e",R:"#a8321f",k:"#24160c",m:"#e0c060"}, rijen:[
+    "................",".......ww.......","......wLLw......",".....wLlLLw.....","....wLLLlLLw....","...wLlLLLLlLw...",
+    "..wwwwwwwwwwww..","..rRrRrrrrRrRr..","..rRrRrkkrRrRr..","..rRrRkkkkRrRr..","..rRrRkkkkRrRr..","..rRrRkkkkRrRr..",".mmmmmkkkkmmmmm.",
+  ]},
+  huisGrot:{kleur:{s:"#8a8494",S:"#aea8ba",d:"#5a5464",c:"#5ad0f0",C:"#d0f6ff",k:"#1a1620",m:"#4c4756"}, rijen:[
+    ".......cc.......","......cCcc......",".......cc.......","....ssssssss....","...sSssSsssSs...","..sssSsssSsssS..",
+    ".dddddddddddddd.","..sSsssSsssSss..","..sssSsckksSss..","..ssSsskkkkssS..","..sSssskkkkSss..","..sssSskkkksSs..",".mmmmmkkkkmmmmm.",
+  ]},
 };
 
 // =====================================================================
@@ -595,6 +738,9 @@ for (const [k, rows] of Object.entries(UILPLAATJES)) { both('uil_' + k, bake(row
 for (const [k, d] of Object.entries(DIERPLAATJES)) both('dier_' + k, bake(d.rijen, d.kleur));
 for (const k of ['vleer1', 'vleer2']) IMG[k] = bake(GROTPLAATJES[k], VLEERKLEUR);
 for (const k of ['spin1', 'spin2']) IMG[k] = bake(GROTPLAATJES[k], SPINKLEUR);
+both('hond', bake(BOERPLAATJES.hond, HONDKLEUR)); both('hondRen', bake(BOERPLAATJES.hondRen, HONDKLEUR));
+both('kip', bake(BOERPLAATJES.kip, KIPKLEUR));
+both('stier', bake(BOERPLAATJES.stier, STIERKLEUR)); both('stierRen', bake(BOERPLAATJES.stierRen, STIERKLEUR));
 for (const [k, rows] of Object.entries(SLANGPLAATJES)) { both('slang_' + k, bake(rows, SLANGKLEUR)); both('baasslang_' + k, bake(rows, BAASSLANGKLEUR)); }
 for (const [k, d] of Object.entries(SPULPLAATJES)) IMG[k] = bake(d.rijen, d.kleur);
 function glow(col, r){ const c = document.createElement('canvas'); c.width = c.height = r * 2; const x = c.getContext('2d'); const g = x.createRadialGradient(r, r, 0, r, r, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, r * 2, r * 2); return c; }
@@ -611,7 +757,7 @@ const hash = (x, y, s = 0) => { let h = (x * 374761393 + y * 668265263 + s * 214
 
 let map, MW, MH, LV = 0;
 const tile = (x, y) => (x < 0 || y < 0 || x >= MW || y >= MH) ? 'T' : map[y][x];
-const SOLID = new Set(['T','O','D','N','W','b','R','V','Q','K','G','E','C','P','&']);
+const SOLID = new Set(['T','O','D','N','W','b','R','V','Q','K','G','E','C','P','&','#','@','!']);
 
 function drawGrass(c, ox, oy, x, y){
   R(c, ox, oy, 16, 16, C.gras);
@@ -679,6 +825,27 @@ function drawTile(c, ch, x, y, ox, oy){
     case '%': drawGrass(c, ox, oy, x, y); c.strokeStyle = 'rgba(225,225,235,.75)'; c.lineWidth = 1; c.beginPath();
       c.moveTo(ox, oy); c.lineTo(ox + 16, oy + 16); c.moveTo(ox + 16, oy); c.lineTo(ox, oy + 16); c.moveTo(ox + 8, oy); c.lineTo(ox + 8, oy + 16); c.moveTo(ox, oy + 8); c.lineTo(ox + 16, oy + 8);
       c.moveTo(ox + 12, oy + 8); c.arc(ox + 8, oy + 8, 4, 0, 6.28); c.moveTo(ox + 15, oy + 8); c.arc(ox + 8, oy + 8, 7, 0, 6.28); c.stroke(); break;
+    case '#': { drawGrass(c, ox, oy, x, y); // hek: palen met planken naar de buren
+      const h = '#', lr = tile(x - 1, y) === h || tile(x + 1, y) === h, ud = tile(x, y - 1) === h || tile(x, y + 1) === h;
+      R(c, ox + 2, oy + 13, 12, 2, 'rgba(0,0,0,.15)');
+      if (lr || !ud) { R(c, ox, oy + 5, 16, 2, '#c8a070'); R(c, ox, oy + 10, 16, 2, '#c8a070'); R(c, ox, oy + 7, 16, 1, '#7a5030'); R(c, ox, oy + 12, 16, 1, '#7a5030'); }
+      if (ud) { R(c, ox + 5, oy, 2, 16, '#c8a070'); R(c, ox + 10, oy, 2, 16, '#c8a070'); R(c, ox + 7, oy, 1, 16, '#7a5030'); R(c, ox + 12, oy, 1, 16, '#7a5030'); }
+      R(c, ox + 6, oy + 2, 4, 12, '#a87a48'); R(c, ox + 6, oy + 2, 4, 1, '#e8c898'); R(c, ox + 9, oy + 3, 1, 11, '#7a5030'); break; }
+    case '~': drawGrass(c, ox, oy, x, y); // hooi
+      R(c, ox + 1, oy + 6, 14, 9, '#e0b84a'); R(c, ox + 3, oy + 3, 10, 4, '#e0b84a'); R(c, ox + 1, oy + 14, 14, 1, '#a8822a');
+      for (let i = 0; i < 6; i++) R(c, ox + 2 + hash(x, y, i) % 12, oy + 3 + hash(x, y, i + 6) % 10, 1, 3, i % 2 ? '#f6dc7c' : '#b8922e'); break;
+    case '+': R(c, ox, oy, 16, 16, '#7a5530'); R(c, ox, oy + 4, 16, 1, '#5f4022'); R(c, ox, oy + 12, 16, 1, '#5f4022'); // moestuin
+      for (const gx of [3, 11]) { const kool = hash(x, y, gx) % 3 === 0, gy = oy + 6;
+        if (kool) { R(c, ox + gx - 3, gy - 1, 6, 5, '#5aa83a'); R(c, ox + gx - 2, gy - 2, 4, 1, '#7fd06a'); R(c, ox + gx - 1, gy, 2, 2, '#8ad870'); }
+        else { R(c, ox + gx - 1, gy + 1, 2, 2, '#f08a2a'); R(c, ox + gx - 2, gy - 2, 1, 3, '#4fae3c'); R(c, ox + gx, gy - 3, 1, 4, '#4fae3c'); R(c, ox + gx + 1, gy - 2, 1, 3, '#4fae3c'); } }
+      break;
+    case '@': case '!': // schuur van rode planken met een grijs dak
+      R(c, ox, oy, 16, 16, '#b8382a'); for (let k = 0; k < 4; k++) R(c, ox + k * 4 + 3, oy, 1, 16, '#8a2a1e');
+      if (tile(x, y - 1) !== '@' && tile(x, y - 1) !== '!') { R(c, ox, oy, 16, 6, '#6a6470'); R(c, ox, oy + 5, 16, 1, '#4a4652'); R(c, ox, oy, 16, 1, '#8a8494'); }
+      if (tile(x, y + 1) !== '@' && tile(x, y + 1) !== '!') R(c, ox, oy + 14, 16, 2, '#f5efe2');
+      if (ch === '!') { R(c, ox + 1, oy + 1, 14, 15, '#f5efe2'); R(c, ox + 2, oy + 2, 12, 14, '#5a2a1a');
+        c.strokeStyle = '#f5efe2'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(ox + 2, oy + 2); c.lineTo(ox + 14, oy + 16); c.moveTo(ox + 14, oy + 2); c.lineTo(ox + 2, oy + 16); c.stroke(); }
+      break;
     case 'W': case 'B': case 'L': break; // getekend in drawWater (beweegt)
     default: drawGrass(c, ox, oy, x, y);
   }
@@ -722,6 +889,10 @@ const SFX = {
   huil: () => { beep(380, .5, 'sine', .06, 620); beep(620, .5, 'sine', .05, 420, .45); },
   piep: () => { beep(2200, .06, 'square', .03); beep(2600, .06, 'square', .03, null, .08); },
   vuur: () => { beep(200, .3, 'sawtooth', .04, 600); beep(800, .15, 'triangle', .04, 400, .1); },
+  woef: () => { beep(320, .09, 'square', .06, 200); beep(280, .12, 'square', .06, 170, .14); },
+  tok:  () => { beep(1300, .05, 'square', .03); beep(950, .07, 'square', .03, null, .07); },
+  boe:  () => beep(150, .7, 'sawtooth', .05, 105),
+  boem: () => { beep(90, .35, 'triangle', .12, 40); beep(600, .1, 'square', .03, 300, .05); },
   oehoe:() => { beep(420, .16, 'sine', .07, 380); beep(360, .28, 'sine', .07, 330, .2); },
   plof: () => beep(170, .12, 'triangle', .09, 70),
   baas: () => [196, 185, 175, 165].forEach((f, i) => beep(f, .25, 'sawtooth', .05, null, i * .2)),
@@ -738,6 +909,46 @@ try { gehaald = JSON.parse(localStorage.getItem(SAVE_KEY) || '[]').map(g => type
 const isGehaald = i => gehaald.includes(LEVELS[i].naam);
 function markWon(i){ if (!isGehaald(i)) gehaald.push(LEVELS[i].naam); try { localStorage.setItem(SAVE_KEY, JSON.stringify(gehaald)); } catch (e) {} }
 
+// --- bewaarde werelden (hoe ver je in elk level bent) ---
+// Per level onthouden we: waar je staat, je spullen, welke spullen weg zijn,
+// welke huisjes er staan en welke diertjes daarin wonen.
+const WERELD_KEY = 'ravi-game-werelden';
+let werelden = {};
+try { werelden = JSON.parse(localStorage.getItem(WERELD_KEY) || '{}') || {}; } catch (e) {}
+const heeftWereld = i => !!werelden[LEVELS[i].naam];
+function schrijfWerelden(){ try { localStorage.setItem(WERELD_KEY, JSON.stringify(werelden)); } catch (e) {} }
+function bewaarWereld(){
+  if (!S || S.state !== 'play') return;
+  const P = S.player, thuis = !!S.carry;
+  werelden[LEVELS[LV].naam] = {
+    // met een diertje op je rug begin je weer bij je hol, en het diertje staat weer op zijn plekje
+    x:thuis ? S.hol.x : P.x, y:thuis ? S.hol.y : P.y, dir:S.dir,
+    inv:S.inv, eikels:S.eikels, saved:S.saved, caught:S.caught, thrown:S.thrown, time:S.time,
+    weg:S.items.map((it, i) => it.got ? i : -1).filter(i => i >= 0),
+    huisjes:S.spots.map(sp => sp.house ? (sp.animal ? S.animals.indexOf(sp.animal) : -1) : null),
+    fakkels:S.fakkels.map(f => f.aan ? 1 : 0),
+  };
+  schrijfWerelden();
+}
+function wisWereld(i = LV){ delete werelden[LEVELS[i].naam]; schrijfWerelden(); }
+function laadWereld(){
+  const w = werelden[LEVELS[LV].naam]; if (!w) return false;
+  try {
+    S.player.x = w.x; S.player.y = w.y; S.dir = w.dir || 'down';
+    for (const k in S.inv) S.inv[k] = w.inv[k] || 0;
+    S.eikels = w.eikels; S.caught = w.caught; S.thrown = w.thrown; S.time = w.time;
+    for (const i of w.weg) if (S.items[i]) S.items[i].got = true;
+    w.huisjes.forEach((h, i) => { const sp = S.spots[i]; if (!sp || h === null) return; sp.house = true; const an = S.animals[h]; if (an) { sp.animal = an; an.state = 'home'; } });
+    S.saved = S.spots.filter(sp => sp.animal).length;
+    w.fakkels.forEach((a, i) => { if (S.fakkels[i]) S.fakkels[i].aan = !!a; });
+    S.firstItem = true; S.fakkelTip = S.fakkels.some(f => f.aan);
+    updateHud(); return true;
+  } catch (e) { wisWereld(); newGame(LV); return false; }
+}
+setInterval(bewaarWereld, 3000);
+addEventListener('pagehide', bewaarWereld);
+document.addEventListener('visibilitychange', () => document.hidden && bewaarWereld());
+
 // --- spelstatus ---
 let S;
 function newGame(lv = LV){
@@ -745,14 +956,15 @@ function newGame(lv = LV){
   Object.assign(C, C0, L.kleuren || {});
   MH = L.kaart.length; MW = Math.max(...L.kaart.map(r => r.length));
   map = L.kaart.map(r => r.padEnd(MW, 'T').split(''));
-  S = { t:0, player:null, dir:'down', moving:false, carry:null, inv:{t:0,l:0,s:0,o:0}, eikels:SPEL.eikelsMax, refill:0,
+  S = { t:0, player:null, dir:'down', moving:false, carry:null, recept:[...Object.keys(SPULLEN), ...(L.spul ? [L.spul] : [])], inv:{}, eikels:SPEL.eikelsMax, refill:0,
         vel:{x:0, y:0}, vast:0, webs:[], fakkels:[], kristallen:[], enemies:[], animals:[], items:[], spots:[], acorns:[], fx:[], flies:[], glows:[], boss:null, saved:0, total:0,
         hol:null, den:null, pv:{x:0, y:0}, caught:0, thrown:0, time:0, state:'intro', banner:0 };
+  for (const k of S.recept) S.inv[k] = 0;
   for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
     const ch = map[y][x], px = x * TS, py = y * TS;
     if (ch === 'H') { S.hol = {x:px, y:py}; continue; }
     if (ch === 'X') { S.spots.push({x:px, y:py, house:false, animal:null}); continue; }
-    if ('VNQG&'.includes(ch)) { S.den = {x:px, y:py + TS}; continue; }
+    if ('VNQG&!'.includes(ch)) { S.den = {x:px, y:py + TS}; continue; }
     if (ch === 'P') { S.fakkels.push({x:px + 8, y:py + 6, aan:false}); continue; }
     if (ch === 'C') { S.kristallen.push({x:px + 8, y:py + 8}); continue; }
     if (ch === '*') { S.glows.push({x:px + 8, y:py + 8}); continue; }
@@ -761,8 +973,10 @@ function newGame(lv = LV){
     else if (ch === 'S') { S.enemies.push(makeSnake(px + 8, py + 10)); map[y][x] = baseOf(x, y); }
     else if (ch === 'Z') { S.enemies.push(makeWolf(px, py)); map[y][x] = '.'; }
     else if (ch === 'A') { S.enemies.push(makeBat(px + 8, py + 8)); map[y][x] = baseOf(x, y); }
+    else if (ch === '1') { S.enemies.push(makeDog(px, py)); map[y][x] = baseOf(x, y); }
+    else if (ch === '2') { S.enemies.push(makeHen(px, py)); map[y][x] = baseOf(x, y); }
     else if (DIEREN[ch]) { const hang = ch === 'z'; S.animals.push({kind:ch, x:px + 2, y:py + (hang ? 0 : 3), home:{x:px + 2, y:py + (hang ? 0 : 3)}, hang, state:'wild', ph:hash(x, y) % 10}); map[y][x] = baseOf(x, y); }
-    else if (SPULLEN[ch]) { S.items.push({kind:ch, x:px + 3, y:py + 4, ph:hash(x, y) % 10}); map[y][x] = baseOf(x, y); }
+    else if (SPULLEN[ch] || (ch === '$' && L.spul)) { S.items.push({kind:ch === '$' ? L.spul : ch, x:px + 3, y:py + 4, ph:hash(x, y) % 10}); map[y][x] = baseOf(x, y); }
   }
   if (L.schemer) for (let i = 0; i < 40; i++) S.flies.push({x:Math.random() * MW * TS, y:Math.random() * MH * TS, ph:Math.random() * 6.28, sp:.5 + Math.random()});
   S.total = S.animals.length;
@@ -772,7 +986,9 @@ function newGame(lv = LV){
   $('boss').hidden = true; $('banner').hidden = true;
   buildStatic(); updateHud();
 }
-function baseOf(x, y){ const n = {}; for (const [a, b] of [[1,0],[-1,0],[0,1],[0,-1]]) { const c = tile(x + a, y + b); if ('.g=B'.includes(c)) n[c] = (n[c] || 0) + 1; } let best = '.', bn = 0; for (const k in n) if (n[k] > bn) { best = k; bn = n[k]; } return best === 'B' ? '.' : best; }
+function baseOf(x, y){ const n = {}; for (const [a, b] of [[1,0],[-1,0],[0,1],[0,-1]]) { const c = tile(x + a, y + b); if ('.g=BM+'.includes(c)) n[c] = (n[c] || 0) + 1; } let best = '.', bn = 0; for (const k in n) if (n[k] > bn) { best = k; bn = n[k]; } return best === 'B' ? '.' : best; }
+function makeDog(x, y){ return {type:'hond', x, y, home:{x, y}, vx:0, vy:0, face:1, state:'slaap', timer:0, wt:0}; }
+function makeHen(x, y){ return {type:'kip', x, y, home:{x, y}, vx:0, vy:0, face:1, state:'pik', timer:0, wt:0, cool:0}; }
 function makeFox(x, y){ return {type:'vos', x, y, home:{x, y}, vx:0, vy:0, face:1, state:'wander', timer:0, wt:0}; }
 function makeBat(x, y){ return {type:'vleer', x, y, home:{x, y}, h:12, ang:Math.random() * 6.28, face:1, state:'fly', timer:0, cool:1 + Math.random() * 2}; }
 function makeWolf(x, y){ return {type:'wolf', x, y, home:{x, y}, vx:0, vy:0, face:1, state:'wander', timer:0, wt:0, stamina:0}; }
@@ -798,6 +1014,8 @@ function moveBody(b, dx, dy){
   if (dy) { if (boxFree(b.x, b.y + dy)) b.y += dy; else ok = false; }
   return ok;
 }
+// Zit het konijntje in het hooi? Dan zien de dieren van de boerderij het niet.
+const verstopt = () => tile(Math.floor((S.player.x + 8) / TS), Math.floor((S.player.y + 13) / TS)) === '~';
 // De tuin rond het hol is veilig: daar komen roofdieren niet.
 const inSafe = (x, y) => Math.hypot(x - (S.hol.x + 8), y - (S.hol.y + 8)) < 6 * TS;
 function moveFox(f, dx, dy){
@@ -851,12 +1069,16 @@ const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
 // --- HUD ---
 const icon = k => IMG[k].toDataURL();
-const ICON = {eikel:icon('eikel'), t:icon('t'), l:icon('l'), s:icon('s'), o:icon('o'), hart:icon('hart')};
+const ICON = {eikel:icon('eikel'), hart:icon('hart')};
+for (const k in ALLESPUL) ICON[k] = icon(k);
+// wat heb je nodig voor één huisje, en heb je dat al?
+const receptTekst = () => S.recept.map(k => '1 ' + ALLESPUL[k]).join(', ').replace(/, ([^,]*)$/, ' en $1');
+const kanBouwen = () => S.recept.every(k => S.inv[k] > 0);
 $('throwimg').src = ICON.eikel;
 function updateHud(){
   let p = ''; for (let i = 0; i < SPEL.eikelsMax; i++) p += `<img src="${ICON.eikel}" alt="" class="${i < S.eikels ? '' : 'off'}">`;
   $('pouch').innerHTML = p;
-  $('mats').innerHTML = Object.keys(SPULLEN).map(k => `<span><img src="${ICON[k]}" alt="${SPULLEN[k]}">${S.inv[k]}</span>`).join('');
+  $('mats').innerHTML = S.recept.map(k => `<span><img src="${ICON[k]}" alt="${ALLESPUL[k]}">${S.inv[k]}</span>`).join('');
   $('saved').innerHTML = `<img src="${ICON.hart}" alt="">${S.saved}/${S.total} veilig`;
   if (S.boss) $('bossbar').style.width = (100 * Math.max(0, S.boss.hp) / SPEL.baasLeven) + '%';
 }
@@ -866,22 +1088,31 @@ function showIntro(){
   const L = LEVELS[LV];
   $('introTitle').textContent = `Level ${LV + 1}: ${L.naam}`;
   $('introText').textContent = L.verhaal;
-  $('levels').innerHTML = LEVELS.map((l, i) => `<button class="lvbtn" type="button" data-i="${i}" aria-pressed="${i === LV}">${i + 1}. ${l.naam}${isGehaald(i) ? ' <span class="ok">✓</span>' : ''}</button>`).join('');
-  $('levels').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { newGame(+b.dataset.i); showIntro(); }));
+  $('recept').textContent = `${S.spots.length} huisjes, elk van ${receptTekst()}`;
+  $('levels').innerHTML = LEVELS.map((l, i) => `<button class="lvbtn" type="button" data-i="${i}" aria-pressed="${i === LV}">${i + 1}. ${l.naam}${isGehaald(i) ? ' <span class="ok">✓</span>' : heeftWereld(i) ? ' <span class="ok" title="Bewaard">💾</span>' : ''}</button>`).join('');
+  $('levels').querySelectorAll('button').forEach(b => b.addEventListener('click', () => { bewaarWereld(); newGame(+b.dataset.i); showIntro(); }));
+  const w = werelden[L.naam];
+  $('start').textContent = w ? 'Verder spelen!' : 'Spelen!';
+  $('fresh').hidden = !w; $('bewaardTxt').hidden = !w;
+  if (w) { const n = w.huisjes.filter(h => h !== null).length; $('bewaardTxt').textContent = `Je wereld is bewaard: ${n} ${n === 1 ? 'huisje' : 'huisjes'} gebouwd, ${w.saved} van de ${S.total} diertjes veilig.`; }
   $('win').hidden = true; $('intro').hidden = false; S.state = 'intro';
 }
 
 // --- spelregels ---
 function startPlay(){
+  const verder = S.state === 'intro' && laadWereld();
   $('intro').hidden = true; $('win').hidden = true; S.state = 'play'; beep(523, .08, 'square', .04);
-  toast(LEVELS[LV].startTip, 3200);
+  toast(verder ? 'Welkom terug! Je wereld is precies zoals je hem achterliet.' : LEVELS[LV].startTip, 3200);
+  // waren alle diertjes al veilig? dan komt de baas meteen
+  if (verder && S.saved === S.total) setTimeout(() => S.state === 'play' && !S.boss && spawnBoss(), 1500);
+  bewaarWereld();
 }
 function caught(door){
   if (S.player.blink > 0) return;
   S.vast = 0;
   S.caught++; SFX.au(); sparkles(S.player.x + 8, S.player.y + 8, '#ffffff', 8);
   S.player.x = S.hol.x; S.player.y = S.hol.y; S.player.blink = 2; S.dir = 'down';
-  const wie = door || {vos:'een vos', uil:'een uil', slang:'een slang', wolf:'een wolf', vleer:'een vleermuis'}[LEVELS[LV].vijand];
+  const wie = door || {vos:'een vos', uil:'een uil', slang:'een slang', wolf:'een wolf', vleer:'een vleermuis', hond:'een hond'}[LEVELS[LV].vijand];
   if (S.carry) {
     // Het diertje schrikt en rent terug naar zijn eigen plekje
     const an = S.carry; S.carry = null;
@@ -1089,6 +1320,96 @@ ENEMY.wolf = {
     ctx.globalAlpha = 1;
   },
   sortY: w => w.y + 15,
+};
+
+// ---------- de waakhond ----------
+ENEMY.hond = {
+  hitbox: h => ['gone', 'flee'].includes(h.state) ? null : {x:h.x + 8, y:h.y + 10, r:11},
+  scare(h, P){ const a = Math.atan2(h.y - P.y, h.x - P.x); h.state = 'flee'; h.timer = 1.4; h.vx = Math.cos(a) * 120; h.vy = Math.sin(a) * 120; SFX.raak(); pop(h.x + 8, h.y, null, 'Kaing!'); },
+  update(h, dt, P, pc){
+    const fc = {x:h.x + 8, y:h.y + 10}, dP = Math.hypot(pc.x - fc.x, pc.y - fc.y), leash = 9 * TS;
+    const ziet = P.blink <= 0 && !inSafe(pc.x, pc.y) && !verstopt();
+    if (h.state === 'gone') { h.timer -= dt; if (h.timer <= 0 && Math.hypot(P.x - h.home.x, P.y - h.home.y) > 90) { h.x = h.home.x; h.y = h.home.y; h.state = 'slaap'; h.appear = .6; } return; }
+    if (h.state === 'flee') { moveFox(h, h.vx * dt, h.vy * dt); h.face = h.vx >= 0 ? 1 : -1; h.timer -= dt; if (h.timer <= 0) { h.state = 'gone'; h.timer = SPEL.terugNa; } return; }
+    if (h.appear > 0) h.appear -= dt;
+    h.run = false;
+    switch (h.state) {
+      case 'slaap': // wakker als je te dichtbij komt
+        if (ziet && dP < SPEL.hondHoort) { h.state = 'wakker'; h.timer = .55; h.face = pc.x > fc.x ? 1 : -1; SFX.woef(); pop(h.x + 8, h.y - 2, null, 'Woef!'); }
+        break;
+      case 'wakker': h.timer -= dt; if (h.timer <= 0) { h.state = 'jaag'; h.timer = SPEL.hondJaag; } break;
+      case 'jaag': {
+        h.timer -= dt;
+        if (!ziet) { h.state = 'snuffel'; h.timer = 1.8; pop(h.x + 8, h.y - 2, null, verstopt() ? 'Waar is hij?' : 'Hmpf.'); break; }
+        if (h.timer <= 0 || Math.hypot(h.x - h.home.x, h.y - h.home.y) > leash) { h.state = 'terug'; pop(h.x + 8, h.y - 2, null, 'Pff, moe.'); break; }
+        const a = Math.atan2(pc.y - fc.y, pc.x - fc.x); moveFox(h, Math.cos(a) * SPEL.hondSnelheid * dt, Math.sin(a) * SPEL.hondSnelheid * dt);
+        h.face = Math.cos(a) >= 0 ? 1 : -1; h.run = true; break; }
+      case 'snuffel': h.timer -= dt; if (h.timer <= 0) h.state = 'terug'; break;
+      case 'terug': { // terug naar zijn plekje, en weer slapen
+        const d = dist(h, h.home);
+        if (d < 3) { h.state = 'slaap'; break; }
+        if (ziet && dP < SPEL.hondHoort * .7) { h.state = 'wakker'; h.timer = .4; SFX.woef(); pop(h.x + 8, h.y - 2, null, 'Woef!'); break; }
+        const a = Math.atan2(h.home.y - h.y, h.home.x - h.x), vx = Math.cos(a) * 34, vy = Math.sin(a) * 34;
+        if (!moveFox(h, vx * dt, vy * dt)) { h.x = h.home.x; h.y = h.home.y; } // vast? dan springt hij terug
+        h.face = vx >= 0 ? 1 : -1; h.run = true; break; }
+    }
+    if (['wakker', 'jaag'].includes(h.state) && dP < 11 && P.blink <= 0) { caught('een hond'); h.state = 'terug'; }
+  },
+  draw(h, camX, camY){
+    if (h.appear > 0 && Math.floor(S.t * 12) % 2) return;
+    const x = Math.round(h.x) - camX, y = Math.round(h.y) - camY, L = h.face < 0 ? 'L' : '';
+    ctx.globalAlpha = h.state === 'flee' ? Math.max(.2, h.timer / 1.4) : 1;
+    ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(x + 3, y + 14, 11, 2);
+    if (h.state === 'slaap') { // ligt opgerold te slapen
+      ctx.drawImage(IMG['hond' + L], 0, 0, 16, 8, x, y + 8, 16, 7);
+      const z = (S.t * .8) % 1; ctx.globalAlpha = 1 - z; ctx.fillStyle = '#fff'; ctx.font = 'bold 7px sans-serif';
+      ctx.fillText('z', x + 12 + z * 4, y + 6 - z * 8); ctx.fillText('Z', x + 9 + z * 3, y + 2 - z * 10);
+    } else {
+      ctx.drawImage(IMG[(h.run && Math.floor(S.t * 10) % 2 ? 'hondRen' : 'hond') + L], x, y + 5 - (h.state === 'wakker' ? 2 : 0));
+      if (h.state === 'jaag' || h.state === 'wakker') { ctx.fillStyle = '#ff5a3c'; ctx.fillRect(x + 7, y - 2, 2, 4); ctx.fillRect(x + 7, y + 3, 2, 1); }
+      if (h.state === 'snuffel') { ctx.fillStyle = '#fff'; ctx.font = 'bold 8px sans-serif'; ctx.fillText('?', x + 6, y + 1 - Math.floor(S.t * 3) % 2); }
+    }
+    ctx.globalAlpha = 1;
+  },
+  sortY: h => h.y + 15,
+};
+// ---------- de boze kip ----------
+ENEMY.kip = {
+  hitbox: k => ['gone', 'flee'].includes(k.state) ? null : {x:k.x + 8, y:k.y + 10, r:10},
+  scare(k, P){ const a = Math.atan2(k.y - P.y, k.x - P.x); k.state = 'flee'; k.timer = 1.2; k.vx = Math.cos(a) * 110; k.vy = Math.sin(a) * 110; SFX.tok(); pop(k.x + 8, k.y, null, 'Pok pok!'); sparkles(k.x + 8, k.y + 8, '#ffffff', 6); },
+  update(k, dt, P, pc){
+    const fc = {x:k.x + 8, y:k.y + 10}, dP = Math.hypot(pc.x - fc.x, pc.y - fc.y), leash = 5 * TS;
+    if (k.state === 'gone') { k.timer -= dt; if (k.timer <= 0 && Math.hypot(P.x - k.home.x, P.y - k.home.y) > 90) { k.x = k.home.x; k.y = k.home.y; k.state = 'pik'; k.appear = .6; } return; }
+    if (k.state === 'flee') { moveFox(k, k.vx * dt, k.vy * dt); k.face = k.vx >= 0 ? 1 : -1; k.timer -= dt; if (k.timer <= 0) { k.state = 'gone'; k.timer = SPEL.terugNa; } return; }
+    if (k.appear > 0) k.appear -= dt;
+    k.cool -= dt;
+    switch (k.state) {
+      case 'pik': { // rondscharrelen en pikken
+        if (k.cool <= 0 && P.blink <= 0 && !inSafe(pc.x, pc.y) && !verstopt() && dP < SPEL.kipZiet) { k.state = 'boos'; k.timer = SPEL.kipMikken; k.da = Math.atan2(pc.y - fc.y, pc.x - fc.x); SFX.tok(); pop(k.x + 8, k.y - 2, null, 'TOK!'); break; }
+        k.wt -= dt; const dH = dist(k, k.home);
+        if (k.wt <= 0 || dH > leash) { k.wt = .8 + Math.random() * 1.5; const a = dH > leash ? Math.atan2(k.home.y - k.y, k.home.x - k.x) : Math.random() * 6.28; const sp = Math.random() < .4 ? 0 : 18; k.vx = Math.cos(a) * sp; k.vy = Math.sin(a) * sp; }
+        if (!moveFox(k, k.vx * dt, k.vy * dt)) k.wt = 0;
+        if (Math.abs(k.vx) > 1) k.face = k.vx > 0 ? 1 : -1;
+        break; }
+      case 'boos': if (k.timer > .3) k.da = Math.atan2(pc.y - fc.y, pc.x - fc.x); k.face = Math.cos(k.da) >= 0 ? 1 : -1; k.timer -= dt; if (k.timer <= 0) { k.state = 'ren'; k.timer = .32; } break;
+      case 'ren': if (!moveFox(k, Math.cos(k.da) * 185 * dt, Math.sin(k.da) * 185 * dt)) k.timer = 0; k.timer -= dt; if (k.timer <= 0) { k.state = 'moe'; k.timer = 1; } break;
+      case 'moe': k.timer -= dt; if (k.timer <= 0) { k.state = 'pik'; k.cool = 1.2; } break;
+    }
+    if (k.state === 'ren' && dP < 11 && P.blink <= 0) { caught('een boze kip'); k.state = 'moe'; k.timer = 1.2; }
+  },
+  draw(k, camX, camY){
+    if (k.appear > 0 && Math.floor(S.t * 12) % 2) return;
+    const x = Math.round(k.x) - camX, y = Math.round(k.y) - camY, L = k.face < 0 ? 'L' : '';
+    if (k.state === 'boos') drawLane(x + 8, y + 10, k.da, 56, 5, 1 - k.timer / SPEL.kipMikken);
+    ctx.globalAlpha = k.state === 'flee' ? Math.max(.2, k.timer / 1.2) : 1;
+    ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(x + 3, y + 14, 10, 2);
+    const pik = k.state === 'pik' && (S.t * 2 + k.home.x) % 1.6 < .2 ? 2 : 0, hup = k.state === 'ren' && Math.floor(S.t * 14) % 2 ? -2 : 0;
+    if (k.state === 'boos') ctx.drawImage(IMG['kip' + L], x + 1, y + 2, 14, 13); // opgeblazen van boosheid
+    else ctx.drawImage(IMG['kip' + L], x + 2, y + 4 + pik + hup);
+    if (k.state === 'moe') { ctx.fillStyle = '#ffe15a'; ctx.font = 'bold 7px sans-serif'; ctx.fillText('~', x + 6 + Math.round(Math.sin(S.t * 6) * 2), y + 2); }
+    ctx.globalAlpha = 1;
+  },
+  sortY: k => k.y + 15,
 };
 
 // De rode streep: hier springt of schiet iets naartoe (k gaat van 0 naar 1)
@@ -1385,6 +1706,69 @@ BOSS.spin = {
   },
   sortY: B => B.y + B.h * 0 + (B.h > 0 ? 1000 : 0),
 };
+BOSS.stier = {
+  make: () => ({x:S.den.x - 8, y:S.den.y, hp:SPEL.baasLeven, state:'enter', timer:1.2, face:-1, speed:36, dashT:2, flash:0, aimT:.9, klappen:0}),
+  // alleen als hij duizelig is kun je hem raken
+  hitbox: B => B.state === 'duizelig' ? {x:B.x + 16, y:B.y + 12, r:18} : null,
+  // anders ketsen je eikels af
+  schild: B => ['chase', 'schraap', 'storm', 'moe', 'zoek'].includes(B.state) ? {x:B.x + 16, y:B.y + 12, r:18} : null,
+  hit(B){
+    B.klappen++; pop(B.x + 16, B.y - 6, null, B.hp <= 0 ? 'BOEEEE!' : 'Au!');
+    if (B.hp <= 0) { B.state = 'flee'; B.timer = 2.5; }
+    else if (B.klappen >= 2) { B.state = 'opstaan'; B.timer = .6; }
+  },
+  update(B, dt, P, pc){
+    const bc = {x:B.x + 16, y:B.y + 14}, a = Math.atan2(pc.y - bc.y, pc.x - bc.x), dP = Math.hypot(pc.x - bc.x, pc.y - bc.y);
+    const free = (nx, ny) => !solidAt(nx + 6, ny + 22) && !solidAt(nx + 26, ny + 22) && !solidAt(nx + 6, ny + 12) && !solidAt(nx + 26, ny + 12) && nx > 0 && ny > 0 && !inSafe(nx + 16, ny + 18);
+    const bmove = (vx, vy) => { if (free(B.x + vx, B.y + vy)) { B.x += vx; B.y += vy; return true; } if (free(B.x + vx, B.y)) { B.x += vx; return false; } if (free(B.x, B.y + vy)) B.y += vy; return false; };
+    const nearHol = Math.hypot(pc.x - S.hol.x - 8, pc.y - S.hol.y - 8) < 26, ziet = !verstopt() && P.blink <= 0;
+    B.flash = Math.max(0, B.flash - dt);
+    switch (B.state) {
+      case 'enter': B.timer -= dt; B.y += 20 * dt; if (B.timer <= 0) B.state = 'chase'; break;
+      case 'chase': {
+        if (!ziet) { B.state = 'zoek'; B.timer = 1.5; break; }
+        const sp = nearHol ? -B.speed * .6 : B.speed;
+        bmove(Math.cos(a) * sp * dt, Math.sin(a) * sp * dt); B.face = Math.cos(a) * Math.sign(sp || 1) >= 0 ? 1 : -1;
+        B.dashT -= dt; if (B.dashT <= 0 && dP < 150 && !nearHol) { B.state = 'schraap'; B.timer = B.aimT; B.da = a; SFX.boe(); pop(B.x + 16, B.y - 4, null, 'Boe!'); }
+        break; }
+      case 'zoek': B.timer -= dt; if (B.timer <= 0) { if (ziet) { B.state = 'chase'; B.dashT = 1; } else B.timer = .5; } break;
+      case 'schraap': // met zijn poot over de grond schrapen en mikken
+        if (B.timer > .3) B.da = a; B.face = Math.cos(B.da) >= 0 ? 1 : -1; B.timer -= dt;
+        if (Math.random() < dt * 8) sparkles(B.x + (B.face > 0 ? 6 : 26), B.y + 22, '#b8945a', 1);
+        if (B.timer <= 0) { B.state = 'storm'; B.timer = 1.6; }
+        break;
+      case 'storm':
+        if (!bmove(Math.cos(B.da) * 220 * dt, Math.sin(B.da) * 220 * dt)) { // BOEM! tegen het hek
+          B.state = 'duizelig'; B.timer = SPEL.stierDuizelig; B.klappen = 0; SFX.boem(); sparkles(B.x + 16 + Math.cos(B.da) * 16, B.y + 14 + Math.sin(B.da) * 12, '#ffd66b', 14); pop(B.x + 16, B.y - 6, null, 'BOING!');
+          if (!S.stierTip) { S.stierTip = true; toast('De stier is duizelig! Gooi nu snel eikels!', 2600); }
+          break; }
+        B.timer -= dt; if (B.timer <= 0) { B.state = 'moe'; B.timer = .8; }
+        break;
+      case 'moe': B.timer -= dt; if (B.timer <= 0) { B.state = 'chase'; B.dashT = 1.8 + Math.random(); } break;
+      case 'duizelig': B.timer -= dt; if (B.timer <= 0) { B.state = 'opstaan'; B.timer = .4; } break;
+      case 'opstaan': B.timer -= dt; if (B.timer <= 0) { B.state = 'chase'; B.dashT = 1.5; B.speed += 4; B.aimT = Math.max(.6, B.aimT - .05); } break;
+      case 'flee': { const fa = Math.atan2(S.den.y - B.y, S.den.x - 8 - B.x); bmove(Math.cos(fa) * 120 * dt, Math.sin(fa) * 120 * dt); B.face = Math.cos(fa) >= 0 ? 1 : -1; B.timer -= dt; B.alpha = Math.max(0, B.timer / 2.5); if (B.timer <= 0) { B.state = 'gone'; win(); } break; }
+    }
+    if (['chase', 'storm', 'schraap'].includes(B.state) && dP < 16 && P.blink <= 0) { caught('de stier'); B.state = 'moe'; B.timer = 1.5; }
+  },
+  draw(B, camX, camY){
+    const bx = Math.round(B.x) - camX, by = Math.round(B.y) - camY, L = B.face < 0 ? 'L' : '';
+    if (B.state === 'schraap') drawLane(bx + 16, by + 14, B.da, 120, 11, 1 - B.timer / B.aimT);
+    ctx.globalAlpha = B.state === 'flee' ? B.alpha : 1;
+    ctx.fillStyle = 'rgba(0,0,0,.22)'; ctx.fillRect(bx + 5, by + 21, 22, 3);
+    const fr = ['chase', 'storm', 'flee'].includes(B.state) && Math.floor(S.t * (B.state === 'storm' ? 16 : 8)) % 2 ? 'stierRen' : 'stier';
+    const wiebel = B.state === 'duizelig' ? Math.round(Math.sin(S.t * 8) * 2) : B.state === 'schraap' ? Math.floor(S.t * 12) % 2 : 0;
+    ctx.drawImage(IMG[fr + L], bx + wiebel, by + 2, 32, 20);
+    if (B.flash > 0 && Math.floor(S.t * 20) % 2) { ctx.globalCompositeOperation = 'lighter'; ctx.drawImage(IMG[fr + L], bx + wiebel, by + 2, 32, 20); ctx.globalCompositeOperation = 'source-over'; }
+    if (B.state === 'duizelig') for (let i = 0; i < 3; i++) { // sterretjes rond zijn kop
+      const an = S.t * 5 + i * 2.1, sx = bx + (B.face > 0 ? 24 : 8) + Math.cos(an) * 9, sy = by - 2 + Math.sin(an) * 3;
+      R(ctx, Math.round(sx) - 1, Math.round(sy), 3, 1, '#ffe15a'); R(ctx, Math.round(sx), Math.round(sy) - 1, 1, 3, '#ffe15a'); }
+    if (B.state === 'zoek') { ctx.fillStyle = '#fff'; ctx.font = 'bold 9px sans-serif'; ctx.fillText('?', bx + 14, by - 2 - Math.floor(S.t * 3) % 2); }
+    if (B.state === 'moe' && Math.floor(S.t * 3) % 2) { const hx = B.face < 0 ? bx - 4 : bx + 32; ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.fillRect(hx, by + 9, 3, 3); }
+    ctx.globalAlpha = 1;
+  },
+  sortY: B => B.y + 24,
+};
 function spawnBoss(){
   const L = LEVELS[LV];
   S.boss = BOSS[L.baas].make(); S.boss.type = L.baas;
@@ -1410,6 +1794,7 @@ function update(dt){
   const traag = 'MY%'.includes(onder), ijs = onder === 'I';
   if (S.vast > 0) { S.vast -= dt; ix = iy = 0; S.moving = false; }
   if (traag && !S.modderTip) { S.modderTip = true; toast({M:'Modder! Hier loop je langzaam.', Y:'Diepe sneeuw! Hier loop je langzaam.', '%':'Een plakkerig spinnenweb! Hier loop je langzaam.'}[onder]); }
+  if (onder === '~' && !S.hooiTip) { S.hooiTip = true; toast('Je zit verstopt in het hooi! Hier zien de honden, kippen en de stier je niet.', 3200); }
   if (ijs && !S.ijsTip) { S.ijsTip = true; toast('Ijs! Hier glij je uit. Rem op tijd!'); }
   const snel = (S.carry ? SPEL.snelheidMetDier : SPEL.snelheid) * (traag ? SPEL.modderTraag : 1);
   if (ijs) { const k = Math.min(1, dt * SPEL.ijsGlij); S.vel.x += (ix * snel - S.vel.x) * k; S.vel.y += (iy * snel - S.vel.y) * k; }
@@ -1430,14 +1815,17 @@ function update(dt){
     for (const e of S.enemies) { const hb = ENEMY[e.type].hitbox(e); if (a.life > 0 && hb && Math.hypot(a.x - hb.x, a.y - hb.y) < hb.r) { ENEMY[e.type].scare(e, P); a.life = 0; } }
     const B = S.boss;
     if (B && a.life > 0) { const hb = BOSS[B.type].hitbox(B);
-      if (hb && Math.hypot(a.x - hb.x, a.y - hb.y) < hb.r) { a.life = 0; B.hp--; B.flash = .3; SFX.raak(); sparkles(hb.x, hb.y, '#ffd66b', 8); BOSS[B.type].hit(B, P); updateHud(); } }
+      if (hb && Math.hypot(a.x - hb.x, a.y - hb.y) < hb.r) { a.life = 0; B.hp--; B.flash = .3; SFX.raak(); sparkles(hb.x, hb.y, '#ffd66b', 8); BOSS[B.type].hit(B, P); updateHud(); }
+      const sh = !hb && BOSS[B.type].schild?.(B);
+      if (sh && Math.hypot(a.x - sh.x, a.y - sh.y) < sh.r) { a.life = 0; SFX.tok(); pop(sh.x, sh.y - 14, null, 'Tok!');
+        if (!S.ketsTip) { S.ketsTip = true; toast('Je eikels ketsen af! Laat de stier eerst tegen een hek rennen.', 3000); } } }
   }
   S.acorns = S.acorns.filter(a => a.life > 0);
 
   // spullen oppakken
   for (const it of S.items) if (!it.got && Math.hypot(pc.x - (it.x + 5), pc.y - (it.y + 4)) < 11) {
     it.got = true; S.inv[it.kind]++; SFX.pak(); pop(it.x + 5, it.y, IMG[it.kind], '+1'); updateHud();
-    if (!S.firstItem) { S.firstItem = true; toast(`Een ${SPULLEN[it.kind]}! Met 1 takje, 1 blaadje, 1 steentje en 1 mos bouw je een huisje.`, 3500); }
+    if (!S.firstItem) { S.firstItem = true; toast(`Een ${ALLESPUL[it.kind]}! Met ${receptTekst()} bouw je een huisje.`, 3500); }
   }
   // diertjes oppakken
   for (const an of S.animals) if (an.state === 'wild' && Math.hypot(pc.x - (an.x + 6), pc.y - (an.y + (an.hang ? 8 : 5))) < 13) {
@@ -1449,11 +1837,11 @@ function update(dt){
   for (const sp of S.spots) {
     if (Math.hypot(pc.x - (sp.x + 8), pc.y - (sp.y + 10)) > 11) continue;
     if (!sp.house) {
-      if (S.inv.t && S.inv.l && S.inv.s && S.inv.o) {
+      if (kanBouwen()) {
         for (const k in S.inv) S.inv[k]--; sp.house = true; SFX.bouw(); sparkles(sp.x + 8, sp.y + 6, '#ffd66b', 14); updateHud();
         toast(S.carry ? 'Huisje gebouwd! Zet het diertje erin.' : 'Huisje gebouwd! Zoek nu een diertje dat erin wil wonen.');
       } else {
-        const mis = Object.keys(SPULLEN).filter(k => !S.inv[k]).map(k => SPULLEN[k]);
+        const mis = S.recept.filter(k => !S.inv[k]).map(k => ALLESPUL[k]);
         hint('Om hier te bouwen heb je nog nodig: ' + mis.join(', ') + '.');
       }
     } else if (!sp.animal && S.carry) {
@@ -1485,7 +1873,7 @@ function update(dt){
 }
 
 function win(){
-  S.state = 'win'; SFX.win(); $('boss').hidden = true; markWon(LV);
+  S.state = 'win'; SFX.win(); $('boss').hidden = true; markWon(LV); wisWereld();
   const L = LEVELS[LV], m = Math.floor(S.time / 60), s = Math.floor(S.time % 60), next = LEVELS[LV + 1];
   $('winTitle').textContent = `Level ${LV + 1} gehaald!`;
   $('winText').textContent = L.gewonnen;
@@ -1506,10 +1894,10 @@ function draw(){
 
   const sprites = [];
   for (const sp of S.spots) if (sp.house) sprites.push({y:sp.y + 14, d:() => {
-    ctx.drawImage(IMG.huisje, sp.x - camX, sp.y - camY + 1);
+    ctx.drawImage(IMG[LEVELS[LV].huis || 'huisje'], sp.x - camX, sp.y - camY + 1);
     if (sp.animal) { const im = IMG['dier_' + sp.animal.kind], sy = sp.animal.hang ? im.height - 6 : 0; ctx.drawImage(im, 0, sy, im.width, 6, sp.x - camX + 2, sp.y - camY + 6 + Math.round(Math.sin(S.t * 2 + sp.x) * .6), im.width, 6); }
   }});
-  else if (S.inv.t && S.inv.l && S.inv.s && S.inv.o && Math.sin(S.t * 6) > 0) sprites.push({y:sp.y, d:() => { ctx.fillStyle = 'rgba(255,214,107,.35)'; ctx.fillRect(sp.x - camX + 1, sp.y - camY + 3, 14, 11); }});
+  else if (kanBouwen() && Math.sin(S.t * 6) > 0) sprites.push({y:sp.y, d:() => { ctx.fillStyle = 'rgba(255,214,107,.35)'; ctx.fillRect(sp.x - camX + 1, sp.y - camY + 3, 14, 11); }});
   for (const it of S.items) if (!it.got) sprites.push({y:it.y + 8, d:() => {
     const b = Math.round(Math.sin(S.t * 3 + it.ph) * 1); const im = IMG[it.kind];
     ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(it.x - camX + 1, it.y - camY + 9, 8, 1);
@@ -1540,7 +1928,10 @@ function draw(){
     const hop = S.moving ? -Math.abs(Math.round(Math.sin(S.t * 14) * 2)) : 0;
     ctx.fillStyle = 'rgba(0,0,0,.2)'; ctx.fillRect(px + 3, py + 14, 10, 2);
     const im = {down:IMG.konijnOmlaag, up:IMG.konijnOmhoog, right:IMG.konijnOpzij, left:IMG.konijnOpzijL}[S.dir];
-    ctx.drawImage(im, px, py + hop);
+    if (verstopt()) { // alleen je oortjes en kopje steken boven het hooi uit
+      ctx.drawImage(im, 0, 0, 16, 9, px, py + 3, 16, 9);
+      for (let i = 0; i < 7; i++) R(ctx, px + 1 + i * 2, py + 9 + (i % 2), 2, 5, i % 2 ? '#f6dc7c' : '#e0b84a');
+    } else ctx.drawImage(im, px, py + hop);
     if (S.carry) { const d = IMG['dier_' + S.carry.kind]; ctx.drawImage(d, px + 2, py - 9 + hop); }
   }});
   sprites.sort((a, b) => a.y - b.y).forEach(s => s.d());
@@ -1612,11 +2003,12 @@ function frame(ts){ const dt = Math.min(.05, (ts - last) / 1000 || 0); last = ts
 
 const blurred = fn => e => { e.currentTarget.blur(); fn(); };
 $('start').addEventListener('click', blurred(startPlay));
+$('fresh').addEventListener('click', blurred(() => { wisWereld(); newGame(LV); startPlay(); }));
 $('next').addEventListener('click', blurred(() => { newGame(LV + 1); showIntro(); }));
 $('again').addEventListener('click', blurred(() => { newGame(LV); startPlay(); }));
 $('menu').addEventListener('click', blurred(() => { newGame(LV); showIntro(); }));
-$('menu2').addEventListener('click', blurred(() => { newGame(LV); showIntro(); }));
-$('restart').addEventListener('click', blurred(() => { newGame(LV); startPlay(); }));
+$('menu2').addEventListener('click', blurred(() => { bewaarWereld(); newGame(LV); showIntro(); }));
+$('restart').addEventListener('click', blurred(() => { wisWereld(); newGame(LV); startPlay(); }));
 $('mute').addEventListener('click', e => { muted = !muted; e.currentTarget.textContent = 'Geluid: ' + (muted ? 'uit' : 'aan'); e.currentTarget.blur(); });
 
 // Begin bij het eerste level dat nog niet gehaald is
