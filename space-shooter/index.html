@@ -251,8 +251,7 @@
           <button id="winkelKnop">Winkel</button>
           <button id="geluidKnop">Geluid: aan</button>
           <button id="samenKnop" style="grid-column: span 2">Samen spelen</button>
-          <button id="rushKnop">Bazenrush</button>
-          <button id="ranglijstKnop">Ranglijst</button>
+          <button id="rushKnop" style="grid-column: span 2">Bazenrush</button>
           <button id="startGolfKnop" style="grid-column: span 2">Begin bij golf 1</button>
           <button id="overzetKnop" style="grid-column: span 2">Voortgang overzetten</button>
         </div>
@@ -330,7 +329,11 @@
     <section id="samen" class="laag" hidden>
       <h2>Samen spelen</h2>
       <p class="sub" id="sStatus"></p>
+      <p class="sub" id="sVersie" style="font-size:16px"></p>
       <div class="knoprij" id="sKeuze">
+        <div class="naamrij">
+          <input id="sNaam" maxlength="12" aria-label="Jouw naam" placeholder="Jouw naam" autocomplete="off">
+        </div>
         <button id="sHost" class="groot">Spel maken</button>
         <div class="naamrij">
           <input id="sCode" maxlength="10" aria-label="Code van je maatje" placeholder="Code" autocomplete="off">
@@ -356,22 +359,6 @@
       <button id="oZetOver" class="groot">Zet over</button>
       <p class="sub" id="oMelding"></p>
       <div class="knoprij"><button id="overzetTerug">Terug</button></div>
-    </section>
-
-    <section id="ranglijst" class="laag lang" hidden>
-      <h2>Ranglijst</h2>
-      <p class="sub" id="rStatus"></p>
-      <div class="wereldkop">
-        <button id="rVorige" aria-label="Vorige lijst">&lt;</button>
-        <div class="titel" id="rTitel"></div>
-        <button id="rVolgende" aria-label="Volgende lijst">&gt;</button>
-      </div>
-      <div id="rLijst" class="lijst"></div>
-      <div class="naamrij" id="rNaamRij">
-        <input id="rNaam" maxlength="12" aria-label="Jouw naam in de ranglijst" placeholder="Jouw naam">
-        <button id="rNaamOk">Opslaan</button>
-      </div>
-      <div class="knoprij"><button id="ranglijstTerug">Terug</button></div>
     </section>
 
     <section id="missieKlaar" class="laag" hidden>
@@ -2769,7 +2756,7 @@
   function render() {
     tekenAchtergrond();
 
-    if (!spel || status === 'menu' || status === 'kaart' || status === 'ranglijst' || status === 'samen' || status === 'overzet' || (status === 'winkel' && winkelTerugNaar === 'menu')) {
+    if (!spel || status === 'menu' || status === 'kaart' || status === 'samen' || status === 'overzet' || (status === 'winkel' && winkelTerugNaar === 'menu')) {
       if (modus === 'arena') { tekenArenaRand(false); tekenSchip(A.cx, A.cy + 60 + Math.sin(tijd * 2) * 3); }
       else tekenSchip(W / 2, H - 60 + Math.sin(tijd * 2) * 3);
       return;
@@ -3012,7 +2999,7 @@
   }
 
   // ---------- Schermen ----------
-  const lagen = { overzet: $('overzet'), samen: $('samen'), ranglijst: $('ranglijst'), missies: $('missies'), missieKlaar: $('missieKlaar'), menu: $('menu'), pauze: $('pauze'), over: $('over'), winkel: $('winkel'), prestaties: $('prestaties'), uitdaging: $('uitdaging') };
+  const lagen = { overzet: $('overzet'), samen: $('samen'), missies: $('missies'), missieKlaar: $('missieKlaar'), menu: $('menu'), pauze: $('pauze'), over: $('over'), winkel: $('winkel'), prestaties: $('prestaties'), uitdaging: $('uitdaging') };
   function toonLaag(naam) {
     for (const [k, el] of Object.entries(lagen)) el.hidden = k !== naam;
     $('pauzeKnop').hidden = naam !== null;
@@ -3066,7 +3053,7 @@
     const nieuw = !spel.uitdaging && !spel.test && spel.score > records[recordSleutel()];
     if (nieuw) records[recordSleutel()] = spel.score;
     controleerPrestaties();
-    bewaar(); deelScores();
+    bewaar();
     status = 'over';
     $('oScore').textContent = spel.score;
     $('oRecord').textContent = spel.uitdaging ? '-' : records[recordSleutel()] + (spel.samen ? ' (samen telt niet)' : spel.test ? ' (test telt niet)' : '');
@@ -3078,79 +3065,8 @@
     if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
   }
 
-  // ---------- Ranglijst: gedeeld met iedereen die dit spel online opent ----------
-  // Elke speler schrijft alleen zijn eigen document scores/<id>; iedereen leest alles.
-  let rdb = null, mijnId = null, mijnDoc = null, rijen = [], rLaden = true, rMagSchrijven = true;
-  let spelerNaam = opslag.get('neon-invasie-naam', ''), rLijstNr = 0;
-  const RLIJSTEN = [
-    ...['normaal', 'moeilijk', 'extreem'].flatMap(n => ['', 'arena-'].map(m => ({ id: m + n, naam: (m ? 'Arena' : 'Klassiek') + ' · ' + NIVEAUS[n].naam }))),
-    { id: 'sterren', naam: 'Missies · sterren' },
-    { id: 'rush', naam: 'Bazenrush · snelste tijd' }
-  ];
-  (async () => {
-    try {
-      if (!window.claude || !window.claude.use) { rLaden = false; return; }
-      const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
-      if (!db || !user) { rLaden = false; if (status === 'ranglijst') renderRanglijst(); return; }
-      rdb = db; mijnId = await user.id();
-      if (!spelerNaam) { const ik = await user.me(); spelerNaam = ((ik && ik.name) || '').split(' ')[0].slice(0, 12); }
-      if (!mijnId) { rMagSchrijven = false; }
-      db.collection('scores').onSnapshot(snap => {
-        rLaden = false;
-        rijen = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        const mijn = rijen.find(r => r.id === mijnId);
-        if (mijn) mijnDoc = mijn;
-        if (!rGesynct) { rGesynct = true; deelScores(); } // eerdere records één keer meenemen
-        if (status === 'ranglijst') renderRanglijst();
-      }, () => { rLaden = false; if (status === 'ranglijst') renderRanglijst(); });
-    } catch (e) { rLaden = false; }
-  })();
-  let rGesynct = false;
-  function mijnScores() {
-    return { naam: (spelerNaam || 'Speler').slice(0, 12), records: { ...records }, sterren: totaalSterren(), rush: rushRecord || 0 };
-  }
-  // schrijf alleen als er echt iets beter (of je naam anders) is
-  function deelScores() {
-    if (!rdb || !mijnId || !rMagSchrijven) return;
-    const nu = mijnScores(), oud = mijnDoc;
-    if (oud && oud.naam === nu.naam && oud.sterren >= nu.sterren && (oud.rush || 0) === nu.rush &&
-      Object.keys(nu.records).every(k => ((oud.records || {})[k] || 0) >= nu.records[k])) return;
-    if (oud && oud.records) for (const k in oud.records) nu.records[k] = Math.max(nu.records[k] || 0, oud.records[k]);
-    if (oud && oud.rush && (!nu.rush || oud.rush < nu.rush)) nu.rush = oud.rush;
-    nu.sterren = Math.max(nu.sterren, (oud && oud.sterren) || 0);
-    mijnDoc = { id: mijnId, ...nu };
-    rdb.doc('scores/' + mijnId).set(nu).catch(err => {
-      if (err && (err.code === 'invalid_argument' || err.code === 'permission_denied')) { rMagSchrijven = false; if (status === 'ranglijst') renderRanglijst(); }
-    });
-  }
-  function openRanglijst() {
-    status = 'ranglijst'; spel = null; Object.assign(A, AS);
-    $('rNaam').value = spelerNaam;
-    renderRanglijst(); toonLaag('ranglijst');
-  }
-  function renderRanglijst() {
-    const lijst = RLIJSTEN[rLijstNr], st = $('rStatus');
-    $('rTitel').textContent = lijst.naam;
-    $('rVorige').disabled = rLijstNr === 0; $('rVolgende').disabled = rLijstNr === RLIJSTEN.length - 1;
-    $('rNaamRij').hidden = !rdb || !rMagSchrijven;
-    if (!window.claude || !window.claude.use) st.textContent = 'De ranglijst werkt alleen in de versie op claude.ai, nog niet op de website.';
-    else if (rLaden) st.textContent = 'Laden...';
-    else if (!rdb) st.textContent = 'De ranglijst is nu niet beschikbaar. Ben je ingelogd?';
-    else if (!rMagSchrijven) st.textContent = 'Je kunt de lijst bekijken, maar je eigen scores komen er niet in. Vraag de eigenaar om je toegang als Bijdrager te geven.';
-    else st.textContent = 'Je scores komen er vanzelf in als je speelt.';
-    const waarde = r => lijst.id === 'sterren' ? r.sterren || 0 : lijst.id === 'rush' ? r.rush || 0 : (r.records || {})[lijst.id] || 0;
-    const gesorteerd = rijen.filter(r => waarde(r) > 0)
-      .sort((a, b) => lijst.id === 'rush' ? waarde(a) - waarde(b) : waarde(b) - waarde(a));
-    const l = $('rLijst'); l.innerHTML = '';
-    if (!gesorteerd.length) l.append(maak('div', 'leeg', rdb ? 'Nog niemand op deze lijst. Wees de eerste!' : ''));
-    gesorteerd.slice(0, 20).forEach((r, i) => {
-      const rij = maak('div', 'rang' + (i < 3 ? ' top' : '') + (r.id === mijnId ? ' ik' : ''));
-      const v = waarde(r);
-      rij.append(maak('span', 'plek', String(i + 1)), maak('span', 'wie', (r.naam || 'Speler') + (r.id === mijnId ? ' (jij)' : '')),
-        maak('span', 'hoeveel', lijst.id === 'rush' ? tijdTekst(v) : lijst.id === 'sterren' ? v + ' ★' : String(v)));
-      l.append(rij);
-    });
-  }
+  // de naam die je maatje boven je schip ziet bij samen spelen
+  let spelerNaam = opslag.get('neon-invasie-naam', '');
 
   // ---------- Bazenrush: alle 10 bazen achter elkaar, zo snel mogelijk ----------
   let rushRecord = +opslag.get('neon-invasie-rush', 0) || 0, laatsteRush = false;
@@ -3163,7 +3079,7 @@
     const sp = spel;
     let nieuw = false;
     if (sp.rushKlaar && (!rushRecord || sp.rushT < rushRecord)) { rushRecord = sp.rushT; opslag.set('neon-invasie-rush', rushRecord); nieuw = true; }
-    controleerPrestaties(); bewaar(); deelScores();
+    controleerPrestaties(); bewaar();
     status = 'over';
     $('oTitel').textContent = sp.rushKlaar ? 'Alle bazen verslagen!' : 'Game over';
     $('oScore').textContent = sp.score;
@@ -3361,7 +3277,7 @@
       banner('MISSIE GEHAALD!', '★'.repeat(sterren) + '☆'.repeat(3 - sterren), 2.2);
       sfx.power(); sp.onkwetsbaar = 99; sp.vijandKogels.length = 0;
     } else if (!sp.weg) { banner('MISLUKT', reden, 2.2); sfx.alarm(); }
-    controleerPrestaties(); bewaar(); deelScores();
+    controleerPrestaties(); bewaar();
   }
 
   function toonMissieUitslag() {
@@ -4007,18 +3923,11 @@
   $('samenKnop').onclick = () => { audio(); openSamen(); };
   $('samenTerug').onclick = () => { verlaatKamer(); naarMenu(); };
   $('sHost').onclick = hostSamen;
+  $('sNaam').addEventListener('input', () => { spelerNaam = $('sNaam').value.trim().slice(0, 12); opslag.set('neon-invasie-naam', spelerNaam); });
   $('sJoin').onclick = doeMee;
   $('sCode').addEventListener('keydown', e => { if (e.key === 'Enter') doeMee(); });
   $('sStart').onclick = () => { if (samen.rol === 'host' && gastPeer()) startSamenSpel('host'); };
   $('rushKnop').onclick = startRush;
-  $('ranglijstTerug').onclick = naarMenu;
-  $('rVorige').onclick = () => { rLijstNr = Math.max(0, rLijstNr - 1); renderRanglijst(); };
-  $('rVolgende').onclick = () => { rLijstNr = Math.min(RLIJSTEN.length - 1, rLijstNr + 1); renderRanglijst(); };
-  $('rNaamOk').onclick = () => {
-    spelerNaam = $('rNaam').value.trim().slice(0, 12); opslag.set('neon-invasie-naam', spelerNaam);
-    sfx.munt(); deelScores(); renderRanglijst();
-  };
-  $('ranglijstKnop').onclick = () => { audio(); openRanglijst(); };
   $('uitdagingKnop').onclick = () => { audio(); openUitdaging(); };
   $('uStart').onclick = startUitdaging;
   $('uTerug').onclick = naarMenu;
@@ -4070,9 +3979,13 @@
     status = 'samen'; spel = null; Object.assign(A, AS);
     await verlaatKamer();
     $('sKeuze').hidden = false; $('sWacht').hidden = true; $('sStart').hidden = true;
-    $('sCode').value = '';
+    $('sCode').value = ''; $('sNaam').value = spelerNaam;
     toonLaag('samen');
     $('sStatus').textContent = 'Maak een spel en geef de code aan je maatje. Of vul de code van je maatje in.';
+    // de twee versies kunnen elkaar niet vinden: zeg welke dit is
+    $('sVersie').textContent = window.claude && window.claude.use
+      ? 'Dit is de claude.ai-versie. Je maatje moet ook de claude.ai-versie openen.'
+      : 'Dit is de website-versie. Je maatje moet ook deze website openen: ' + location.host + location.pathname;
     if (window.claude && window.claude.use) {
       // op claude.ai: de kamer van claude.ai
       if (!samen.room) samen.room = await window.claude.use('room');
@@ -4118,7 +4031,7 @@
           c.on('open', () => c.send(mijn));
           c.on('data', d => { if (d && typeof d === 'object' && !Array.isArray(d)) { ander = Object.freeze(d); meld(); } });
           c.on('close', () => { if (conn === c) { conn = null; ander = null; meld(); } });
-          c.on('error', () => {});
+          c.on('error', () => { if (rol !== 'host' && !ander) { samen.peerFout = 'geen-verbinding'; if (status === 'samen') renderLobby(); } });
         };
         const kamer = {
           name: naam,
@@ -4138,7 +4051,11 @@
         };
         peer.on('open', () => {
           open = true;
-          if (rol !== 'host') koppel(peer.connect(id, { reliable: true, serialization: 'json' }));
+          if (rol !== 'host') {
+            const c = peer.connect(id, { reliable: true, serialization: 'json' });
+            koppel(c);
+            setTimeout(() => { if (!c.open && !peer.destroyed && samen.peerFout !== 'geen-spel') { samen.peerFout = 'geen-verbinding'; if (status === 'samen') renderLobby(); } }, 10000);
+          }
           gelukt(kamer);
         });
         peer.on('connection', c => { if (rol === 'host') koppel(c); else c.close(); });
@@ -4200,7 +4117,9 @@
       $('sStatus').textContent = ander ? 'Je maatje is er! Druk op Start.' : 'Geef deze code aan je maatje. Wachten...';
       $('sStart').hidden = !ander;
     } else {
-      $('sStatus').textContent = ander ? 'Gevonden! Wachten tot de host op Start drukt...' : samen.peerFout === 'geen-spel' ? 'Geen spel gevonden met deze code. Klopt de code, en staat het spel van je maatje open?' : 'Zoeken...';
+      $('sStatus').textContent = ander ? 'Gevonden! Wachten tot de host op Start drukt...' : samen.peerFout === 'geen-spel' ? 'Geen spel gevonden met deze code. Klopt de code, staat het spel van je maatje open, en gebruiken jullie allebei dezelfde versie (zie hieronder)?'
+        : samen.peerFout === 'geen-verbinding' ? 'Het spel is gevonden, maar jullie apparaten kunnen elkaar niet bereiken. Dat gebeurt op sommige wifi (school, gasten-wifi). Probeer een ander netwerk, bijvoorbeeld mobiel internet op één van de twee.'
+        : 'Zoeken...';
       if (ander && ander.presence.fase === 'spel') startSamenSpel('gast');
     }
   }
