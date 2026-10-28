@@ -1890,7 +1890,8 @@
         }
         break;
     }
-    if (e.t > 1.5 && !binnen(e.x, e.y, 90) && !(sp.ruimte && e.opObj)) { e.dood = true; e.ontsnapt = true; }
+    // wie ver buiten beeld raakt is ontsnapt; een baas nooit, die komt altijd terug
+    if (e.t > 1.5 && e.soort !== 'baas' && !binnen(e.x, e.y, 90) && !(sp.ruimte && e.opObj)) { e.dood = true; e.ontsnapt = true; }
   }
 
   function baasAanval(e) {
@@ -3362,6 +3363,11 @@
   let laatsteRush = false;
   const rushSleutel = ruimte => ruimte ? 'neon-invasie-rush-ruimte' : 'neon-invasie-rush';
   let rushRecord = +opslag.get(rushSleutel(false), 0) || 0;
+  // records van de open-ruimte-rush van vóór de fix (bazen verdwenen buiten beeld) één keer wissen
+  if (opslag.get('neon-invasie-rushfix', '') !== '1') {
+    try { localStorage.removeItem(rushSleutel(true)); } catch (e) {}
+    opslag.set('neon-invasie-rushfix', '1');
+  }
   const tijdTekst = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
   function startRush() {
     terug = 0; laatsteUitdaging = null; laatsteRush = true; samen.opnieuw = false;
@@ -4277,6 +4283,8 @@
   // De host rekent het hele spel uit. Elke speler deelt een klein pakketje (presence) in een
   // kamer met een code: de gast stuurt zijn schip en of hij schiet, de host stuurt ~15 keer per
   // seconde een momentopname van alle aliens, kogels en munten. De gast tekent die na.
+  // verhoog dit als samen spelen anders gaat werken: dan zien spelers met een oude versie een waarschuwing
+  const SAMEN_VERSIE = 5;
   const samen = { room: null, kamer: null, rol: null, code: '', seq: 0, zendT: 0, bnId: 0, laatsteBanner: null,
     laatsteT: -1, w: null, wTijd: 0, buf: [], klok: null, kt: 0, gh: 0, gm: 0, gpN: 0, host: null, lokaal: new Map(), echtWapen: null, weg: false, opnieuw: false };
   const SOORT_LIJST = ['kever', 'zwier', 'schutter', 'tank', 'baas', 'meteor', 'splitser', 'schildje', 'kamikaze', 'spook'];
@@ -4392,7 +4400,7 @@
       $('sStatus').textContent = 'Verbinden lukte niet. Heb je internet? Probeer het nog eens.'; return false;
     }
     samen.code = code; samen.rol = rol;
-    samen.kamer.presence({ rol, naam: mijnNaam(), schip: echtSchipId(), kleur: schipInfo().kleur, fase: 'lobby' }).catch(() => {});
+    samen.kamer.presence({ rol, naam: mijnNaam(), schip: echtSchipId(), kleur: schipInfo().kleur, fase: 'lobby', v: SAMEN_VERSIE }).catch(() => {});
     samen.kamer.onPeers(() => { if (status === 'samen') renderLobby(); });
     $('sKeuze').hidden = true; $('sWacht').hidden = false;
     $('sCodeTekst').textContent = code.replace(/(\D+)(\d+)/, '$1 $2').toUpperCase();
@@ -4422,15 +4430,19 @@
     const l = $('sSpelers'); l.innerHTML = '';
     const ik = maak('div', 'rang ik'); ik.append(maak('span', 'wie', mijnNaam() + ' (jij)'), maak('span', 'hoeveel', samen.rol === 'host' ? 'host' : 'gast')); l.append(ik);
     const ander = samen.rol === 'host' ? gastPeer() : hostPeer();
+    const andereVersie = ander && ander.presence.v !== SAMEN_VERSIE;
     if (ander) { const r = maak('div', 'rang'); r.append(maak('span', 'wie', String(ander.presence.naam || 'Teamgenoot').slice(0, 12)), maak('span', 'hoeveel', samen.rol === 'host' ? 'gast' : 'host')); l.append(r); }
     if (samen.rol === 'host') {
-      $('sStatus').textContent = ander ? 'Je teamgenoot is er! Kies wat jullie gaan spelen.' : 'Geef deze code aan je teamgenoot. Wachten...';
-      $('sStart').hidden = !ander; $('sDuel').hidden = !ander; $('sRush').hidden = !ander;
+      $('sStatus').textContent = andereVersie ? 'Jullie hebben een andere versie van het spel. Laat je teamgenoot de pagina opnieuw laden (en doe het zelf ook), en maak dan een nieuw spel.'
+        : ander ? 'Je teamgenoot is er! Kies wat jullie gaan spelen.' : 'Geef deze code aan je teamgenoot. Wachten...';
+      const kan = ander && !andereVersie;
+      $('sStart').hidden = !kan; $('sDuel').hidden = !kan; $('sRush').hidden = !kan;
     } else {
       $('sStatus').textContent = ander ? 'Gevonden! Wachten tot de host op Start drukt...' : samen.peerFout === 'geen-spel' ? 'Geen spel gevonden met deze code. Klopt de code, staat het spel van je teamgenoot open, en gebruiken jullie allebei dezelfde versie (zie hieronder)?'
         : samen.peerFout === 'geen-verbinding' ? 'Het spel is gevonden, maar jullie apparaten kunnen elkaar niet bereiken. Dat gebeurt op sommige wifi (school, gasten-wifi). Probeer een ander netwerk, bijvoorbeeld mobiel internet op één van de twee.'
         : 'Zoeken...';
-      if (ander && ander.presence.fase === 'spel') startSamenSpel('gast', ander.presence.modus || 'samen');
+      if (andereVersie) $('sStatus').textContent = 'Jullie hebben een andere versie van het spel. Laad de pagina opnieuw (en laat de host dat ook doen), en probeer het dan nog eens.';
+      else if (ander && ander.presence.fase === 'spel') startSamenSpel('gast', ander.presence.modus || 'samen');
     }
   }
 
