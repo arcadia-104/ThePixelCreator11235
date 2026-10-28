@@ -219,6 +219,17 @@
   .naamrij { display: flex; gap: 8px; align-self: stretch; }
   .naamrij input { flex: 1; min-width: 0; font-family: var(--font-display); font-size: 13px; background: var(--panel); color: var(--fg); border: 2px solid #2e2a5c; border-radius: 4px; padding: 8px; }
   .naamrij input:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
+  .rangkaart { display: flex; align-items: center; gap: 10px; width: min(280px, 100%); text-align: left; padding: 6px 12px; text-transform: none; letter-spacing: 0; box-sizing: border-box; }
+  .rangkaart canvas { width: 40px; height: 44px; flex: none; }
+  .rangkaart .info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .rangkaart .naam { font-family: var(--font-display); font-size: 13px; }
+  .rangkaart .uitleg { font-family: var(--font-body); font-size: 16px; color: var(--muted); }
+  .rangkaart .voortgang { margin-top: 0; }
+  #rBadge { width: 90px; height: 100px; }
+  .rangnaam { font-family: var(--font-display); font-size: 24px; }
+  .rangbalk { align-self: stretch; }
+  .rij.bereikt .naam { color: var(--fg); }
+  .rij.nogniet { opacity: 0.55; }
   .codevak { align-self: stretch; height: 70px; resize: none; font: 12px monospace; background: var(--panel); color: var(--fg); border: 2px solid #2e2a5c; border-radius: 4px; padding: 6px; word-break: break-all; }
   .codevak:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
   .grootcode { font-family: var(--font-display); font-size: 34px; letter-spacing: 0.12em; color: var(--yellow); text-shadow: 0 0 12px var(--yellow); text-align: center; }
@@ -240,6 +251,10 @@
         <div>Record <b id="mRecord">0</b></div>
         <div><span class="munt"></span><b id="mMunten">0</b></div>
       </div>
+      <button id="rangKaart" class="rangkaart" aria-label="Jouw rang">
+        <canvas id="mBadge" width="40" height="44"></canvas>
+        <span class="info"><span class="naam" id="mRang">Brons I</span><span class="voortgang"><i id="mRangBalk"></i></span><span class="uitleg" id="mRangXp"></span></span>
+      </button>
       <div class="knoprij">
         <button id="speelKnop" class="groot">Spelen</button>
         <button id="missiesKnop" class="groot missieknop">Missies</button>
@@ -250,6 +265,7 @@
           <button id="prestatiesKnop">Prestaties</button>
           <button id="winkelKnop">Winkel</button>
           <button id="geluidKnop">Geluid: aan</button>
+          <button id="opdrachtKnop" style="grid-column: span 2">Opdrachten van vandaag</button>
           <button id="samenKnop" style="grid-column: span 2">Samen spelen</button>
           <button id="rushKnop" style="grid-column: span 2">Bazenrush</button>
           <button id="startGolfKnop" style="grid-column: span 2">Begin bij golf 1</button>
@@ -283,6 +299,7 @@
         <dt>Record</dt><dd id="oRecord">0</dd>
         <dt>Golf</dt><dd id="oGolf">1</dd>
         <dt>Munten</dt><dd id="oMunten">0</dd>
+        <dt>XP</dt><dd id="oXp">0</dd>
       </dl>
       <div class="knoprij">
         <button id="opnieuwKnop" class="groot">Opnieuw</button>
@@ -343,9 +360,30 @@
       <div id="sWacht" class="knoprij" hidden>
         <div class="grootcode" id="sCodeTekst"></div>
         <div id="sSpelers" class="lijst"></div>
-        <button id="sStart" class="groot" hidden>Start!</button>
+        <button id="sStart" class="groot" hidden>Samen tegen de aliens</button>
+        <button id="sDuel" class="groot" hidden>Duel: tegen elkaar</button>
+        <button id="sRush" class="groot" hidden>Bazenrush samen (open ruimte)</button>
       </div>
       <div class="knoprij"><button id="samenTerug">Terug</button></div>
+    </section>
+
+    <section id="opdrachten" class="laag lang" hidden>
+      <h2>Opdrachten</h2>
+      <p class="sub">Elke dag 3 nieuwe opdrachten. Elke opdracht geeft 300 XP en 150 munten, en alle drie samen nog 300 munten extra.</p>
+      <div id="oLijst" class="lijst"></div>
+      <p class="sub" id="oBonus"></p>
+      <div class="knoprij"><button id="opdrachtenTerug">Terug</button></div>
+    </section>
+
+    <section id="rang" class="laag lang" hidden>
+      <h2>Rang</h2>
+      <canvas id="rBadge" width="90" height="100"></canvas>
+      <div class="rangnaam" id="rNaamGroot">Brons I</div>
+      <div class="rangbalk"><div class="voortgang"><i id="rBalk"></i></div><p class="sub" id="rXp"></p></div>
+      <p class="sub" id="rBonus"></p>
+      <p class="sub" style="font-size:17px">Je krijgt XP voor alles: aliens, golven, bazen, missies, Bazenrush en uitdagingen. Op Moeilijk en Extreem krijg je meer, en samen spelen geeft 25% extra.</p>
+      <div id="rLijst" class="lijst"></div>
+      <div class="knoprij"><button id="rangTerug">Terug</button></div>
     </section>
 
     <section id="overzet" class="laag lang" hidden>
@@ -562,6 +600,17 @@
       '..X.X..',
       '..X.X..',
       '.XX.XX.'],
+    schipG: [
+      '......X......',
+      '..X..XXX..X..',
+      '..XX.XXX.XX..',
+      'X.XXXXXXXXX.X',
+      'XXXXX.X.XXXXX',
+      'XXXXXXXXXXXXX',
+      '.XXX.XXX.XXX.',
+      '.XX..X.X..XX.',
+      'XX...X.X...XX',
+      'X...........X'],
     schipF: [
       '......X......',
       '.....XXX.....',
@@ -869,20 +918,25 @@
       { id: 'geel', naam: 'Geel', prijs: 150, kleur: K.geel }, { id: 'wit', naam: 'Wit', prijs: 150, kleur: '#ffffff' },
       { id: 'regenboog', naam: 'Regenboog', prijs: 500 },
       { id: 'goud', naam: 'Goud', prijs: null, kleur: '#ffcf4a', prestatie: 'bazen10' },
-      { id: 'sterrenstof', naam: 'Sterrenstof', prijs: null, kleur: '#9fe8ff', prestatie: 'sterren20' } ] },
+      { id: 'sterrenstof', naam: 'Sterrenstof', prijs: null, kleur: '#9fe8ff', prestatie: 'sterren20' },
+      { id: 'zilver', naam: 'Zilver', prijs: null, kleur: '#dfe6f2', rang: 3 },
+      { id: 'platina', naam: 'Platina', prijs: null, kleur: '#7fe6d6', rang: 9 } ] },
     spoor: { naam: 'Spoor achter je schip', items: [
       { id: 'geen', naam: 'Geen', prijs: 0 }, { id: 'vonken', naam: 'Vonken', prijs: 300 },
       { id: 'regenboog', naam: 'Regenboog', prijs: 600 },
       { id: 'komeet', naam: 'Komeet', prijs: null, prestatie: 'golf20ex' },
-      { id: 'sterren', naam: 'Sterrenregen', prijs: null, prestatie: 'sterren50' } ] },
+      { id: 'sterren', naam: 'Sterrenregen', prijs: null, prestatie: 'sterren50' },
+      { id: 'goudstof', naam: 'Goudstof', prijs: null, rang: 6 } ] },
     knal: { naam: 'Ontploffing', items: [
       { id: 'standaard', naam: 'Standaard', prijs: 0 }, { id: 'confetti', naam: 'Confetti', prijs: 300 },
       { id: 'groot', naam: 'Schokgolf', prijs: 500 },
-      { id: 'supernova', naam: 'Supernova', prijs: null, prestatie: 'aliens10000' } ] },
+      { id: 'supernova', naam: 'Supernova', prijs: null, prestatie: 'aliens10000' },
+      { id: 'diamant', naam: 'Diamantscherven', prijs: null, rang: 12 } ] },
     achter: { naam: 'Achtergrond', items: [
       { id: 'sterren', naam: 'Sterren', prijs: 0 }, { id: 'nevel', naam: 'Nevel', prijs: 400 },
       { id: 'raster', naam: 'Neonraster', prijs: 600 },
-      { id: 'aurora', naam: 'Noorderlicht', prijs: null, prestatie: 'uitdaging5' } ] }
+      { id: 'aurora', naam: 'Noorderlicht', prijs: null, prestatie: 'uitdaging5' },
+      { id: 'meester', naam: 'Meesterdraaikolk', prijs: null, rang: 15 } ] }
   };
 
   const UITDAGINGEN = [
@@ -1012,6 +1066,8 @@
       kracht: 'Heel sterk, maar schiet wat trager.', hartjes: 5, vuurTraag: 1.25 },
     { id: 'raketvos', naam: 'Raketvos', kleur: K.oranje, grid: 'schipE', prijs: 550,
       kracht: 'Schiet ook raketten die aliens zoeken.', hartjes: 3, raket: true },
+    { id: 'legende', naam: 'Legende', kleur: '#ff4f8b', grid: 'schipG', prijs: null, rang: 18,
+      kracht: '5 hartjes, sneller vuur, doorboren en zoekraketten.', hartjes: 5, vuurTraag: 0.85, doorboor: 1, raket: true },
     { id: 'sterrenjager', naam: 'Sterrenjager', kleur: '#ffd23d', grid: 'schipF', prijs: null, prestatie: 'sterren90',
       kracht: '4 hartjes, sneller vuur en kogels gaan door 1 vijand.', hartjes: 4, vuurTraag: 0.85, doorboor: 1 }
   ];
@@ -1047,7 +1103,7 @@
       .map(x => ({ id: x.id, naam: String(x.naam || 'Mijn schip').slice(0, 12), romp: x.romp, vleugels: x.vleugels, motor: x.motor, kleur: x.kleur, stats: x.stats || {} }));
   } catch (e) {}
   const alleSchepen = () => [...SCHEPEN, ...ontwerpen.map(ontwerpNaarSchip)];
-  const heeftSchip = id => eigenSchepen.includes(id) || ontwerpen.some(o => o.id === id);
+  const heeftSchip = id => eigenSchepen.includes(id) || ontwerpen.some(o => o.id === id) || (id === 'legende' && rangNr() >= 18);
   let gekozenSchip = opslag.get('neon-invasie-schip', 'bliksem');
   try { const h = JSON.parse(opslag.get('neon-invasie-hangar', 'null')); if (Array.isArray(h) && h.length) gekozenSchip = h[0]; } catch (e) {}
   if (!heeftSchip(gekozenSchip) || !alleSchepen().some(s => s.id === gekozenSchip)) gekozenSchip = 'bliksem';
@@ -1126,6 +1182,170 @@
   if (!missieSterren || typeof missieSterren !== 'object') missieSterren = {};
   const totaalSterren = () => Object.values(missieSterren).reduce((a, b) => a + (+b || 0), 0);
 
+  // ---------- Rang: XP verdienen, van Brons I tot Legende ----------
+  // Elke rang geeft +1% munten en +1% schade. De eerste rangen gaan snel, Legende duurt weken.
+  const RANG_TIERS = ['Brons', 'Zilver', 'Goud', 'Platina', 'Diamant', 'Meester'];
+  const RANG_KLEUREN = ['#cd7f32', '#c9d1e0', '#ffd23d', '#7fe6d6', '#7ab8ff', '#b967ff', '#ff4f8b'];
+  const RANGEN = [];
+  {
+    let totaal = 0;
+    RANG_TIERS.forEach((t, ti) => [1, 2, 3].forEach(stap => {
+      const i = RANGEN.length;
+      if (i > 0) totaal += Math.round((400 + 300 * i ** 1.5) / 50) * 50;
+      RANGEN.push({ naam: t + ' ' + 'I'.repeat(stap), tier: ti, stap, xp: totaal });
+    }));
+    totaal += Math.round((400 + 300 * RANGEN.length ** 1.5) / 50) * 50;
+    RANGEN.push({ naam: 'Legende', tier: 6, stap: 0, xp: totaal });
+  }
+  let xp = +opslag.get('neon-invasie-xp', -1);
+  let rangWelkom = false;
+  if (!(xp >= 0)) {
+    // bestaande spelers krijgen XP voor wat ze al gedaan hebben
+    xp = Math.round(stats.aliens + stats.bazen * 100 + totaalSterren() * 30 + stats.uitdagingen * 150 + stats.maxGolf * 20);
+    opslag.set('neon-invasie-xp', xp);
+    rangWelkom = xp >= RANGEN[1].xp;
+  }
+  function rangNr(x = xp) { let r = 0; while (r + 1 < RANGEN.length && x >= RANGEN[r + 1].xp) r++; return r; }
+  const rangBonus = () => 1 + 0.01 * rangNr();
+  // wat je vrijspeelt met een nieuwe rang
+  function rangSpullen(nr) {
+    const uit = [];
+    for (const [cat, groep] of Object.entries(UITERLIJK)) for (const it of groep.items) if (it.rang === nr) uit.push(groep.naam + ': ' + it.naam);
+    if (nr === 18) uit.push('het schip Legende');
+    return uit;
+  }
+  function meldRangSpullen(van, tot) {
+    for (let r = van + 1; r <= tot; r++) for (const t of rangSpullen(r)) toonToast('Nieuw vrijgespeeld: ' + t + '!');
+  }
+  function geefXP(n) {
+    if (!spel || (spel.test && !spel.samen) || !(n > 0)) return;
+    n = Math.round(n * (N().punten || 1) * (spel.samen ? 1.25 : 1));
+    spel.xp = (spel.xp || 0) + n;
+    xpErbij(n);
+  }
+  function xpErbij(n) {
+    const voor = rangNr();
+    xp += n;
+    opslag.set('neon-invasie-xp', xp);
+    const na = rangNr();
+    if (na > voor) { banner('PROMOTIE!', RANGEN[na].naam, 2.8); sfx.power(); tril([60, 40, 120]); meldRangSpullen(voor, na); }
+  }
+  // ---------- Dagelijkse opdrachten ----------
+  const OPDRACHTEN = [
+    { id: 'aliens', n: [80, 120, 160], tekst: n => `Versla ${n} aliens` },
+    { id: 'kever', n: [30, 50], tekst: n => `Versla ${n} groene kevers` },
+    { id: 'tank', n: [6, 10], tekst: n => `Versla ${n} tanks` },
+    { id: 'bazen', n: [1, 2, 3], tekst: n => n === 1 ? 'Versla een eindbaas' : `Versla ${n} eindbazen` },
+    { id: 'golf', n: [10, 15], tekst: n => `Haal golf ${n} in één potje` },
+    { id: 'arena', n: [8, 12], tekst: n => `Haal golf ${n} in de Arena` },
+    { id: 'munten', n: [100, 200], tekst: n => `Raap ${n} munten op` },
+    { id: 'sterren', n: [3, 5], tekst: n => `Haal ${n} sterren in Missies` },
+    { id: 'samen', n: [1], tekst: () => 'Speel een potje samen (of een duel)' },
+    { id: 'kracht', n: [4, 6], tekst: n => `Gebruik je speciale aanval ${n} keer` },
+    { id: 'rush', n: [3, 5], tekst: n => `Versla ${n} bazen in de Bazenrush` },
+    { id: 'potjes', n: [3, 5], tekst: n => `Speel ${n} potjes` }
+  ];
+  let opdr = leesJson('neon-invasie-opdrachten', null);
+  function zorgOpdrachten() {
+    const dag = vandaag();
+    if (opdr && opdr.datum === dag && Array.isArray(opdr.lijst) && opdr.lijst.length === 3) return opdr;
+    let h = 11;
+    for (const c of dag + 'opdr') h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    const vrij = [...OPDRACHTEN], lijst = [];
+    for (let i = 0; i < 3; i++) {
+      h = (h * 1103515245 + 12345) >>> 0;
+      const o = vrij.splice(h % vrij.length, 1)[0];
+      lijst.push({ id: o.id, n: o.n[(h >>> 8) % o.n.length] });
+    }
+    opdr = { datum: dag, lijst, tel: [0, 0, 0], klaar: [false, false, false], bonus: false };
+    opslag.set('neon-invasie-opdrachten', JSON.stringify(opdr));
+    return opdr;
+  }
+  const opdrachtTekst = o => OPDRACHTEN.find(x => x.id === o.id).tekst(o.n);
+  // tel mee voor een opdracht; hoogste = alleen de hoogste waarde telt (zoals 'haal golf 10')
+  function opdrachtTel(id, n = 1, hoogste = false) {
+    if (spel && spel.test && !spel.samen) return;
+    const d = zorgOpdrachten();
+    let veranderd = false;
+    d.lijst.forEach((o, i) => {
+      if (o.id !== id || d.klaar[i]) return;
+      const nieuw = hoogste ? Math.max(d.tel[i], n) : d.tel[i] + n;
+      if (nieuw === d.tel[i]) return;
+      d.tel[i] = Math.min(o.n, nieuw); veranderd = true;
+      if (d.tel[i] >= o.n) {
+        d.klaar[i] = true; bank += 150; xpErbij(300);
+        toonToast(`Opdracht klaar: ${opdrachtTekst(o)}! +300 XP en 150 munten`);
+      }
+    });
+    if (veranderd && d.klaar.every(k => k) && !d.bonus) { d.bonus = true; bank += 300; toonToast('Alle opdrachten van vandaag klaar! +300 munten extra'); }
+    if (veranderd) { opslag.set('neon-invasie-opdrachten', JSON.stringify(d)); opslag.set('neon-invasie-munten', bank); }
+  }
+  function openOpdrachten() {
+    status = 'opdrachten'; spel = null; Object.assign(A, AS);
+    const d = zorgOpdrachten(), l = $('oLijst'); l.innerHTML = '';
+    d.lijst.forEach((o, i) => {
+      const rij = maak('div', 'rij' + (d.klaar[i] ? ' gehaald' : '')), info = maak('div', 'info');
+      info.append(maak('div', 'naam', (d.klaar[i] ? '✓ ' : '') + opdrachtTekst(o)));
+      const balk = maak('div', 'voortgang'), vul = maak('i'); vul.style.width = (d.tel[i] / o.n * 100) + '%'; balk.append(vul);
+      info.append(balk, maak('div', 'uitleg', `${d.tel[i]} / ${o.n}`));
+      const bel = maak('div', 'beloning'); bel.innerHTML = '300 XP<br><span class="munt"></span>150';
+      rij.append(info, bel); l.append(rij);
+    });
+    $('oBonus').textContent = d.bonus ? 'Alles klaar voor vandaag! Morgen zijn er nieuwe.' : `${d.klaar.filter(k => k).length} van 3 klaar`;
+    toonLaag('opdrachten');
+  }
+
+  // een schildje met de kleur van je rang en I, II of III (Legende: een ster)
+  function tekenBadge(g, x, y, s, nr) {
+    const r = RANGEN[clamp(nr | 0, 0, RANGEN.length - 1)], kleur = RANG_KLEUREN[r.tier];
+    g.save(); g.translate(x, y);
+    g.beginPath(); g.moveTo(0, -s); g.lineTo(s * 0.85, -s * 0.6); g.lineTo(s * 0.72, s * 0.4); g.lineTo(0, s); g.lineTo(-s * 0.72, s * 0.4); g.lineTo(-s * 0.85, -s * 0.6); g.closePath();
+    g.fillStyle = 'rgba(6, 5, 15, 0.9)'; g.fill();
+    g.lineWidth = Math.max(1.5, s * 0.15); g.strokeStyle = kleur; g.shadowColor = kleur; g.shadowBlur = s * 0.7; g.stroke(); g.shadowBlur = 0;
+    g.fillStyle = kleur; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.font = `700 ${Math.round(s * (r.stap === 3 ? 0.62 : 0.8))}px ${FONT_D}`;
+    g.fillText(r.stap ? 'I'.repeat(r.stap) : '★', 0, s * 0.02);
+    g.restore();
+  }
+  function badgeOpCanvas(c, nr) {
+    const dpr = window.devicePixelRatio || 1, w = c.clientWidth || c.width, h = c.clientHeight || c.height;
+    c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+    const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+    tekenBadge(g, w / 2, h / 2, Math.min(w, h) * 0.42, nr);
+  }
+  function rangVoortgang() {
+    const r = rangNr(), nu = RANGEN[r], volgende = RANGEN[r + 1];
+    if (!volgende) return { r, deel: 1, tekst: `${xp.toLocaleString('nl-NL')} XP · hoogste rang!` };
+    return { r, deel: (xp - nu.xp) / (volgende.xp - nu.xp), tekst: `${(xp - nu.xp).toLocaleString('nl-NL')} / ${(volgende.xp - nu.xp).toLocaleString('nl-NL')} XP naar ${volgende.naam}` };
+  }
+  function toonRangKaart() {
+    const v = rangVoortgang();
+    $('mRang').textContent = RANGEN[v.r].naam; $('mRang').style.color = RANG_KLEUREN[RANGEN[v.r].tier];
+    $('mRangBalk').style.width = (v.deel * 100) + '%'; $('mRangXp').textContent = v.tekst;
+    badgeOpCanvas($('mBadge'), v.r);
+  }
+  function openRang() {
+    status = 'rang'; spel = null; Object.assign(A, AS);
+    toonLaag('rang');
+    const v = rangVoortgang(), r = v.r;
+    badgeOpCanvas($('rBadge'), r);
+    $('rNaamGroot').textContent = RANGEN[r].naam; $('rNaamGroot').style.color = RANG_KLEUREN[RANGEN[r].tier];
+    $('rBalk').style.width = (v.deel * 100) + '%'; $('rXp').textContent = v.tekst;
+    $('rBonus').textContent = r ? `Jouw bonus: +${r}% munten en +${r}% schade.` : 'Elke nieuwe rang geeft +1% munten en +1% schade.';
+    const l = $('rLijst'); l.innerHTML = '';
+    RANGEN.forEach((rg, i) => {
+      const rij = maak('div', 'rij ' + (i <= r ? 'bereikt' : 'nogniet'));
+      const c = document.createElement('canvas'); c.style.width = '34px'; c.style.height = '38px'; c.width = 34; c.height = 38;
+      const info = maak('div', 'info');
+      const nm = maak('div', 'naam', (i <= r ? '✓ ' : '') + rg.naam); nm.style.color = RANG_KLEUREN[rg.tier];
+      const spullen = rangSpullen(i);
+      info.append(nm, maak('div', 'uitleg', i ? `${rg.xp.toLocaleString('nl-NL')} XP · +${i}% munten en schade` : 'Hier begin je'));
+      if (spullen.length) { const sp2 = maak('div', 'uitleg', '🎁 ' + spullen.join(', ')); sp2.style.color = 'var(--yellow)'; info.append(sp2); }
+      rij.append(c, info); l.append(rij);
+      badgeOpCanvas(c, i);
+    });
+  }
+
   function bewaar() {
     opslag.set('neon-invasie-drones', JSON.stringify({ lvl: droneLvl, actief: actieveDrone }));
     opslag.set('neon-invasie-wapenlvl', JSON.stringify(wapenLvl));
@@ -1157,6 +1377,11 @@
   // (RUIMTE x RUIMTE); dan is A het stuk dat je ziet en schuift het mee met je schip.
   const AS = { ...A };
   const RUIMTE = 1080;
+  function maakPlaneten(seed) {
+    let h = (seed >>> 0) || 1;
+    const r = () => { h = (h * 1103515245 + 12345) >>> 0; return h / 4294967296; };
+    return [0, 1, 2, 3].map(k => ({ x: 100 + r() * (RUIMTE - 200), y: 100 + r() * (RUIMTE - 200), r: 40 + r() * 55, kleur: REGENBOOG[Math.floor(r() * 6)] }));
+  }
   function zetCamera() {
     const w = AS.x1 - AS.x0, h = AS.y1 - AS.y0;
     A.x0 = clamp(schip.x - w / 2, 0, RUIMTE - w); A.x1 = A.x0 + w; A.cx = A.x0 + w / 2;
@@ -1370,16 +1595,23 @@
       kogels: [], vijandKogels: [], vijanden: [], muntjes: [], powerups: [], deeltjes: [], teksten: [],
       vuurT: 0, onkwetsbaar: 0, schud: 0, flits: 0, streak: 0, einde: 0, weg: false,
       actief: { drie: 0, snel: 0, schild: 0, magneet: 0 }, banner: null, raketten: [],
-      arena: uitdaging ? uitdaging.arena : missie ? true : rush ? false : modus === 'arena', ruimte: !!missie, rush, rushT: 0, rushBazen: 0, mik: -Math.PI / 2, mikDoel: -Math.PI / 2,
+      arena: uitdaging ? uitdaging.arena : missie ? true : rush === 'ruimte' ? true : rush ? false : modus === 'arena', ruimte: !!missie || rush === 'ruimte', rush: !!rush, rushT: 0, rushBazen: 0, mik: -Math.PI / 2, mikDoel: -Math.PI / 2,
       krachtT: 8, uitdaging, bommen: [], ringen: [], vlammen: [], bliksems: [], boemerangs: [], gevaren: [], geraaktGolf: false, drone: upgrades.drone ? { hoek: 0, vuurT: 1 } : null
     };
     Object.assign(A, AS);
+    if (!(beginGolf > 1 && !uitdaging && !missie && !rush)) opdrachtTel('potjes');
     spel.levens = uit('glas') ? 1 : hartjesVan(schipInfo());
     schip.x = schip.doelX = W / 2;
     if (spel.arena) schip.y = schip.doelY = A.cy + 60;
     if (schipInfo().startSchild) spel.actief.schild = duurVan('schild');
     if (missie) { startMissieSpel(missie); return; }
-    if (rush) { startGolf(5); return; }
+    if (rush) {
+      if (rush === 'ruimte') {
+        spel.planeten = maakPlaneten(Math.floor(Math.random() * 1e9));
+        schip.x = schip.doelX = RUIMTE / 2; schip.y = schip.doelY = RUIMTE / 2 + 60; zetCamera();
+      }
+      startGolf(5); return;
+    }
     spel.test = !uitdaging && beginGolf > 1;
     startGolf(spel.test ? beginGolf : 1);
   }
@@ -1389,6 +1621,7 @@
   function startGolf(n) {
     spel.golf = n; spel.golfKlaar = false;
     spel.wachtrij = maakGolf(n); spel.spawnT = 1.4; spel.geraaktGolf = false;
+    if (!spel.rush && !spel.missie) { opdrachtTel('golf', n, true); if (spel.arena) opdrachtTel('arena', n, true); }
     if (!spel.test && !spel.rush) {
       stats.maxGolf = Math.max(stats.maxGolf, n);
       if (!spel.uitdaging && niveau === 'extreem') stats.maxGolfExtreem = Math.max(stats.maxGolfExtreem, n);
@@ -1492,7 +1725,9 @@
   }
 
   // ---------- Arena ----------
-  const binnen = (x, y, m = 0) => x > A.x0 - m && x < A.x1 + m && y > A.y0 - m && y < A.y1 + m;
+  const inRect = (R, x, y, m) => x > R.x0 - m && x < R.x1 + m && y > R.y0 - m && y < R.y1 + m;
+  // bij samen spelen in de grote ruimte telt ook wat de gast ziet
+  const binnen = (x, y, m = 0) => inRect(A, x, y, m) || !!(spel && spel.gastA && inRect(spel.gastA, x, y, m));
   const zichtbaar = e => !e.vaag && (spel.arena ? binnen(e.x, e.y) : e.y > 0);
   // sommige aliens gaan bij een missie op het vrachtschip of station af
   const doelVan = e => e.opObj && spel.missie && spel.missie.obj && !spel.missie.klaar && !spel.missie.gedaan.vracht && !spel.missie.gedaan.station ? spel.missie.obj : spelerDoel(e);
@@ -1504,11 +1739,12 @@
   function randPunt(m) {
     let p;
     for (let poging = 0; poging < 6; poging++) {
-      const kant = Math.floor(Math.random() * 4), t = rand(0.12, 0.88), w = A.x1 - A.x0, h = A.y1 - A.y0;
-      if (kant === 0) p = { x: A.x0 + t * w, y: A.y0 - m, nx: 0, ny: 1 };
-      else if (kant === 1) p = { x: A.x1 + m, y: A.y0 + t * h, nx: -1, ny: 0 };
-      else if (kant === 2) p = { x: A.x0 + t * w, y: A.y1 + m, nx: 0, ny: -1 };
-      else p = { x: A.x0 - m, y: A.y0 + t * h, nx: 1, ny: 0 };
+      const B = spel && spel.gastA && Math.random() < 0.5 ? spel.gastA : A; // soms bij de gast
+      const kant = Math.floor(Math.random() * 4), t = rand(0.12, 0.88), w = B.x1 - B.x0, h = B.y1 - B.y0;
+      if (kant === 0) p = { x: B.x0 + t * w, y: B.y0 - m, nx: 0, ny: 1 };
+      else if (kant === 1) p = { x: B.x1 + m, y: B.y0 + t * h, nx: -1, ny: 0 };
+      else if (kant === 2) p = { x: B.x0 + t * w, y: B.y1 + m, nx: 0, ny: -1 };
+      else p = { x: B.x0 - m, y: B.y0 + t * h, nx: 1, ny: 0 };
       if (Math.hypot(p.x - schip.x, p.y - schip.y) > 110) break;
     }
     return p;
@@ -1634,7 +1870,8 @@
           break;
         }
         if (sp.ruimte && !sp.weg) {
-          const dx = schip.x - e.mx, dy = schip.y - e.my, d = Math.hypot(dx, dy) || 1, v = (e.woedend ? 40 : 25) * dt;
+          const prooi = spelerDoel({ x: e.mx, y: e.my });
+          const dx = prooi.x - e.mx, dy = prooi.y - e.my, d = Math.hypot(dx, dy) || 1, v = (e.woedend ? 40 : 25) * dt;
           if (d > 60) { e.mx += dx / d * v; e.my += dy / d * v; }
         }
         if (!e.woedend && e.hp <= e.maxHp / 2) {
@@ -1858,9 +2095,10 @@
   }
 
   function pakMunt(m) {
-    const x = (schipInfo().muntX || 1) * N().munten * (spel.arena ? MODI.arena.beloning : 1) * (1 + 0.1 * upgrades.muntbonus);
+    const x = (schipInfo().muntX || 1) * N().munten * (spel.arena ? MODI.arena.beloning : 1) * (1 + 0.1 * upgrades.muntbonus) * rangBonus();
     const n = Math.floor(x) + (Math.random() < x % 1 ? 1 : 0);
     if (spel.missie) spel.missie.munten++;
+    opdrachtTel('munten');
     m.weg = true; spel.munten += n; spel.opgeraapt = (spel.opgeraapt || 0) + n; bank += n; spel.score += 5; sfx.munt();
     opslag.set('neon-invasie-munten', bank);
   }
@@ -1930,6 +2168,7 @@
     const st = uiterlijk.knal;
     if (st === 'confetti') knal(x, y, REGENBOOG, n, v);
     else if (st === 'groot') { knal(x, y, kleur, Math.round(n * 1.6), v * 1.3); ring(x, y, kleur, 32); }
+    else if (st === 'diamant') { knal(x, y, ['#bff6ff', '#7ab8ff', '#ffffff'], Math.round(n * 1.4), v * 1.4); ring(x, y, '#bff6ff', 30); ring(x, y, '#7ab8ff', 18); }
     else if (st === 'supernova') { knal(x, y, '#ffffff', n, v * 1.5); knal(x, y, kleur, n, v); ring(x, y, '#ffffff', 48); }
     else knal(x, y, kleur, n, v);
   }
@@ -2013,7 +2252,7 @@
       if (Math.random() < 0.3) knal(e.x + rand(-e.hw, e.hw), e.y + rand(-e.hh, e.hh), BAZEN[e.stijl].kleur, 2, 80);
       return;
     }
-    e.hp -= schade * (uit('glas') ? 2 : 1) * (1 + 0.15 * upgrades.kracht); e.flash = 0.08;
+    e.hp -= schade * (uit('glas') ? 2 : 1) * (1 + 0.15 * upgrades.kracht) * rangBonus(); e.flash = 0.08;
     if (e.hp <= 0) dood(e); else sfx.raak();
   }
 
@@ -2024,9 +2263,11 @@
     spel.streak++;
     stats.aliens++;
     if (e.soort === 'baas') stats.bazen++;
+    geefXP(e.soort === 'baas' ? 50 + 25 * (e.nr || 1) : Math.max(1, Math.round((d.score || 10) / 10)));
+    if (e.soort === 'baas') opdrachtTel('bazen'); else { opdrachtTel('aliens'); if (e.soort === 'kever' || e.soort === 'tank') opdrachtTel(e.soort); }
     if (vermenigvuldiger() >= 4) stats.combo = 1;
     const punten = Math.round((e.score || d.score) * vermenigvuldiger() * N().punten * (spel.arena ? MODI.arena.beloning : 1));
-    spel.score += punten;
+    if (spel.duel && laatsteSchutter === 'gast') spel.gastScore += punten; else spel.score += punten;
     tekst(e.x, e.y, '+' + punten);
     if (e.soort === 'splitser') for (const z of [-1, 1]) { // valt uit elkaar in twee kevers
       const x = e.x + z * 10;
@@ -2082,7 +2323,7 @@
   }
 
   function raakSchip() {
-    if (spel.onkwetsbaar > 0 || spel.weg || spel.hostDood) return;
+    if (spel.onkwetsbaar > 0 || spel.weg || spel.hostDood || spel.duelDood) return;
     spel.geraaktGolf = true;
     if (spel.actief.schild > 0) {
       spel.actief.schild = 0; spel.onkwetsbaar = 1;
@@ -2092,6 +2333,13 @@
     spel.levens--; spel.streak = 0; spel.onkwetsbaar = 2; spel.schud = 0.35;
     sfx.au(); tril(120);
     knal(schip.x, schip.y, schipInfo().kleur, 18, 150);
+    if (spel.levens <= 0 && spel.duel) {
+      spel.duelDood = true; spel.respawnT = 3;
+      knal(schip.x, schip.y, schipInfo().kleur, 50, 240); sfx.groteKnal();
+      banner('KAPOT!', 'Over 3 seconden ben je terug', 2);
+      if (spel.samen === 'host') spel.gastScore += 300; else samen.doodTel++;
+      return;
+    }
     if (spel.levens <= 0 && spel.samen === 'host' && spel.gast && !spel.gast.dood) {
       spel.hostDood = true;
       knal(schip.x, schip.y, schipInfo().kleur, 50, 240); sfx.groteKnal();
@@ -2312,6 +2560,7 @@
     pantser:      { naam: 'Bolwerk',      uitleg: '5 seconden onkwetsbaar en alle kogels weg' },
     raketvos:     { naam: 'Raketregen',   uitleg: '12 zoekraketten' },
     sterrenjager: { naam: 'Supernova',    uitleg: 'grote klap op alles in beeld' },
+    legende:      { naam: 'Legendestorm', uitleg: 'bliksem op alles in beeld en 8 zoekraketten' },
     eigen:        { naam: 'Schokgolf',    uitleg: 'een golf die kogels en aliens om je heen wegblaast' }
   };
   const krachtVan = s => KRACHTEN[s.id] || KRACHTEN.eigen;
@@ -2320,6 +2569,12 @@
   }
   function gebruikKracht() {
     const sp = spel;
+    if (sp && sp.duel && sp.samen === 'host') {
+      if (sp.weg || sp.duelDood || status !== 'spel' || sp.krachtT > 0) return;
+      sp.krachtT = KRACHT_WACHT; opdrachtTel('kracht');
+      stuurZwerm(sp.gast, 'gast'); banner('ZWERM GESTUURD!', '', 1.2);
+      return;
+    }
     if (sp && sp.samen === 'gast') {
       if (sp.weg || status !== 'spel' || sp.krachtT > 0) return;
       samen.kt++; sp.krachtT = KRACHT_WACHT; ring(schip.x, schip.y, schipInfo().kleur, 160); toon(220, 0.4, 'sawtooth', 0.05, 700);
@@ -2329,7 +2584,7 @@
     const id = KRACHTEN[schipInfo().id] ? schipInfo().id : 'eigen', k = KRACHTEN[id];
     const zicht = sp.vijanden.filter(e => !e.dood && zichtbaar(e));
     const dichtbij = r => zicht.filter(e => Math.hypot(e.x - schip.x, e.y - schip.y) < r);
-    sp.krachtT = KRACHT_WACHT;
+    sp.krachtT = KRACHT_WACHT; opdrachtTel('kracht');
     banner(k.naam.toUpperCase(), '', 1.2); tril(60); toon(220, 0.4, 'sawtooth', 0.05, 700);
     if (id === 'bliksem') {
       for (const e of zicht) { sp.bliksems.push({ punten: kartel([[schip.x, schip.y], [e.x, e.y]]), l: 0.35 }); raakVijand(e, 4); }
@@ -2352,6 +2607,10 @@
       for (const e of dichtbij(120)) raakVijand(e, 5);
     } else if (id === 'raketvos') {
       for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; sp.raketten.push({ x: schip.x, y: schip.y, vx: Math.cos(a) * 200, vy: Math.sin(a) * 200, schade: 3, t: 0, doel: null }); }
+    } else if (id === 'legende') {
+      for (const e of zicht) { sp.bliksems.push({ punten: kartel([[schip.x, schip.y], [e.x, e.y]]), l: 0.35 }); raakVijand(e, 5); }
+      for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; sp.raketten.push({ x: schip.x, y: schip.y, vx: Math.cos(a) * 200, vy: Math.sin(a) * 200, schade: 3, t: 0, doel: null }); }
+      ring(schip.x, schip.y, '#ff4f8b', 180); ruis(0.3, 0.08, 3000);
     } else if (id === 'sterrenjager') {
       sp.flits = 0.4; sp.vijandKogels.length = 0;
       for (const e of zicht) raakVijand(e, 8);
@@ -2385,8 +2644,8 @@
     const st = uiterlijk.spoor;
     if (st === 'geen' || spel.deeltjes.length > 450) return;
     const h = richting() + Math.PI, x = schip.x + Math.cos(h) * 16, y = schip.y + Math.sin(h) * 16;
-    const kleur = st === 'regenboog' ? REGENBOOG[Math.floor(tijd * 12) % REGENBOOG.length] : st === 'komeet' ? (Math.random() < 0.5 ? '#ffffff' : K.cyaan) : st === 'sterren' ? ['#ffd23d', '#ffffff', '#9fe8ff'][Math.floor(Math.random() * 3)] : schipInfo().kleur;
-    const n = st === 'komeet' || st === 'sterren' ? 2 : 1, l = st === 'komeet' || st === 'sterren' ? 0.7 : 0.4;
+    const kleur = st === 'regenboog' ? REGENBOOG[Math.floor(tijd * 12) % REGENBOOG.length] : st === 'komeet' ? (Math.random() < 0.5 ? '#ffffff' : K.cyaan) : st === 'sterren' ? ['#ffd23d', '#ffffff', '#9fe8ff'][Math.floor(Math.random() * 3)] : st === 'goudstof' ? ['#ffd23d', '#ffb02e', '#fff3b0'][Math.floor(Math.random() * 3)] : schipInfo().kleur;
+    const n = st === 'komeet' || st === 'sterren' || st === 'goudstof' ? 2 : 1, l = st === 'komeet' || st === 'sterren' || st === 'goudstof' ? 0.7 : 0.4;
     for (let i = 0; i < n; i++)
       spel.deeltjes.push({ x: x + rand(-3, 3), y: y + rand(-3, 3), vx: Math.cos(h + rand(-0.4, 0.4)) * 70, vy: Math.sin(h + rand(-0.4, 0.4)) * 70, l, max: l, k: kleur, s: st === 'komeet' ? rand(2, 3.5) : rand(1.5, 2.5) });
   }
@@ -2429,10 +2688,11 @@
     if (sp.schud > 0) sp.schud -= dt;
     if (sp.flits > 0) sp.flits -= dt;
     if (sp.banner) { sp.banner.t -= dt; if (sp.banner.t <= 0) sp.banner = null; }
+    if (sp.duelDood) { sp.respawnT -= dt; if (sp.respawnT <= 0) { sp.duelDood = false; sp.levens = hartjesVan(schipInfo()); sp.onkwetsbaar = 3; } }
     if (sp.samen === 'gast') { updateGast(dt); return; }
 
     // schieten
-    if (!sp.weg && !sp.hostDood) {
+    if (!sp.weg && !sp.hostDood && !sp.duelDood) {
       const interval = (0.26 - upgrades.vuur * 0.028) * (sp.actief.snel > 0 ? 0.5 : 1) * (schipInfo().vuurTraag || 1);
       if (gekozenWapen === 'laser') updateLaser(dt, interval);
       else {
@@ -2465,7 +2725,8 @@
     } else if (!sp.vijanden.length && !sp.weg) {
       if (!sp.golfKlaar) {
         sp.golfKlaar = true; sp.volgendeT = 2.4;
-        if (sp.rush) { sp.rushBazen++; if (sp.golf >= 50) sp.rushKlaar = true; }
+        geefXP(5 + sp.golf);
+        if (sp.rush) { sp.rushBazen++; opdrachtTel('rush'); if (sp.golf >= 50) sp.rushKlaar = true; }
         const bonus = Math.round(sp.golf * 2 * (isBaasGolf(sp.golf) ? 2 : 1) * N().munten);
         bank += bonus; sp.munten += bonus;
         if (sp.golf >= 5 && !sp.geraaktGolf) stats.perfect = 1;
@@ -2473,7 +2734,7 @@
         if (sp.uitdaging && !sp.uitdagingGehaald && sp.golf >= sp.uitdaging.doel) {
           sp.uitdagingGehaald = true;
           if (uitdagingGedaan !== vandaag()) {
-            uitdagingGedaan = vandaag(); stats.uitdagingen++;
+            uitdagingGedaan = vandaag(); stats.uitdagingen++; geefXP(150);
             bank += UITDAGING_BELONING; sp.munten += UITDAGING_BELONING;
             banner('UITDAGING GEHAALD!', '+' + UITDAGING_BELONING + ' munten', 3);
           } else banner('UITDAGING GEHAALD!', 'Je had vandaag al een beloning', 3);
@@ -2606,15 +2867,16 @@
       if (b.weg) continue;
       for (const e of sp.vijanden) {
         if (e.dood || b.geraakt.includes(e)) continue;
-        if (raakt(e, b.x, b.y, 3)) {
-          knal(b.x, b.y, kogelKleur(), 3, 70); raakVijand(e, b.mult || 1);
+        // kogels van de gast iets ruimer: hij ziet de aliens net wat later
+        if (raakt(e, b.x, b.y, b.gast ? 8 : 3)) {
+          knal(b.x, b.y, kogelKleur(), 3, 70); laatsteSchutter = b.gast ? 'gast' : 'host'; raakVijand(e, b.mult || 1); laatsteSchutter = 'host';
           if (b.door > 0) { b.door--; b.geraakt.push(e); } else { b.weg = true; break; }
         }
       }
     }
 
     if (sp.samen === 'host') updateHostNet(dt);
-    if (!sp.weg && !sp.hostDood) {
+    if (!sp.weg && !sp.hostDood && !sp.duelDood) {
       // vijanden botsen met schip
       for (const e of sp.vijanden) {
         if (e.dood) continue;
@@ -2734,6 +2996,19 @@
       for (let x = 0; x <= W; x += 36) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
       for (let y = (tijd * 40) % 36 - 36; y <= H; y += 36) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
       ctx.stroke();
+    } else if (st === 'meester') {
+      // een langzaam draaiende paarse draaikolk
+      const cx = W / 2, cy = H * 0.42;
+      for (let arm = 0; arm < 4; arm++) {
+        ctx.strokeStyle = (arm % 2 ? K.paars : K.roze) + '30'; ctx.lineWidth = 14;
+        ctx.beginPath();
+        for (let i = 0; i < 60; i++) {
+          const r = i * 7, a = arm * Math.PI / 2 + i * 0.12 + tijd * 0.15;
+          const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r * 0.8;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
     } else if (st === 'aurora') {
       [K.groen, K.cyaan, K.paars].forEach((k, b) => {
         ctx.strokeStyle = k + '26'; ctx.lineWidth = 28;
@@ -2756,7 +3031,7 @@
   function render() {
     tekenAchtergrond();
 
-    if (!spel || status === 'menu' || status === 'kaart' || status === 'samen' || status === 'overzet' || (status === 'winkel' && winkelTerugNaar === 'menu')) {
+    if (!spel || status === 'menu' || status === 'kaart' || status === 'samen' || status === 'overzet' || status === 'rang' || status === 'opdrachten' || (status === 'winkel' && winkelTerugNaar === 'menu')) {
       if (modus === 'arena') { tekenArenaRand(false); tekenSchip(A.cx, A.cy + 60 + Math.sin(tijd * 2) * 3); }
       else tekenSchip(W / 2, H - 60 + Math.sin(tijd * 2) * 3);
       return;
@@ -2884,7 +3159,7 @@
       ctx.fillStyle = '#ffffff'; ctx.fillRect(2, -1, 3, 2);
       ctx.restore();
     }
-    if (!sp.weg && !sp.hostDood && !(sp.onkwetsbaar > 0 && Math.floor(tijd * 15) % 2)) {
+    if (!sp.weg && !sp.hostDood && !sp.duelDood && !(sp.onkwetsbaar > 0 && Math.floor(tijd * 15) % 2)) {
       if (sp.arena) {
         ctx.strokeStyle = schipInfo().kleur; ctx.globalAlpha = 0.35; ctx.lineWidth = 1.5; ctx.setLineDash([3, 5]);
         ctx.beginPath(); ctx.moveTo(schip.x + Math.cos(sp.mik) * 22, schip.y + Math.sin(sp.mik) * 22);
@@ -2924,9 +3199,8 @@
       g.addColorStop(0, 'rgba(6, 5, 15, 0)'); g.addColorStop(1, 'rgba(6, 5, 15, 0.97)');
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
     }
-    if (sp.ruimte) tekenPijlen();
     if (sp.arena) tekenArenaRand(true);
-    if (sp.ruimte) tekenMinikaart();
+    if (sp.ruimte) { tekenMinikaart(); tekenPijlen(); } // pijltjes bovenop de minikaart
     if (sp.flits > 0) { ctx.fillStyle = `rgba(185,103,255,${sp.flits})`; ctx.fillRect(0, 0, W, H); }
 
     tekenHud();
@@ -2971,6 +3245,10 @@
     if (sp.missie) {
       const r = missieRegels();
       r.forEach((t, i) => { ctx.fillStyle = i ? K.grijs : K.geel; ctx.fillText(t, W - 56, 45 + i * 18); });
+    } else if (sp.duel) {
+      const ander = sp.samen === 'host' ? sp.gastScore : sp.duelAnder || 0;
+      ctx.fillStyle = K.roze; ctx.fillText('TEGEN ' + ander, W - 56, 45);
+      ctx.fillStyle = K.geel; ctx.fillText('TIJD ' + tijdTekst(Math.max(0, sp.duelT)), W - 56, 63);
     } else if (sp.rush) {
       ctx.fillStyle = K.geel; ctx.fillText(tijdTekst(sp.rushT), W - 56, 45);
       ctx.fillStyle = K.grijs; ctx.fillText(`BAAS ${Math.min(10, sp.rushBazen + 1)}/10`, W - 56, 63);
@@ -2999,7 +3277,7 @@
   }
 
   // ---------- Schermen ----------
-  const lagen = { overzet: $('overzet'), samen: $('samen'), missies: $('missies'), missieKlaar: $('missieKlaar'), menu: $('menu'), pauze: $('pauze'), over: $('over'), winkel: $('winkel'), prestaties: $('prestaties'), uitdaging: $('uitdaging') };
+  const lagen = { opdrachten: $('opdrachten'), rang: $('rang'), overzet: $('overzet'), samen: $('samen'), missies: $('missies'), missieKlaar: $('missieKlaar'), menu: $('menu'), pauze: $('pauze'), over: $('over'), winkel: $('winkel'), prestaties: $('prestaties'), uitdaging: $('uitdaging') };
   function toonLaag(naam) {
     for (const [k, el] of Object.entries(lagen)) el.hidden = k !== naam;
     $('pauzeKnop').hidden = naam !== null;
@@ -3016,6 +3294,10 @@
     $('niveauKnop').textContent = 'Niveau: ' + N().naam;
     $('startGolfKnop').textContent = beginGolf > 1 ? `Testen: begin bij golf ${beginGolf} (telt niet mee)` : 'Begin bij golf 1';
     $('mMunten').textContent = bank;
+    $('rushKnop').textContent = 'Bazenrush (' + (modus === 'arena' ? 'open ruimte' : 'klassiek') + ')';
+    toonRangKaart();
+    { const d = zorgOpdrachten(), n = d.klaar.filter(k => k).length; $('opdrachtKnop').textContent = `Opdrachten van vandaag (${n}/3)` + (n === 3 ? ' ✓' : ''); }
+    if (rangWelkom) { rangWelkom = false; toonToast(`Nieuw: rangen! Met wat je al gespeeld hebt ben je ${RANGEN[rangNr()].naam}.`); }
     $('geluidKnop').textContent = 'Geluid: ' + (geluidAan ? 'aan' : 'uit');
     toonLaag('menu');
   }
@@ -3038,9 +3320,10 @@
 
   function eindeSpel() {
     if (spel.samen === 'gast') { eindSamenGast('Je bent gestopt.'); return; }
+    if (samen.echtWapen) { gekozenWapen = samen.echtWapen; samen.echtWapen = null; }
     if (spel.samen === 'host' && samen.kamer) {
       const k = samen.kamer;
-      k.presence({ fase: 'einde', eind: { score: spel.score, golf: spel.golf }, w: null }).catch(() => {});
+      k.presence({ fase: 'einde', eind: { score: spel.score, golf: spel.golf, duel: spel.duel ? { host: spel.score, gast: spel.gastScore } : null, rush: spel.rush ? { klaar: !!spel.rushKlaar, t: Math.round(spel.rushT), bazen: spel.rushBazen } : null }, w: null }).catch(() => {});
       samen.kamer = null; setTimeout(() => { k.leave().catch(() => {}); }, 4000);
     }
     if (spel.missie) {
@@ -3050,6 +3333,11 @@
     }
     if (spel.rush) { rushEinde(); return; }
     $('oTitel').textContent = spel.samen ? 'Samen gespeeld!' : 'Game over';
+    if (spel.duel) {
+      const ik = spel.score, ander = spel.gastScore;
+      $('oTitel').textContent = ik > ander ? 'Jij wint het duel!' : ik < ander ? 'Je tegenstander wint!' : 'Gelijkspel!';
+      if (ik > ander) geefXP(150);
+    }
     const nieuw = !spel.uitdaging && !spel.test && spel.score > records[recordSleutel()];
     if (nieuw) records[recordSleutel()] = spel.score;
     controleerPrestaties();
@@ -3060,6 +3348,8 @@
     $('oNiveau').textContent = spel.uitdaging ? 'Uitdaging' : MODI[modus].naam + ' · ' + N().naam;
     $('oGolf').textContent = spel.golf;
     $('oMunten').textContent = spel.munten;
+    $('oXp').textContent = '+' + (spel.xp || 0);
+    if (spel.duel) $('oNiveau').textContent = `Duel · ${spel.score} tegen ${spel.gastScore}`;
     $('nieuwRecord').hidden = !nieuw;
     toonLaag('over');
     if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
@@ -3069,24 +3359,31 @@
   let spelerNaam = opslag.get('neon-invasie-naam', '');
 
   // ---------- Bazenrush: alle 10 bazen achter elkaar, zo snel mogelijk ----------
-  let rushRecord = +opslag.get('neon-invasie-rush', 0) || 0, laatsteRush = false;
+  let laatsteRush = false;
+  const rushSleutel = ruimte => ruimte ? 'neon-invasie-rush-ruimte' : 'neon-invasie-rush';
+  let rushRecord = +opslag.get(rushSleutel(false), 0) || 0;
   const tijdTekst = t => Math.floor(t / 60) + ':' + String(Math.floor(t % 60)).padStart(2, '0');
   function startRush() {
     terug = 0; laatsteUitdaging = null; laatsteRush = true; samen.opnieuw = false;
-    audio(); nieuwSpel(null, null, true); status = 'spel'; toonLaag(null); houdScherm();
+    audio(); nieuwSpel(null, null, modus === 'arena' ? 'ruimte' : true); status = 'spel'; toonLaag(null); houdScherm();
   }
   function rushEinde() {
     const sp = spel;
     let nieuw = false;
-    if (sp.rushKlaar && (!rushRecord || sp.rushT < rushRecord)) { rushRecord = sp.rushT; opslag.set('neon-invasie-rush', rushRecord); nieuw = true; }
+    if (sp.rushKlaar) geefXP(300);
+    const rec = +opslag.get(rushSleutel(sp.ruimte), 0) || 0;
+    if (sp.rushKlaar && !sp.samen && (!rec || sp.rushT < rec)) { opslag.set(rushSleutel(sp.ruimte), sp.rushT); nieuw = true; }
+    if (!sp.ruimte) rushRecord = +opslag.get(rushSleutel(false), 0) || 0;
+    const record = +opslag.get(rushSleutel(sp.ruimte), 0) || 0;
     controleerPrestaties(); bewaar();
     status = 'over';
     $('oTitel').textContent = sp.rushKlaar ? 'Alle bazen verslagen!' : 'Game over';
     $('oScore').textContent = sp.score;
-    $('oNiveau').textContent = 'Bazenrush · ' + tijdTekst(sp.rushT);
-    $('oRecord').textContent = rushRecord ? tijdTekst(rushRecord) : '-';
+    $('oNiveau').textContent = (sp.samen ? 'Bazenrush samen · ' : sp.ruimte ? 'Bazenrush ruimte · ' : 'Bazenrush · ') + tijdTekst(sp.rushT);
+    $('oRecord').textContent = sp.samen ? '-' : record ? tijdTekst(record) : '-';
     $('oGolf').textContent = `${sp.rushBazen} van 10 bazen`;
     $('oMunten').textContent = sp.munten;
+    $('oXp').textContent = '+' + (sp.xp || 0);
     $('nieuwRecord').hidden = !nieuw;
     toonLaag('over');
     if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
@@ -3269,6 +3566,7 @@
       munten = oud === 0 ? bel : sterren > oud ? Math.round(bel / 2) : Math.round(bel / 5);
       if (sterren > oud) missieSterren[sleutel] = sterren;
       bank += munten; sp.munten += munten;
+      geefXP(20 + 15 * sterren); opdrachtTel('sterren', sterren);
     }
     m.klaar = { gehaald, reden, sterren, munten, oud };
     m.eindT = 1.8;
@@ -3288,7 +3586,7 @@
     $('mkSterren').textContent = '★'.repeat(k.sterren) + '☆'.repeat(3 - k.sterren);
     let t;
     if (k.gehaald) {
-      t = `${m.def.naam}: +${k.munten} munten.`;
+      t = `${m.def.naam}: +${k.munten} munten en +${spel.xp || 0} XP.`;
       if (k.oud && k.sterren <= k.oud) t += ' Je had al zoveel sterren, dus minder munten.';
       t += ` Je hebt nu ${totaalSterren()} van de ${WERELDEN.length * 18} sterren.`;
     } else t = (k.reden || 'Dat ging mis.') + ' Probeer het nog eens!';
@@ -3392,8 +3690,8 @@
   }
   // achtergrond van de grote ruimte: planeten en de rand
   function tekenRuimte() {
-    const m = spel.missie;
-    if (m && m.planeten) for (const p of m.planeten) {
+    const m = spel.missie, planeten = (m && m.planeten) || spel.planeten;
+    if (planeten) for (const p of planeten) {
       const g = ctx.createRadialGradient(p.x - p.r * 0.3, p.y - p.r * 0.3, p.r * 0.1, p.x, p.y, p.r);
       g.addColorStop(0, p.kleur + '55'); g.addColorStop(1, p.kleur + '10');
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
@@ -3422,6 +3720,7 @@
       for (const a of m.mannetjes) stip(a.x, a.y, 4, a.lucht / a.max > 0.4 || knipper ? K.cyaan : K.roze);
     }
     for (const e of sp.vijanden) if (e.soort === 'baas') stip(e.x, e.y, 6, BAZEN[e.stijl].kleur);
+    { const maat = maatjePlek(); if (maat) stip(maat.x, maat.y, 5, maat.kleur || K.cyaan); }
     // jij: een pijltje in de richting waarin je richt
     const [sx, sy] = P(schip.x, schip.y);
     ctx.translate(sx, sy); ctx.rotate(sp.mik);
@@ -3429,15 +3728,23 @@
     ctx.beginPath(); ctx.moveTo(4, 0); ctx.lineTo(-3, -3); ctx.lineTo(-3, 3); ctx.closePath(); ctx.fill();
     ctx.restore();
   }
+  // waar je teamgenoot is (voor pijltje en minikaart)
+  function maatjePlek() {
+    const sp = spel;
+    if (sp.samen === 'host' && sp.gast && !sp.gast.dood) return sp.gast;
+    if (sp.samen === 'gast' && samen.host && !samen.host.dood) return samen.host;
+    return null;
+  }
   // pijltjes aan de rand van het scherm naar alles wat buiten beeld is
   function tekenPijlen() {
     const sp = spel, m = sp.missie;
-    if (!m || m.klaar) return;
-    const doelen = [];
-    for (const a of m.mannetjes) doelen.push([a.x, a.y, a.lucht / a.max > 0.4 ? K.cyaan : K.roze]);
-    if (m.obj) doelen.push([m.obj.x, m.obj.y, K.groen]);
-    if (m.obj && delenVan(m.def).includes('vracht')) doelen.push([m.obj.naar[0], m.obj.naar[1], K.grijs]);
-    if (delenVan(m.def).includes('munten') && !m.gedaan.munten) {
+    if (m && m.klaar) return;
+    const doelen = [], maat = maatjePlek();
+    if (maat) doelen.push([maat.x, maat.y, maat.kleur || K.cyaan]);
+    if (m) for (const a of m.mannetjes) doelen.push([a.x, a.y, a.lucht / a.max > 0.4 ? K.cyaan : K.roze]);
+    if (m && m.obj) doelen.push([m.obj.x, m.obj.y, K.groen]);
+    if (m && m.obj && delenVan(m.def).includes('vracht')) doelen.push([m.obj.naar[0], m.obj.naar[1], K.grijs]);
+    if (m && delenVan(m.def).includes('munten') && !m.gedaan.munten) {
       // naar de dichtstbijzijnde munt van een stapel
       let best = null, bd = 1e12;
       for (const c of sp.muntjes) if (c.stapel) { const d = (c.x - schip.x) ** 2 + (c.y - schip.y) ** 2; if (d < bd) { bd = d; best = c; } }
@@ -3763,7 +4070,7 @@
     bewaar(); sfx.koop(); controleerPrestaties(); renderWinkel();
   }
 
-  const heeftUiterlijk = (cat, it) => it.prijs === 0 || uiterlijk.bezit.includes(cat + ':' + it.id);
+  const heeftUiterlijk = (cat, it) => it.prijs === 0 || uiterlijk.bezit.includes(cat + ':' + it.id) || (it.rang !== undefined && rangNr() >= it.rang);
   function renderUiterlijk() {
     const w = $('wUiterlijk'); w.innerHTML = '';
     for (const [cat, groep] of Object.entries(UITERLIJK)) {
@@ -3777,6 +4084,7 @@
           rij.append(st);
         }
         const info = maak('div', 'info'); info.append(maak('div', 'naam', it.naam));
+        if (it.rang !== undefined && !heeftUiterlijk(cat, it)) info.append(maak('div', 'uitleg', 'Verdien je met de rang ' + RANGEN[it.rang].naam + '.'));
         if (it.prestatie && !heeftUiterlijk(cat, it)) info.append(maak('div', 'uitleg', 'Verdien je met de prestatie ' + PRESTATIES.find(p => p.id === it.prestatie).naam + '.'));
         const b = maak('button'); b.id = `uiterlijk-${cat}-${it.id}`;
         if (uiterlijk[cat] === it.id) { b.textContent = 'Gekozen'; b.disabled = true; }
@@ -3827,7 +4135,7 @@
       const b = document.createElement('button'); b.id = 'schip-' + s.id;
       if (gekozenSchip === s.id) { b.textContent = 'Gekozen'; b.disabled = true; }
       else if (heeftSchip(s.id)) { b.textContent = 'Kies'; b.onclick = () => { gekozenSchip = s.id; bewaar(); renderWinkel(); }; }
-      else if (s.prijs === null) { b.textContent = 'Op slot'; b.disabled = true; kracht.textContent += ' Haal 90 sterren in Missies.'; }
+      else if (s.prijs === null) { b.textContent = 'Op slot'; b.disabled = true; kracht.textContent += s.rang ? ' Word ' + RANGEN[s.rang].naam + '.' : ' Haal 90 sterren in Missies.'; }
       else { b.innerHTML = `<span class="munt"></span>${s.prijs}`; b.disabled = bank < s.prijs; b.onclick = () => koopSchip(s); }
       kaart.append(c, naam, kracht, b); sl.append(kaart);
     }
@@ -3927,6 +4235,8 @@
   $('sJoin').onclick = doeMee;
   $('sCode').addEventListener('keydown', e => { if (e.key === 'Enter') doeMee(); });
   $('sStart').onclick = () => { if (samen.rol === 'host' && gastPeer()) startSamenSpel('host'); };
+  $('sDuel').onclick = () => { if (samen.rol === 'host' && gastPeer()) startSamenSpel('host', 'duel'); };
+  $('sRush').onclick = () => { if (samen.rol === 'host' && gastPeer()) startSamenSpel('host', 'rush'); };
   $('rushKnop').onclick = startRush;
   $('uitdagingKnop').onclick = () => { audio(); openUitdaging(); };
   $('uStart').onclick = startUitdaging;
@@ -3978,7 +4288,7 @@
   async function openSamen() {
     status = 'samen'; spel = null; Object.assign(A, AS);
     await verlaatKamer();
-    $('sKeuze').hidden = false; $('sWacht').hidden = true; $('sStart').hidden = true;
+    $('sKeuze').hidden = false; $('sWacht').hidden = true; $('sStart').hidden = true; $('sDuel').hidden = true; $('sRush').hidden = true;
     $('sCode').value = ''; $('sNaam').value = spelerNaam;
     toonLaag('samen');
     $('sStatus').textContent = 'Maak een spel en geef de code aan je teamgenoot. Of vul de code van je teamgenoot in.';
@@ -4114,33 +4424,60 @@
     const ander = samen.rol === 'host' ? gastPeer() : hostPeer();
     if (ander) { const r = maak('div', 'rang'); r.append(maak('span', 'wie', String(ander.presence.naam || 'Teamgenoot').slice(0, 12)), maak('span', 'hoeveel', samen.rol === 'host' ? 'gast' : 'host')); l.append(r); }
     if (samen.rol === 'host') {
-      $('sStatus').textContent = ander ? 'Je teamgenoot is er! Druk op Start.' : 'Geef deze code aan je teamgenoot. Wachten...';
-      $('sStart').hidden = !ander;
+      $('sStatus').textContent = ander ? 'Je teamgenoot is er! Kies wat jullie gaan spelen.' : 'Geef deze code aan je teamgenoot. Wachten...';
+      $('sStart').hidden = !ander; $('sDuel').hidden = !ander; $('sRush').hidden = !ander;
     } else {
       $('sStatus').textContent = ander ? 'Gevonden! Wachten tot de host op Start drukt...' : samen.peerFout === 'geen-spel' ? 'Geen spel gevonden met deze code. Klopt de code, staat het spel van je teamgenoot open, en gebruiken jullie allebei dezelfde versie (zie hieronder)?'
         : samen.peerFout === 'geen-verbinding' ? 'Het spel is gevonden, maar jullie apparaten kunnen elkaar niet bereiken. Dat gebeurt op sommige wifi (school, gasten-wifi). Probeer een ander netwerk, bijvoorbeeld mobiel internet op één van de twee.'
         : 'Zoeken...';
-      if (ander && ander.presence.fase === 'spel') startSamenSpel('gast');
+      if (ander && ander.presence.fase === 'spel') startSamenSpel('gast', ander.presence.modus || 'samen');
     }
   }
 
-  function startSamenSpel(rol) {
+  const DUEL_TIJD = 120;
+  function startSamenSpel(rol, soort = 'samen') {
+    const duel = soort === 'duel' || soort === true, rush = soort === 'rush';
+    opdrachtTel('samen');
     terug = 0; laatsteUitdaging = null; laatsteRush = false; samen.opnieuw = true;
     const oudModus = modus, oudBegin = beginGolf;
     modus = 'arena'; beginGolf = 1;
-    if (rol === 'gast') { samen.echtWapen = gekozenWapen; gekozenWapen = 'blaster'; }
-    nieuwSpel();
+    // de gast schiet altijd met de blaster; in een duel de host ook (eerlijk)
+    if (rol === 'gast' || duel) { samen.echtWapen = gekozenWapen; gekozenWapen = 'blaster'; }
+    if (rush) nieuwSpel(null, null, 'ruimte'); else nieuwSpel();
     modus = oudModus; beginGolf = oudBegin;
+    if (rush) {
+      // allebei dezelfde planeten, en de gast begint naast de host
+      spel.planeten = maakPlaneten([...samen.code].reduce((a, c) => a * 31 + c.charCodeAt(0), 7));
+      if (rol === 'gast') { schip.x = schip.doelX = RUIMTE / 2 + 90; zetCamera(); }
+    }
     spel.samen = rol; spel.test = true;
     samen.seq = 0; samen.zendT = 0; samen.laatsteT = -1; samen.w = null; samen.buf = []; samen.klok = null; samen.kt = 0; samen.gh = 0; samen.gm = 0; samen.gpN = 0;
     samen.host = null; samen.lokaal = new Map(); samen.weg = false; samen.laatsteBanner = null;
-    if (rol === 'host') samen.kamer.presence({ fase: 'spel' }).catch(() => {});
-    else { spel.drone = null; spel.wachtrij = []; spel.vijanden = []; spel.banner = null; }
+    samen.doodTel = 0; samen.pvp = 0; samen.pvVerloren = 0;
+    if (duel) { spel.duel = true; spel.duelT = DUEL_TIJD; spel.gastScore = 0; spel.drone = null; }
+    if (rol === 'host') {
+      samen.kamer.presence({ fase: 'spel', modus: duel ? 'duel' : rush ? 'rush' : 'samen' }).catch(() => {});
+      if (duel) { spel.wachtrij = []; startGolf(4); banner('DUEL!', 'Wie heeft na 2 minuten de meeste punten?', 3); }
+    } else { spel.drone = null; spel.wachtrij = []; spel.vijanden = []; spel.banner = null; }
     status = 'spel'; toonLaag(null); houdScherm();
   }
 
   // --- host ---
+  let laatsteSchutter = 'host';
+  // duel: een zwerm kevers naar je tegenstander sturen
+  function stuurZwerm(doel, wie) {
+    if (!doel) return;
+    for (let i = 0; i < 6; i++) {
+      const a = i / 6 * Math.PI * 2;
+      maakVijand('kever', { x: clamp(doel.x + Math.cos(a) * 150, A.x0 + 10, A.x1 - 10), y: clamp(doel.y + Math.sin(a) * 150, A.y0 + 10, A.y1 - 10),
+        v: 70, fase: rand(0, 6), duik: true, gedoken: false, t: 1.4, jaagt: wie, munt: 0.1 });
+    }
+    ring(doel.x, doel.y, K.roze, 150); toon(300, 0.4, 'sawtooth', 0.05, -200);
+  }
   function spelerDoel(e) {
+    const g0 = spel.gast;
+    if (e.jaagt === 'gast' && g0 && !g0.dood) return g0;
+    if (e.jaagt === 'host' && !spel.hostDood && !spel.duelDood) return schip;
     const g = spel.gast;
     if (spel.samen !== 'host' || !g || g.dood) return schip;
     if (spel.hostDood) return g;
@@ -4149,8 +4486,12 @@
   function gastSchoten(g) {
     const h = g.mik, dx = Math.cos(h), dy = Math.sin(h), k = 1 + clamp(g.kanon || 0, 0, 2);
     const offsets = k === 1 ? [0] : k === 2 ? [-6, 6] : [-10, 0, 10];
-    const mult = (1 + 0.15 * clamp(g.kracht || 0, 0, 10)) / (1 + 0.15 * upgrades.kracht);
-    const kogel = (x, y, vx, vy) => spel.kogels.push({ x, y, vx, vy, door: clamp(g.door || 0, 0, 2), geraakt: [], gast: true, mult });
+    const mult = (1 + 0.15 * clamp(g.kracht || 0, 0, 10)) * (1 + 0.01 * clamp(g.rang || 0, 0, 18)) / ((1 + 0.15 * upgrades.kracht) * rangBonus());
+    const bl = clamp(g.bl || 0, 0, 5), door = clamp(g.door || 0, 0, 2) + Math.floor(bl / 2);
+    const kogel = (x, y, vx, vy) => spel.kogels.push({ x, y, vx, vy, door, geraakt: [], gast: true, mult });
+    // blaster-levels van de gast tellen ook
+    const schuin = bl >= 5 ? [-0.5, -0.22, 0.22, 0.5] : bl >= 3 ? [-0.3, 0.3] : [];
+    if (schuin.length && !g.drie) for (const a of schuin) kogel(g.x, g.y, Math.cos(h + a) * 580, Math.sin(h + a) * 580);
     for (const o of offsets) kogel(g.x - dy * o + dx * 18, g.y + dx * o + dy * 18, dx * 600, dy * 600);
     if (g.drie) for (const a of [-0.27, 0.27]) kogel(g.x + dx * 10, g.y + dy * 10, Math.cos(h + a) * 580, Math.sin(h + a) * 580);
   }
@@ -4162,27 +4503,45 @@
       const P = gp.presence, num = (v, d) => typeof v === 'number' && isFinite(v) ? v : d;
       if (!sp.gast) { sp.gast = { x: num(P.x, A.cx), y: num(P.y, A.cy), mik: 0, vuurT: 0.5, kt: num(P.kt, 0), gh: 0, gm: 0, gpN: 0, gp: [] }; tekst(A.cx, A.cy, 'TEAMGENOOT ERBIJ!', K.cyaan); }
       const g = sp.gast;
-      g.x += (clamp(num(P.x, g.x), A.x0, A.x1) - g.x) * Math.min(1, dt * 15);
-      g.y += (clamp(num(P.y, g.y), A.y0, A.y1) - g.y) * Math.min(1, dt * 15);
+      const gr = sp.ruimte ? [0, RUIMTE, 0, RUIMTE] : [A.x0, A.x1, A.y0, A.y1];
+      g.x += (clamp(num(P.x, g.x), gr[0], gr[1]) - g.x) * Math.min(1, dt * 15);
+      g.y += (clamp(num(P.y, g.y), gr[2], gr[3]) - g.y) * Math.min(1, dt * 15);
+      if (sp.ruimte) {
+        const w = AS.x1 - AS.x0, h = AS.y1 - AS.y0, x0 = clamp(g.x - w / 2, 0, RUIMTE - w), y0 = clamp(g.y - h / 2, 0, RUIMTE - h);
+        sp.gastA = { x0, x1: x0 + w, y0, y1: y0 + h };
+      }
       g.mik = num(P.mik, g.mik); g.drie = !!P.drie; g.iv = clamp(num(P.iv, 0.26), 0.06, 1); g.door = num(P.door, 0);
-      g.kanon = num(P.kanon, 0); g.kracht = num(P.kracht, 0); g.on = !!P.on; g.dood = !!P.dood;
+      if (sp.duel && num(P.dt, 0) > (g.dt || 0)) { g.dt = num(P.dt, 0); sp.score += 300; tekst(g.x, g.y - 30, '+300', K.geel); }
+      g.bl = num(P.bl, 0); g.rang = num(P.rang, 0); g.kanon = num(P.kanon, 0); g.kracht = num(P.kracht, 0); g.on = !!P.on; g.dood = !!P.dood;
       g.naam = String(P.naam || 'Teamgenoot').slice(0, 12); g.schip = String(P.schip || 'bliksem'); g.kleur = /^#[0-9a-f]{6}$/i.test(P.kleur) ? P.kleur : K.cyaan;
       if (!g.dood && !sp.weg) {
         g.vuurT -= dt;
         if (g.vuurT <= 0) { gastSchoten(g); g.vuurT += g.iv; }
-        // de speciale aanval van je maatje: een schokgolf om hem heen
+        // de speciale aanval van je teamgenoot: een schokgolf om hem heen (duel: een zwerm naar mij)
+        if (num(P.kt, 0) > g.kt && sp.duel) { g.kt = num(P.kt, 0); stuurZwerm(schip, 'host'); }
         if (num(P.kt, 0) > g.kt) {
-          g.kt = num(P.kt, 0);
+          g.kt = num(P.kt, 0); laatsteSchutter = 'gast';
           sp.vijandKogels = sp.vijandKogels.filter(b => Math.hypot(b.x - g.x, b.y - g.y) > 160);
           for (const e of sp.vijanden) if (!e.dood && zichtbaar(e) && Math.hypot(e.x - g.x, e.y - g.y) < 160) raakVijand(e, 4);
-          ring(g.x, g.y, g.kleur, 160);
+          ring(g.x, g.y, g.kleur, 160); laatsteSchutter = 'host';
+        }
+        if (sp.duel) {
+          // jouw kogels raken je tegenstander, en andersom
+          if (!g.on) for (const b of sp.kogels) if (!b.gast && !b.weg && (b.x - g.x) ** 2 + (b.y - g.y) ** 2 < 12 * 12) { b.weg = true; g.pvp = (g.pvp || 0) + 1; knal(g.x, g.y, g.kleur, 8, 100); }
+          // de gast zegt hoeveel hartjes mijn kogels hem echt kostten
+          if (num(P.pv, 0) > (g.pvTeller || 0)) { sp.score += 100 * (num(P.pv, 0) - (g.pvTeller || 0)); g.pvTeller = num(P.pv, 0); }
+          if (!sp.duelDood && !(sp.onkwetsbaar > 0)) for (const b of sp.kogels) if (b.gast && !b.weg && (b.x - schip.x) ** 2 + (b.y - schip.y) ** 2 < 12 * 12) {
+            b.weg = true; const voor = sp.levens; raakSchip(); if (sp.levens < voor) sp.gastScore += 100;
+          }
         }
         for (const b of sp.vijandKogels) if (!b.weg && (b.x - g.x) ** 2 + (b.y - g.y) ** 2 < 11 * 11) { b.weg = true; g.gh++; }
+        laatsteSchutter = 'gast';
         for (const e of sp.vijanden) {
           if (e.dood || !raakt(e, g.x, g.y, e.soort === 'baas' ? 6 : 8 - e.r * 0.2)) continue;
           g.gh++;
           if (e.soort === 'tank' || e.soort === 'baas') raakVijand(e, 3); else dood(e);
         }
+        laatsteSchutter = 'host';
         for (const m of sp.muntjes) {
           if (m.weg) continue;
           const d = Math.hypot(g.x - m.x, g.y - m.y);
@@ -4192,11 +4551,12 @@
         for (const p of sp.powerups) {
           if (p.weg || Math.hypot(g.x - p.x, g.y - p.y) > 20) continue;
           p.weg = true; g.gpN++; g.gp.push([g.gpN, PU_LIJST.indexOf(p.type)]); if (g.gp.length > 4) g.gp.shift();
-          if (p.type === 'bom') { sp.flits = 0.35; sp.vijandKogels.length = 0; for (const e of sp.vijanden) if (!e.dood && zichtbaar(e)) raakVijand(e, 5); }
+          if (p.type === 'bom') { sp.flits = 0.35; sp.vijandKogels.length = 0; laatsteSchutter = 'gast'; for (const e of sp.vijanden) if (!e.dood && zichtbaar(e)) raakVijand(e, 5); laatsteSchutter = 'host'; }
         }
       }
-    } else if (sp.gast) { tekst(A.cx, A.cy, 'JE TEAMGENOOT IS WEG', K.roze); sp.gast = null; }
+    } else if (sp.gast) { tekst(A.cx, A.cy, 'JE TEAMGENOOT IS WEG', K.roze); sp.gast = null; sp.gastA = null; }
     if (sp.hostDood && (!sp.gast || sp.gast.dood) && !sp.weg) { sp.weg = true; sp.einde = 1.4; }
+    if (sp.duel && !sp.weg) { sp.duelT -= dt; if (sp.duelT <= 0) { sp.duelT = 0; sp.weg = true; sp.einde = 0.3; } }
     samen.zendT -= dt;
     if (samen.zendT <= 0) { samen.zendT = 1 / 20; zendStaat(); }
   }
@@ -4223,9 +4583,11 @@
     for (const b of sp.bommen) w.bm.push(R(b.x), R(b.y));
     for (const f of sp.vlammen) if (w.vl.length < 45) w.vl.push(R(f.x), R(f.y), R(f.l * 100));
     w.h = [R(schip.x), R(schip.y), R(sp.mik * 100), sp.hostDood ? 1 : 0, sp.actief.schild > 0 ? 1 : 0, gekozenWapen === 'laser' && !sp.hostDood ? 1 : 0, sp.onkwetsbaar > 0 ? 1 : 0];
+    if (sp.duel) w.duel = [R(sp.duelT * 10), sp.gastScore];
+    if (sp.rush) w.rush = [R(sp.rushT * 10), sp.rushBazen];
     if (sp.banner !== samen.laatsteBanner) { samen.laatsteBanner = sp.banner; samen.bnId++; }
     if (sp.banner) w.bn = [samen.bnId, String(sp.banner.tekst), String(sp.banner.sub || '')];
-    if (g) { w.gh = g.gh; w.gm = g.gm; w.gp = g.gp; }
+    if (g) { w.gh = g.gh; w.gm = g.gm; w.gp = g.gp; w.pvp = g.pvp || 0; }
     // past het niet in het pakketje, laat dan eerst kogels en munten weg
     let tekst = JSON.stringify(w);
     while (tekst.length > 3500 && (w.k.length || w.hk.length || w.m.length || w.vl.length)) {
@@ -4233,7 +4595,7 @@
       w.m.length = Math.max(0, w.m.length - 20); w.vl.length = Math.max(0, w.vl.length - 15);
       tekst = JSON.stringify(w);
     }
-    samen.kamer.presence({ rol: 'host', naam: mijnNaam(), schip: echtSchipId(), kleur: schipInfo().kleur, fase: 'spel', w }).catch(() => {});
+    samen.kamer.presence({ rol: 'host', naam: mijnNaam(), schip: echtSchipId(), kleur: schipInfo().kleur, fase: 'spel', rang: rangNr(), w }).catch(() => {});
   }
 
   // --- gast ---
@@ -4245,11 +4607,11 @@
     if (P.fase === 'einde') { eindSamenGast(null, P.eind); return; }
     // wat ik zelf doe deel ik met de host
     const iv = (0.26 - upgrades.vuur * 0.028) * (sp.actief.snel > 0 ? 0.5 : 1) * (schipInfo().vuurTraag || 1);
-    samen.kamer.presence({ rol: 'gast', naam: mijnNaam(), schip: echtSchipId(), kleur: schipInfo().kleur, x: R(schip.x), y: R(schip.y),
+    samen.kamer.presence({ rol: 'gast', bl: wl('blaster'), rang: rangNr(), naam: mijnNaam(), schip: echtSchipId(), kleur: schipInfo().kleur, x: R(schip.x), y: R(schip.y),
       mik: R(sp.mik * 100) / 100, iv: R(iv * 1000) / 1000, door: schipInfo().doorboor || 0, kanon: upgrades.kanon, kracht: upgrades.kracht,
-      drie: sp.actief.drie > 0, dood: sp.weg, kt: samen.kt, on: sp.onkwetsbaar > 0 }).catch(() => {});
+      drie: sp.actief.drie > 0, dood: sp.weg || !!sp.duelDood, kt: samen.kt, dt: samen.doodTel || 0, pv: samen.pvVerloren || 0, on: sp.onkwetsbaar > 0 }).catch(() => {});
     // mijn eigen kogels (om te zien; de host rekent uit wat ze raken)
-    if (!sp.weg) {
+    if (!sp.weg && !sp.duelDood) {
       sp.vuurT -= dt;
       if (sp.vuurT <= 0) { vuur(); sp.vuurT = Math.max(sp.vuurT + iv, iv * 0.5); }
     }
@@ -4279,9 +4641,16 @@
       samen.buf.push(w);
       if (samen.buf.length > 12) samen.buf.shift();
     }
-    sp.score = w.sc | 0; sp.golf = w.g | 0;
+    sp.golf = w.g | 0;
+    if (Array.isArray(w.rush)) { sp.rushT = w.rush[0] / 10; sp.rushBazen = w.rush[1] | 0; }
+    if (Array.isArray(w.duel)) { sp.duel = true; sp.duelT = w.duel[0] / 10; sp.score = w.duel[1] | 0; sp.duelAnder = w.sc | 0; }
+    else sp.score = w.sc | 0;
     if (w.bn && w.bn[0] !== samen.bnId) { samen.bnId = w.bn[0]; banner(String(w.bn[1]).slice(0, 40), String(w.bn[2]).slice(0, 60)); }
     // geraakt? dan verlies ik zelf een hartje (mijn schild en knipperen tellen gewoon)
+    if ((w.pvp | 0) > (samen.pvp || 0)) {
+      const n = (w.pvp | 0) - (samen.pvp || 0); samen.pvp = w.pvp | 0;
+      for (let i = 0; i < n; i++) { const voor = sp.levens; raakSchip(); if (sp.levens < voor || sp.duelDood) samen.pvVerloren = (samen.pvVerloren || 0) + 1; }
+    }
     if ((w.gh | 0) > samen.gh) { const n = (w.gh | 0) - samen.gh; samen.gh = w.gh | 0; for (let i = 0; i < n; i++) raakSchip(); }
     if ((w.gm | 0) > samen.gm) {
       const n = (w.gm | 0) - samen.gm; samen.gm = w.gm | 0;
@@ -4336,7 +4705,11 @@
     }
     for (const [id, e] of samen.lokaal) if (!nu.has(id)) {
       samen.lokaal.delete(id);
-      if (binnen(e.x, e.y, -10) && e.hp < 60) { doodsKnal(e.x, e.y, SOORTEN[e.soort].kleur, e.soort === 'baas' ? 40 : 16, 140); sfx.knal(); }
+      if (binnen(e.x, e.y, -10) && e.hp < 60) {
+        doodsKnal(e.x, e.y, SOORTEN[e.soort].kleur, e.soort === 'baas' ? 40 : 16, 140); sfx.knal();
+        geefXP(e.soort === 'baas' ? 50 + 25 * ((e.stijl | 0) + 1) : Math.max(1, Math.round((SOORTEN[e.soort].score || 10) / 10)));
+        if (e.soort === 'baas') opdrachtTel('bazen'); else { opdrachtTel('aliens'); if (e.soort === 'kever' || e.soort === 'tank') opdrachtTel(e.soort); }
+      }
     }
     sp.vijanden = [...samen.lokaal.values()];
     sp.vijandKogels = [];
@@ -4368,6 +4741,7 @@
     if (h.length) { ho.x = h0[0] + (h[0] - h0[0]) * f; ho.y = h0[1] + (h[1] - h0[1]) * f; }
     const m0 = (h0[2] || 0) / 100, m1 = (h[2] || 0) / 100;
     ho.mik = m0 + Math.atan2(Math.sin(m1 - m0), Math.cos(m1 - m0)) * f; ho.dood = !!h[3]; ho.schild = !!h[4]; ho.laser = !!h[5]; ho.on = !!h[6];
+    ho.rang = hp && typeof hp.presence.rang === 'number' ? hp.presence.rang : 0;
     ho.naam = hp ? String(hp.presence.naam || 'Teamgenoot').slice(0, 12) : 'Teamgenoot';
     ho.schip = hp ? String(hp.presence.schip || 'bliksem') : 'bliksem';
     ho.kleur = hp && /^#[0-9a-f]{6}$/i.test(hp.presence.kleur) ? hp.presence.kleur : K.cyaan;
@@ -4381,9 +4755,21 @@
     $('oTitel').textContent = reden ? reden : 'Samen gespeeld!';
     $('oScore').textContent = eind ? eind.score | 0 : spel.score;
     $('oNiveau').textContent = 'Samen spelen';
+    if (eind && eind.rush) {
+      $('oTitel').textContent = eind.rush.klaar ? 'Samen alle bazen verslagen!' : 'Game over';
+      $('oNiveau').textContent = 'Bazenrush samen · ' + tijdTekst(eind.rush.t | 0);
+      $('oGolf').textContent = `${eind.rush.bazen | 0} van 10 bazen`;
+    }
+    if (eind && eind.duel) {
+      const ik = eind.duel.gast | 0, ander = eind.duel.host | 0;
+      if (ik > ander) { geefXP(150); $('oXp').textContent = '+' + (spel.xp || 0); }
+      $('oTitel').textContent = ik > ander ? 'Jij wint het duel!' : ik < ander ? 'Je tegenstander wint!' : 'Gelijkspel!';
+      $('oScore').textContent = ik; $('oNiveau').textContent = `Duel · ${ik} tegen ${ander}`;
+    }
     $('oRecord').textContent = '-';
-    $('oGolf').textContent = eind ? eind.golf | 0 : spel.golf;
+    $('oGolf').textContent = eind && eind.rush ? `${eind.rush.bazen | 0} van 10 bazen` : eind ? eind.golf | 0 : spel.golf;
     $('oMunten').textContent = spel.munten;
+    $('oXp').textContent = '+' + (spel.xp || 0);
     $('nieuwRecord').hidden = true;
     toonLaag('over');
     verlaatKamer();
@@ -4410,7 +4796,9 @@
     ctx.restore();
     if (m.schild) { ctx.strokeStyle = K.groen; ctx.globalAlpha = 0.6; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(m.x, m.y + 1, 26, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1; }
     ctx.font = `14px ${FONT_B}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = m.kleur;
-    ctx.fillText(m.naam || 'Teamgenoot', m.x, m.y - 26);
+    const naamTekst = m.naam || 'Teamgenoot';
+    ctx.fillText(naamTekst, m.x + 8, m.y - 26);
+    tekenBadge(ctx, m.x + 8 - ctx.measureText(naamTekst).width / 2 - 10, m.y - 26, 7, m.rang || 0);
   }
 
   // ---------- Voortgang overzetten met een code ----------
@@ -4444,6 +4832,10 @@
     $('oZetOver').textContent = 'Zet over';
     toonLaag('overzet');
   }
+  $('opdrachtKnop').onclick = () => { audio(); openOpdrachten(); };
+  $('opdrachtenTerug').onclick = naarMenu;
+  $('rangKaart').onclick = () => { audio(); openRang(); };
+  $('rangTerug').onclick = naarMenu;
   $('overzetKnop').onclick = () => { audio(); openOverzet(); };
   $('overzetTerug').onclick = naarMenu;
   $('oKopieer').onclick = async () => {
