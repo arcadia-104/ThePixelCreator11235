@@ -233,6 +233,11 @@
   .codevak { align-self: stretch; height: 70px; resize: none; font: 12px monospace; background: var(--panel); color: var(--fg); border: 2px solid #2e2a5c; border-radius: 4px; padding: 6px; word-break: break-all; }
   .codevak:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
   .grootcode { font-family: var(--font-display); font-size: 34px; letter-spacing: 0.12em; color: var(--yellow); text-shadow: 0 0 12px var(--yellow); text-align: center; }
+  .kistuit { align-self: stretch; text-align: center; background: var(--panel); border-radius: 8px; padding: 12px; border: 2px solid var(--kleur, var(--cyan)); box-shadow: 0 0 16px var(--kleur, var(--cyan)); animation: kistpop 0.5s ease-out; }
+  .kistuit .zeld { font-family: var(--font-display); font-size: 12px; letter-spacing: 0.1em; color: var(--kleur, var(--cyan)); }
+  .kistuit .wat { font-family: var(--font-display); font-size: 16px; margin-top: 4px; }
+  @keyframes kistpop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
+  #bTekening { width: 100%; max-width: 320px; height: auto; align-self: center; image-rendering: pixelated; }
   .ronde { font-family: var(--font-display); font-size: 13px; color: var(--muted); letter-spacing: 0.08em; margin: 8px 0 0; text-align: left; }
   .potje { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; background: var(--panel); border-radius: 6px; padding: 6px 10px; text-align: left; border: 2px solid transparent; font: inherit; color: var(--fg); box-shadow: none; }
   .potje.ik { border-color: var(--cyan); }
@@ -275,6 +280,7 @@
           <button id="winkelKnop">Winkel</button>
           <button id="geluidKnop">Geluid: aan</button>
           <button id="opdrachtKnop" style="grid-column: span 2">Opdrachten van vandaag</button>
+          <button id="basisKnop" style="grid-column: span 2">Mijn basis</button>
           <button id="samenKnop" style="grid-column: span 2">Samen spelen</button>
           <button id="toernooiKnop" style="grid-column: span 2">Toernooi</button>
           <button id="rushKnop" style="grid-column: span 2">Bazenrush</button>
@@ -377,6 +383,18 @@
       <div class="knoprij"><button id="samenTerug">Terug</button></div>
     </section>
 
+    <section id="basis" class="laag lang" hidden>
+      <div class="winkelkop">
+        <h2>Mijn basis</h2>
+        <span class="saldo"><span class="munt"></span><span id="bSaldo">0</span></span>
+      </div>
+      <canvas id="bTekening" width="320" height="190" aria-label="Jouw ruimtebasis"></canvas>
+      <p class="sub" id="bMijn"></p>
+      <button id="bOphalen" class="groot" hidden>Ophalen</button>
+      <div id="bLijst" class="lijst"></div>
+      <div class="knoprij"><button id="basisTerug">Terug</button></div>
+    </section>
+
     <section id="toernooi" class="laag lang" hidden>
       <h2>Toernooi</h2>
       <p class="sub" id="tStatus"></p>
@@ -462,6 +480,18 @@
         <button id="tab-wapens" role="tab" data-tab="wapens">Wapens</button>
         <button id="tab-uiterlijk" role="tab" data-tab="uiterlijk">Uiterlijk</button>
         <button id="tab-drones" role="tab" data-tab="drones">Drones</button>
+        <button id="tab-maatjes" role="tab" data-tab="maatjes">Maatjes</button>
+        <button id="tab-kisten" role="tab" data-tab="kisten">Kisten</button>
+      </div>
+      <div id="paneel-maatjes" class="paneel" role="tabpanel" hidden>
+        <p class="sub">Een maatje vliegt met je mee en helpt je, naast je drone. Je kiest er één. Elk maatje kan 5 levels omhoog.</p>
+        <div id="wMaatjes" class="lijst"></div>
+      </div>
+      <div id="paneel-kisten" class="paneel" role="tabpanel" hidden>
+        <p class="sub">Een kist geeft iets willekeurigs: munten, XP, een muntenboost, een maatje-snoepje of uiterlijk dat je nergens anders kunt kopen.</p>
+        <div id="wKistUit" class="kistuit" hidden></div>
+        <div id="wKisten" class="lijst"></div>
+        <p class="sub" id="wBoost"></p>
       </div>
       <div id="paneel-drones" class="paneel" role="tabpanel" hidden>
         <p class="sub">Een drone vliegt met je mee. Je kiest er één. Elke drone kun je 5 keer verbeteren.</p>
@@ -728,6 +758,65 @@
       '...XX.X.XX...',
       '..XX..X..XX..',
       '.X.........X.'],
+    schipI: [
+      '......X......',
+      '.....XXX.....',
+      '....XX.XX....',
+      'X...XXXXX...X',
+      'XX.XXXXXXX.XX',
+      'XXXXX.X.XXXXX',
+      '.XXXXXXXXXXX.',
+      '..X.XXXXX.X..',
+      '....X.X.X....',
+      '...X..X..X...'],
+    schipJ: [
+      'X...........X',
+      'XX....X....XX',
+      '.XX..XXX..XX.',
+      '.XXXXXXXXXXX.',
+      '..XXX.X.XXX..',
+      '..XXXXXXXXX..',
+      '...XXXXXXX...',
+      '..XX.XXX.XX..',
+      '.XX...X...XX.',
+      'XX.........XX'],
+    schipK: [
+      '.......X.......',
+      '......XXX......',
+      '.....XXXXX.....',
+      '..X..XX.XX..X..',
+      '.XXX.XXXXX.XXX.',
+      'XXXXXXXXXXXXXXX',
+      'XXX.XXXXXXX.XXX',
+      'XXXXXXX.XXXXXXX',
+      '.XXXXXXXXXXXXX.',
+      '..XX.XXXXX.XX..',
+      '.XX...XXX...XX.',
+      'XX.....X.....XX'],
+    katje: [
+      'X.....X',
+      'XX...XX',
+      'XXXXXXX',
+      'X.XXX.X',
+      'XXXXXXX',
+      '.XX.XX.',
+      '..XXX..'],
+    uiltje: [
+      '.XX.XX.',
+      'XXXXXXX',
+      'X.XXX.X',
+      'XXX.XXX',
+      '.XXXXX.',
+      '.X.X.X.',
+      '..X.X..'],
+    draakje: [
+      'X.......X',
+      'XX.XXX.XX',
+      '.XXXXXXX.',
+      '..XX.XX..',
+      '..XXXXX..',
+      '.X.XXX.X.',
+      '....X....'],
     drone: [
       '.XXX.',
       'X.X.X',
@@ -993,18 +1082,30 @@
       { id: 'goud', naam: 'Goud', prijs: null, kleur: '#ffcf4a', prestatie: 'bazen10' },
       { id: 'sterrenstof', naam: 'Sterrenstof', prijs: null, kleur: '#9fe8ff', prestatie: 'sterren20' },
       { id: 'zilver', naam: 'Zilver', prijs: null, kleur: '#dfe6f2', rang: 3 },
-      { id: 'platina', naam: 'Platina', prijs: null, kleur: '#7fe6d6', rang: 9 } ] },
+      { id: 'platina', naam: 'Platina', prijs: null, kleur: '#7fe6d6', rang: 9 },
+      { id: 'lava', naam: 'Lava', prijs: null, kleur: '#ff5a1f', kist: 'zeldzaam' },
+      { id: 'gif', naam: 'Gifgroen', prijs: null, kleur: '#7dff3a', kist: 'zeldzaam' },
+      { id: 'nacht', naam: 'Nachtblauw', prijs: null, kleur: '#4b6bff', kist: 'zeldzaam' },
+      { id: 'kristal', naam: 'Kristal', prijs: null, kleur: '#c8f7ff', kist: 'episch' },
+      { id: 'sterrenvuur', naam: 'Sterrenvuur', prijs: null, kleuren: ['#ffffff', '#ffd23d', '#ff6a2b', '#ff4f8b'], kist: 'legendarisch' } ] },
     spoor: { naam: 'Spoor achter je schip', items: [
       { id: 'geen', naam: 'Geen', prijs: 0 }, { id: 'vonken', naam: 'Vonken', prijs: 300 },
       { id: 'regenboog', naam: 'Regenboog', prijs: 600 },
       { id: 'komeet', naam: 'Komeet', prijs: null, prestatie: 'golf20ex' },
       { id: 'sterren', naam: 'Sterrenregen', prijs: null, prestatie: 'sterren50' },
-      { id: 'goudstof', naam: 'Goudstof', prijs: null, rang: 6 } ] },
+      { id: 'goudstof', naam: 'Goudstof', prijs: null, rang: 6 },
+      { id: 'lava', naam: 'Lavaspoor', prijs: null, kleuren: ['#ff3d1f', '#ff8a1f', '#ffd23d'], kist: 'zeldzaam' },
+      { id: 'ijs', naam: 'IJsspoor', prijs: null, kleuren: ['#ffffff', '#9fe8ff', '#5bc8ff'], kist: 'zeldzaam' },
+      { id: 'plasma', naam: 'Plasma', prijs: null, kleuren: ['#b56bff', '#ff4f8b', '#ffffff'], kist: 'episch' },
+      { id: 'zonnevlam', naam: 'Zonnevlam', prijs: null, kleuren: ['#ffffff', '#fff3b0', '#ffd23d', '#ff8a1f'], kist: 'legendarisch' } ] },
     knal: { naam: 'Ontploffing', items: [
       { id: 'standaard', naam: 'Standaard', prijs: 0 }, { id: 'confetti', naam: 'Confetti', prijs: 300 },
       { id: 'groot', naam: 'Schokgolf', prijs: 500 },
       { id: 'supernova', naam: 'Supernova', prijs: null, prestatie: 'aliens10000' },
-      { id: 'diamant', naam: 'Diamantscherven', prijs: null, rang: 12 } ] },
+      { id: 'diamant', naam: 'Diamantscherven', prijs: null, rang: 12 },
+      { id: 'vuurwerk', naam: 'Vuurwerk', prijs: null, kleuren: ['#ff4f8b', '#ffd23d', '#3df2ff', '#7dff3a'], kist: 'zeldzaam' },
+      { id: 'zwartgat', naam: 'Zwart gat', prijs: null, kleuren: ['#6b3dff', '#2a1a66', '#b56bff'], kist: 'episch' },
+      { id: 'heelal', naam: 'Heelal', prijs: null, kleuren: ['#ff4f8b', '#ffd23d', '#3df2ff', '#b56bff', '#ffffff'], groot: true, kist: 'legendarisch' } ] },
     achter: { naam: 'Achtergrond', items: [
       { id: 'sterren', naam: 'Sterren', prijs: 0 }, { id: 'nevel', naam: 'Nevel', prijs: 400 },
       { id: 'raster', naam: 'Neonraster', prijs: 600 },
@@ -1144,8 +1245,36 @@
     { id: 'sterrenjager', naam: 'Sterrenjager', kleur: '#ffd23d', grid: 'schipF', prijs: null, prestatie: 'sterren90',
       kracht: '4 hartjes, sneller vuur en kogels gaan door 1 vijand.', hartjes: 4, vuurTraag: 0.85, doorboor: 1 },
     { id: 'ijsvogel', naam: 'IJsvogel', kleur: '#9fe8ff', grid: 'schipH', prijs: 1500,
-      kracht: '4 hartjes, en je kogels bevriezen aliens even.', hartjes: 4, vries: 1 }
+      kracht: '4 hartjes, en je kogels bevriezen aliens even.', hartjes: 4, vries: 1 },
+    { id: 'vuurdraak', naam: 'Vuurdraak', kleur: '#ff6a2b', grid: 'schipI', prijs: 3000,
+      kracht: '4 hartjes, en je kogels zetten aliens in brand.', hartjes: 4, brand: 1 },
+    { id: 'schaduw', naam: 'Schaduw', kleur: '#b56bff', grid: 'schipJ', prijs: 6000,
+      kracht: '4 hartjes, veel sneller vuur en kogels gaan door 1 vijand.', hartjes: 4, vuurTraag: 0.75, doorboor: 1 },
+    { id: 'titaan', naam: 'Titaan', kleur: '#f4f1e0', grid: 'schipK', prijs: 10000,
+      kracht: '6 hartjes, sneller vuur, kogels door 2 vijanden en zoekraketten.', hartjes: 6, vuurTraag: 0.8, doorboor: 2, raket: true }
   ];
+
+  // ---------- Maatjes: een ruimtebeestje dat met je meevliegt (los van je drone) ----------
+  const MAATJES = [
+    { id: 'kat', naam: 'Ruimtekat', kleur: '#ffb02e', grid: 'katje', prijzen: [1500, 1200, 2000, 3000, 4500],
+      uitleg: l => `Rent naar munten tot ${110 + 30 * l} ver weg en raapt ze op.` + (l >= 3 ? ' Soms vindt hij een extra munt.' : ' Vanaf level 3 vindt hij soms een extra munt.') },
+    { id: 'uil', naam: 'Sterrenuil', kleur: '#9fe8ff', grid: 'uiltje', prijzen: [3000, 2000, 3000, 4500, 6500],
+      uitleg: l => `Schiet elke ${(1.7 - 0.2 * l).toFixed(1)} s een ster naar de dichtstbijzijnde alien.` + (l >= 4 ? ' Sterren gaan door 1 alien heen.' : '') },
+    { id: 'draak', naam: 'Kristaldraakje', kleur: '#ff4f8b', grid: 'draakje', prijzen: [6000, 3500, 5000, 7000, 10000],
+      uitleg: l => `Vangt kogels die dicht bij hem komen, en spuwt elke ${Math.round(14 - 1.5 * l)} s vuur rondom je.` }
+  ];
+  const maatjes = (() => { try { const m = JSON.parse(opslag.get('neon-invasie-maatjes', 'null')); if (m && m.lvl) return m; } catch (e) {} return { lvl: {}, actief: '' }; })();
+  const bewaarMaatjes = () => opslag.set('neon-invasie-maatjes', JSON.stringify(maatjes));
+  // kisten: hoeveel spellen muntenboost je nog hebt
+  const kistData = (() => { try { const k = JSON.parse(opslag.get('neon-invasie-kisten', 'null')); if (k && typeof k.boost === 'number') return k; } catch (e) {} return { boost: 0, open: 0 }; })();
+  const bewaarKisten = () => opslag.set('neon-invasie-kisten', JSON.stringify(kistData));
+  // je eigen basis: gebouwen met levels, en wanneer je de mijn voor het laatst leeggehaald hebt
+  const basis = (() => { try { const b = JSON.parse(opslag.get('neon-invasie-basis', 'null')); if (b && b.lvl) return b; } catch (e) {} return { lvl: {}, t: 0 }; })();
+  const bewaarBasis = () => opslag.set('neon-invasie-basis', JSON.stringify(basis));
+  const basisLvl = id => +basis.lvl[id] || 0;
+  const MIJN_PER_UUR = [0, 25, 50, 90, 140, 200];
+  const mijnOpbrengst = () => basisLvl('mijn') ? Math.floor(Math.min(12, Math.max(0, Date.now() - basis.t) / 3.6e6) * MIJN_PER_UUR[basisLvl('mijn')]) : 0;
+
 
   // ---------- Opgeslagen voortgang ----------
   const NIVEAUS = {
@@ -1165,6 +1294,8 @@
   for (const k in NIVEAUS) for (const m of ['', 'arena-']) records[m + k] = +opslag.get('neon-invasie-record-' + m + k, 0) || 0;
   records.normaal = Math.max(records.normaal, +opslag.get('neon-invasie-record', 0) || 0);
   let bank = +opslag.get('neon-invasie-munten', 0) || 0;
+  // tijdens een toernooiduel: je echte upgrades, schip en wapenlevels (die worden dan even op 0 gezet)
+  let toerEcht = null;
   let upgrades = { vuur: 0, kanon: 0, leven: 0, duur: 0, magneet: 0, drone: 0, kracht: 0, muntbonus: 0, geluk: 0, bazenschild: 0, herstel: 0 };
   try { Object.assign(upgrades, JSON.parse(opslag.get('neon-invasie-upgrades', '{}'))); } catch (e) {}
   let eigenSchepen = ['bliksem'];
@@ -1282,7 +1413,7 @@
     rangWelkom = xp >= RANGEN[1].xp;
   }
   function rangNr(x = xp) { let r = 0; while (r + 1 < RANGEN.length && x >= RANGEN[r + 1].xp) r++; return r; }
-  const rangBonus = () => 1 + 0.01 * rangNr();
+  const rangBonus = () => toerEcht ? 1 : 1 + 0.01 * rangNr();
   // wat je vrijspeelt met een nieuwe rang
   function rangSpullen(nr) {
     const uit = [];
@@ -1295,7 +1426,7 @@
   }
   function geefXP(n) {
     if (!spel || (spel.test && !spel.samen) || !(n > 0)) return;
-    n = Math.round(n * (N().punten || 1) * (spel.samen ? 1.25 : 1));
+    n = Math.round(n * (N().punten || 1) * (spel.samen ? 1.25 : 1) * (toerEcht ? 1 : 1 + 0.05 * basisLvl('lab')));
     spel.xp = (spel.xp || 0) + n;
     xpErbij(n);
   }
@@ -1424,15 +1555,15 @@
 
   function bewaar() {
     opslag.set('neon-invasie-drones', JSON.stringify({ lvl: droneLvl, actief: actieveDrone }));
-    opslag.set('neon-invasie-wapenlvl', JSON.stringify(wapenLvl));
+    opslag.set('neon-invasie-wapenlvl', JSON.stringify(toerEcht ? toerEcht.wapenLvl : wapenLvl));
     for (const k in records) opslag.set('neon-invasie-record-' + k, records[k]);
     opslag.set('neon-invasie-niveau', niveau);
     opslag.set('neon-invasie-modus', modus);
     opslag.set('neon-invasie-munten', bank);
-    opslag.set('neon-invasie-upgrades', JSON.stringify(upgrades));
+    opslag.set('neon-invasie-upgrades', JSON.stringify(toerEcht ? toerEcht.upgrades : upgrades));
     opslag.set('neon-invasie-schepen', JSON.stringify(eigenSchepen));
-    opslag.set('neon-invasie-schip', gekozenSchip);
-    opslag.set('neon-invasie-hangar', JSON.stringify([gekozenSchip]));
+    opslag.set('neon-invasie-schip', toerEcht ? toerEcht.schip : gekozenSchip);
+    opslag.set('neon-invasie-hangar', JSON.stringify([toerEcht ? toerEcht.schip : gekozenSchip]));
     opslag.set('neon-invasie-delen', JSON.stringify(eigenDelen));
     opslag.set('neon-invasie-ontwerpen', JSON.stringify(ontwerpen));
     opslag.set('neon-invasie-wapens', JSON.stringify(eigenWapens));
@@ -1508,6 +1639,7 @@
       sprites['baas' + i + 'W'] = pixelSprite(b.grid || GRIDS.baas, '#ffffff', b.px || SOORTEN.baas.px);
     });
     for (const d of DRONES) sprites['drone_' + d.id] = pixelSprite(GRIDS[d.grid], d.kleur, 2);
+    for (const m of MAATJES) sprites['maatje_' + m.id] = pixelSprite(GRIDS[m.grid], m.kleur, 2);
     sprites.drone = sprites['drone_' + (actieveDrone || 'blaster')];
     sprites.vracht = pixelSprite(GRIDS.vracht, K.oranje, 3);
     sprites.station = pixelSprite(GRIDS.station, K.groen, 3);
@@ -1648,6 +1780,7 @@
   function kogelKleur(i = 0) {
     if (uiterlijk.kogel === 'regenboog') return REGENBOOG[(Math.floor(tijd * 10) + i) % REGENBOOG.length];
     const item = UITERLIJK.kogel.items.find(x => x.id === uiterlijk.kogel);
+    if (item && item.kleuren) return item.kleuren[(Math.floor(tijd * 10) + i) % item.kleuren.length];
     return (item && item.kleur) || schipInfo().kleur;
   }
   function kogelSprite(kleur) {
@@ -1672,14 +1805,18 @@
       vuurT: 0, onkwetsbaar: 0, schud: 0, flits: 0, streak: 0, einde: 0, weg: false,
       actief: { drie: 0, snel: 0, schild: 0, magneet: 0 }, banner: null, raketten: [],
       arena: uitdaging ? uitdaging.arena : missie ? true : rush === 'ruimte' ? true : rush ? false : modus === 'arena', ruimte: !!missie || rush === 'ruimte', rush: !!rush, rushT: 0, rushBazen: 0, mik: -Math.PI / 2, mikDoel: -Math.PI / 2,
-      krachtT: 8, uitdaging, bommen: [], ringen: [], vlammen: [], bliksems: [], boemerangs: [], gevaren: [], geraaktGolf: false, drone: upgrades.drone ? { hoek: 0, vuurT: 1 } : null
+      krachtT: 8, uitdaging, bommen: [], ringen: [], vlammen: [], bliksems: [], boemerangs: [], gevaren: [], geraaktGolf: false, drone: upgrades.drone ? { hoek: 0, vuurT: 1 } : null,
+      maatje: maatjes.actief && maatjes.lvl[maatjes.actief] ? { id: maatjes.actief, x: W / 2, y: H - 40, vuurT: 1, spuwT: 6 } : null
     };
+    // een muntenboost uit een kist: dubbele munten (niet in test-spellen)
+    if (kistData.boost > 0 && !(beginGolf > 1 && !uitdaging && !missie && !rush)) { kistData.boost--; spel.boost = true; bewaarKisten(); }
     Object.assign(A, AS);
     if (!(beginGolf > 1 && !uitdaging && !missie && !rush)) opdrachtTel('potjes');
     spel.levens = uit('glas') ? 1 : hartjesVan(schipInfo());
     schip.x = schip.doelX = W / 2;
     if (spel.arena) schip.y = schip.doelY = A.cy + 60;
     if (schipInfo().startSchild) spel.actief.schild = duurVan('schild');
+    if (basisLvl('generator') && !toerEcht) spel.actief.schild = Math.max(spel.actief.schild, [0, 4, 7, 10][basisLvl('generator')]);
     if (missie) { startMissieSpel(missie); return; }
     if (rush) {
       if (rush === 'ruimte') {
@@ -1692,7 +1829,10 @@
     startGolf(spel.test ? beginGolf : 1);
   }
 
-  function banner(tekst, sub = '', duur = 2.2) { spel.banner = { tekst, sub, t: duur }; }
+  function banner(tekst, sub = '', duur = 2.2) {
+    if (!spel) { toonToast(tekst + (sub ? ': ' + sub : '')); return; } // buiten een spel (bijv. XP uit een kist)
+    spel.banner = { tekst, sub, t: duur };
+  }
 
   function startGolf(n) {
     spel.golf = n; spel.golfKlaar = false;
@@ -2184,7 +2324,7 @@
   }
 
   function pakMunt(m) {
-    const x = (schipInfo().muntX || 1) * N().munten * (spel.arena ? MODI.arena.beloning : 1) * (1 + 0.1 * upgrades.muntbonus) * rangBonus();
+    const x = (schipInfo().muntX || 1) * N().munten * (spel.arena ? MODI.arena.beloning : 1) * (1 + 0.1 * upgrades.muntbonus) * rangBonus() * (spel.boost ? 2 : 1);
     const n = Math.floor(x) + (Math.random() < x % 1 ? 1 : 0);
     if (spel.missie) spel.missie.munten++;
     opdrachtTel('munten');
@@ -2305,7 +2445,8 @@
   function ring(x, y, kleur, max) { spel.ringen.push({ x, y, r: 4, max, kleur, l: 0.45 }); }
   // de ontploffing van een alien, in de stijl die je gekozen hebt
   function doodsKnal(x, y, kleur, n, v) {
-    const st = uiterlijk.knal;
+    const st = uiterlijk.knal, it = UITERLIJK.knal.items.find(x => x.id === st);
+    if (it && it.kleuren) { knal(x, y, it.kleuren, Math.round(n * 1.4), v * 1.3); ring(x, y, it.kleuren[0], it.groot ? 46 : 30); if (it.groot) ring(x, y, it.kleuren[2], 24); return; }
     if (st === 'confetti') knal(x, y, REGENBOOG, n, v);
     else if (st === 'groot') { knal(x, y, kleur, Math.round(n * 1.6), v * 1.3); ring(x, y, kleur, 32); }
     else if (st === 'diamant') { knal(x, y, ['#bff6ff', '#7ab8ff', '#ffffff'], Math.round(n * 1.4), v * 1.4); ring(x, y, '#bff6ff', 30); ring(x, y, '#7ab8ff', 18); }
@@ -2398,11 +2539,13 @@
       if (e.schildHP <= 0) { ring(e.x, e.y, '#7ab8ff', 26); toon(900, 0.15, 'square', 0.03, -500); }
       return;
     }
-    if (e.schildT > 0) { // schild van een baas: alles ketst af
+    let afweer = 1;
+    if (e.schildT > 0) { // schild van een baas: de helft van de schade ketst af
       if (Math.random() < 0.3) knal(e.x + rand(-e.hw, e.hw), e.y + rand(-e.hh, e.hh), BAZEN[e.stijl].kleur, 2, 80);
-      return;
+      afweer = 0.5;
     }
-    e.hp -= schade * (uit('glas') ? 2 : 1) * (1 + 0.15 * upgrades.kracht) * rangBonus(); e.flash = 0.08;
+    const toren = e.soort === 'baas' && !toerEcht ? 1 + 0.05 * basisLvl('toren') : 1;
+    e.hp -= schade * afweer * toren * (uit('glas') ? 2 : 1) * (1 + 0.15 * upgrades.kracht) * rangBonus(); e.flash = 0.08;
     if (e.hp <= 0) dood(e); else sfx.raak();
   }
 
@@ -2448,7 +2591,7 @@
     for (let i = 0; i < aantal; i++)
       spel.muntjes.push({ x: e.x + rand(-6, 6), y: e.y + rand(-6, 6), vx: rand(-spreiding, spreiding), vy: rand(-60, 20), t: rand(0, 6) });
     // power-up
-    const kans = e.soort === 'baas' || uit('geenpower') ? 0 : (e.soort === 'tank' ? 0.4 : e.soort === 'schutter' ? 0.1 : 0.04) * (schipInfo().puKans || 1) * (1 + 0.2 * upgrades.geluk);
+    const kans = e.soort === 'baas' || uit('geenpower') ? 0 : (e.soort === 'tank' ? 0.4 : e.soort === 'schutter' ? 0.1 : 0.04) * (schipInfo().puKans || 1) * (1 + 0.2 * upgrades.geluk) * (toerEcht ? 1 : 1 + 0.1 * basisLvl('radar'));
     if (Math.random() < kans) {
       const lijst = ['drie', 'drie', 'snel', 'snel', 'schild', 'magneet', 'bom'];
       if (spel.levens < maxHartjes()) lijst.push('hart');
@@ -2711,6 +2854,9 @@
     raketvos:     { naam: 'Raketregen',   uitleg: '12 zoekraketten' },
     sterrenjager: { naam: 'Supernova',    uitleg: 'grote klap op alles in beeld' },
     ijsvogel:     { naam: 'Diepvries',    uitleg: 'alle aliens in beeld 5 seconden bevroren en alle kogels weg' },
+    vuurdraak:    { naam: 'Drakenadem',   uitleg: 'alle aliens in beeld 6 seconden in brand' },
+    schaduw:      { naam: 'Schaduwsprong', uitleg: '4 seconden onkwetsbaar, alle kogels weg en bliksem op 6 aliens' },
+    titaan:       { naam: 'Titanenklap',  uitleg: 'grote klap op alles in beeld, alles 3 seconden bevroren en alle kogels weg' },
     legende:      { naam: 'Legendestorm', uitleg: 'bliksem op alles in beeld en 8 zoekraketten' },
     eigen:        { naam: 'Schokgolf',    uitleg: 'een golf die kogels en aliens om je heen wegblaast' }
   };
@@ -2766,6 +2912,18 @@
       sp.vijandKogels.length = 0;
       for (const e of zicht) bevries(e, 5);
       ring(schip.x, schip.y, '#9fe8ff', 200); knal(schip.x, schip.y, ['#9fe8ff', '#ffffff'], 40, 240); toon(1500, 0.5, 'triangle', 0.04, -1200);
+    } else if (id === 'vuurdraak') {
+      for (const e of zicht) { e.brandT = Math.max(e.brandT || 0, 6); raakVijand(e, 3); }
+      ring(schip.x, schip.y, '#ff6a2b', 200); knal(schip.x, schip.y, ['#ff3d1f', '#ff8a1f', '#ffd23d'], 40, 240);
+    } else if (id === 'schaduw') {
+      sp.onkwetsbaar = Math.max(sp.onkwetsbaar, 4); sp.vijandKogels.length = 0;
+      const doelen = zicht.slice().sort((a, b) => Math.hypot(a.x - schip.x, a.y - schip.y) - Math.hypot(b.x - schip.x, b.y - schip.y)).slice(0, 6);
+      for (const e of doelen) { sp.bliksems.push({ punten: kartel([[schip.x, schip.y], [e.x, e.y]]), l: 0.35 }); raakVijand(e, 6); }
+      ring(schip.x, schip.y, '#b56bff', 140); ruis(0.25, 0.06, 2000);
+    } else if (id === 'titaan') {
+      sp.flits = 0.4; sp.vijandKogels.length = 0;
+      for (const e of zicht) { raakVijand(e, 10); bevries(e, 3); }
+      ring(schip.x, schip.y, '#f4f1e0', 220); knal(schip.x, schip.y, ['#f4f1e0', '#ffd23d', '#ffffff'], 44, 260); sfx.groteKnal();
     } else if (id === 'sterrenjager') {
       sp.flits = 0.4; sp.vijandKogels.length = 0;
       for (const e of zicht) raakVijand(e, 8);
@@ -2799,6 +2957,12 @@
     const st = uiterlijk.spoor;
     if (st === 'geen' || spel.deeltjes.length > 450) return;
     const h = richting() + Math.PI, x = schip.x + Math.cos(h) * 16, y = schip.y + Math.sin(h) * 16;
+    const it = UITERLIJK.spoor.items.find(x => x.id === st);
+    if (it && it.kleuren) {
+      for (let i = 0; i < 2; i++)
+        spel.deeltjes.push({ x: x + rand(-3, 3), y: y + rand(-3, 3), vx: Math.cos(h + rand(-0.4, 0.4)) * 70, vy: Math.sin(h + rand(-0.4, 0.4)) * 70, l: 0.7, max: 0.7, k: it.kleuren[Math.floor(Math.random() * it.kleuren.length)], s: rand(1.8, 3.2) });
+      return;
+    }
     const kleur = st === 'regenboog' ? REGENBOOG[Math.floor(tijd * 12) % REGENBOOG.length] : st === 'komeet' ? (Math.random() < 0.5 ? '#ffffff' : K.cyaan) : st === 'sterren' ? ['#ffd23d', '#ffffff', '#9fe8ff'][Math.floor(Math.random() * 3)] : st === 'goudstof' ? ['#ffd23d', '#ffb02e', '#fff3b0'][Math.floor(Math.random() * 3)] : schipInfo().kleur;
     const n = st === 'komeet' || st === 'sterren' || st === 'goudstof' ? 2 : 1, l = st === 'komeet' || st === 'sterren' || st === 'goudstof' ? 0.7 : 0.4;
     for (let i = 0; i < n; i++)
@@ -2856,6 +3020,7 @@
         if (sp.vuurT <= 0) { if (vuur() === false) sp.vuurT = 0; else sp.vuurT = Math.max(sp.vuurT + iv, iv * 0.5); }
       }
       if (sp.drone) updateDrone(dt);
+      if (sp.maatje && !sp.samen) updateMaatje(dt);
       updateSpoor();
     }
     updateBommen(dt);
@@ -3029,6 +3194,7 @@
           // ijs breekt: een bevroren alien krijgt dubbele schade van het IJskanon
           const vries = b.ijs || (!b.gast && schipInfo().vries) || 0, breek = b.ijsK && e.vriesT > 0 ? 2 : 1;
           raakVijand(e, (b.mult || 1) * breek); if (vries) bevries(e, vries); laatsteSchutter = 'host';
+          if (!b.gast && !b.maatje && schipInfo().brand) e.brandT = Math.max(e.brandT || 0, 2);
           if (b.door > 0) { b.door--; b.geraakt.push(e); } else { b.weg = true; break; }
         }
       }
@@ -3343,6 +3509,7 @@
       }
     }
     if (sp.drone && !sp.weg) { const [dx, dy] = dronePlek(); teken(sprites.drone, dx, dy); }
+    if (sp.maatje && !sp.samen && !sp.weg) teken(sprites['maatje_' + sp.maatje.id], sp.maatje.x, sp.maatje.y + Math.sin(tijd * 5) * 2);
     for (const r of sp.ringen) {
       ctx.strokeStyle = r.kleur; ctx.lineWidth = 2; ctx.globalAlpha = Math.max(0, r.l / 0.45);
       ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2); ctx.stroke();
@@ -3442,7 +3609,7 @@
   }
 
   // ---------- Schermen ----------
-  const lagen = { toernooi: $('toernooi'), opdrachten: $('opdrachten'), rang: $('rang'), overzet: $('overzet'), samen: $('samen'), missies: $('missies'), missieKlaar: $('missieKlaar'), menu: $('menu'), pauze: $('pauze'), over: $('over'), winkel: $('winkel'), prestaties: $('prestaties'), uitdaging: $('uitdaging') };
+  const lagen = { basis: $('basis'), toernooi: $('toernooi'), opdrachten: $('opdrachten'), rang: $('rang'), overzet: $('overzet'), samen: $('samen'), missies: $('missies'), missieKlaar: $('missieKlaar'), menu: $('menu'), pauze: $('pauze'), over: $('over'), winkel: $('winkel'), prestaties: $('prestaties'), uitdaging: $('uitdaging') };
   function toonLaag(naam) {
     for (const [k, el] of Object.entries(lagen)) el.hidden = k !== naam;
     if (naam === 'over') $('opnieuwKnop').textContent = spel && spel.toernooi ? 'Naar het toernooi' : 'Opnieuw';
@@ -3462,6 +3629,7 @@
     $('mMunten').textContent = bank;
     $('rushKnop').textContent = 'Bazenrush (' + (modus === 'arena' ? 'open ruimte' : 'klassiek') + ')';
     toonRangKaart();
+    { const m = mijnOpbrengst(); $('basisKnop').textContent = 'Mijn basis' + (m > 0 ? ` (${m} munten klaar)` : ''); }
     { const d = zorgOpdrachten(), n = d.klaar.filter(k => k).length; $('opdrachtKnop').textContent = `Opdrachten van vandaag (${n}/3)` + (n === 3 ? ' ✓' : ''); }
     if (rangWelkom) { rangWelkom = false; toonToast(`Nieuw: rangen! Met wat je al gespeeld hebt ben je ${RANGEN[rangNr()].naam}.`); }
     $('geluidKnop').textContent = 'Geluid: ' + (geluidAan ? 'aan' : 'uit');
@@ -3487,6 +3655,7 @@
   function eindeSpel() {
     if (spel.samen === 'gast') { eindSamenGast('Je bent gestopt.'); return; }
     if (samen.echtWapen) { gekozenWapen = samen.echtWapen; samen.echtWapen = null; }
+    zetEchtTerug();
     if (spel.samen === 'host' && samen.kamer) {
       const k = samen.kamer;
       k.presence({ fase: 'einde', eind: { score: spel.score, golf: spel.golf, duel: spel.duel ? { host: spel.score, gast: spel.gastScore, klaar: spel.duelT <= 0 } : null, rush: spel.rush ? { klaar: !!spel.rushKlaar, t: Math.round(spel.rushT), bazen: spel.rushBazen } : null }, w: null }).catch(() => {});
@@ -4018,9 +4187,10 @@
   }
 
   let winkelTab = opslag.get('neon-invasie-tab', 'upgrades');
+  const WINKEL_TABS = ['upgrades', 'schepen', 'werkplaats', 'wapens', 'uiterlijk', 'drones', 'maatjes', 'kisten'];
   function kiesTab(tab) {
     winkelTab = tab; opslag.set('neon-invasie-tab', tab);
-    for (const t of ['upgrades', 'schepen', 'werkplaats', 'wapens', 'uiterlijk', 'drones']) {
+    for (const t of WINKEL_TABS) {
       $('tab-' + t).setAttribute('aria-selected', String(t === tab));
       $('paneel-' + t).hidden = t !== tab;
     }
@@ -4252,11 +4422,12 @@
         const rij = maak('div', 'rij');
         if (cat === 'kogel') {
           const st = maak('span', 'staal');
-          st.style.background = it.id === 'regenboog' ? `conic-gradient(${REGENBOOG.join(', ')}, ${REGENBOOG[0]})` : (it.kleur || schipInfo().kleur);
+          st.style.background = it.id === 'regenboog' ? `conic-gradient(${REGENBOOG.join(', ')}, ${REGENBOOG[0]})` : it.kleuren ? `conic-gradient(${it.kleuren.join(', ')}, ${it.kleuren[0]})` : (it.kleur || schipInfo().kleur);
           rij.append(st);
         }
         const info = maak('div', 'info'); info.append(maak('div', 'naam', it.naam));
         if (it.rang !== undefined && !heeftUiterlijk(cat, it)) info.append(maak('div', 'uitleg', 'Verdien je met de rang ' + RANGEN[it.rang].naam + '.'));
+        if (it.kist && !heeftUiterlijk(cat, it)) info.append(maak('div', 'uitleg', `Zit in kisten (${it.kist}).`));
         if (it.prestatie && !heeftUiterlijk(cat, it)) info.append(maak('div', 'uitleg', 'Verdien je met de prestatie ' + PRESTATIES.find(p => p.id === it.prestatie).naam + '.'));
         const b = maak('button'); b.id = `uiterlijk-${cat}-${it.id}`;
         if (uiterlijk[cat] === it.id) { b.textContent = 'Gekozen'; b.disabled = true; }
@@ -4276,8 +4447,10 @@
 
   function renderWinkel() {
     $('wSaldo').textContent = bank;
-    kiesTab(['upgrades', 'schepen', 'werkplaats', 'wapens', 'uiterlijk', 'drones'].includes(winkelTab) ? winkelTab : 'upgrades');
+    kiesTab(WINKEL_TABS.includes(winkelTab) ? winkelTab : 'upgrades');
     renderWapens();
+    renderMaatjes();
+    renderKisten();
     renderDrones();
     renderUiterlijk();
     renderWerkplaats();
@@ -4635,6 +4808,12 @@
     }
   }
 
+  function zetEchtTerug() {
+    const e = toerEcht;
+    if (!e) return;
+    toerEcht = null;
+    upgrades = e.upgrades; gekozenSchip = e.schip; wapenLvl = e.wapenLvl;
+  }
   const DUEL_TIJD = 120;
   function startSamenSpel(rol, soort = 'samen') {
     const duel = soort === 'duel' || soort === true, rush = soort === 'rush';
@@ -4644,6 +4823,12 @@
     modus = 'arena'; beginGolf = 1;
     // de gast schiet altijd met de blaster; in een duel de host ook (eerlijk)
     if (rol === 'gast' || duel) { samen.echtWapen = gekozenWapen; gekozenWapen = 'blaster'; }
+    // toernooi: iedereen Bliksem, zonder upgrades, wapenlevels of rangbonus (eerlijk)
+    if (samen.toernooi && !toerEcht) {
+      toerEcht = { upgrades, schip: gekozenSchip, wapenLvl };
+      upgrades = Object.fromEntries(Object.keys(upgrades).map(k => [k, 0]));
+      gekozenSchip = 'bliksem'; wapenLvl = {};
+    }
     if (rush) nieuwSpel(null, null, 'ruimte'); else nieuwSpel();
     modus = oudModus; beginGolf = oudBegin;
     if (rush) {
@@ -4809,7 +4994,7 @@
     if (P.fase === 'einde') { eindSamenGast(null, P.eind); return; }
     // wat ik zelf doe deel ik met de host
     const iv = (0.26 - upgrades.vuur * 0.028) * (sp.actief.snel > 0 ? 0.5 : 1) * (schipInfo().vuurTraag || 1);
-    samen.kamer.presence({ rol: 'gast', bl: wl('blaster'), rang: rangNr(), naam: mijnNaam(), schip: echtSchipId(), kleur: schipInfo().kleur, x: R(schip.x), y: R(schip.y),
+    samen.kamer.presence({ rol: 'gast', bl: wl('blaster'), rang: toerEcht ? 0 : rangNr(), naam: mijnNaam(), schip: echtSchipId(), kleur: schipInfo().kleur, x: R(schip.x), y: R(schip.y),
       mik: R(sp.mik * 100) / 100, iv: R(iv * 1000) / 1000, door: schipInfo().doorboor || 0, kanon: upgrades.kanon, kracht: upgrades.kracht,
       drie: sp.actief.drie > 0, dood: sp.weg || !!sp.duelDood, kt: samen.kt, dt: samen.doodTel || 0, pv: samen.pvVerloren || 0, on: sp.onkwetsbaar > 0 }).catch(() => {});
     // mijn eigen kogels (om te zien; de host rekent uit wat ze raken)
@@ -4955,6 +5140,7 @@
     if (status !== 'spel' && status !== 'pauze') return;
     toerDuelKlaar(eind && eind.duel ? eind.duel.host : 0, eind && eind.duel ? eind.duel.gast : 0, !!(eind && eind.duel && eind.duel.klaar));
     if (samen.echtWapen) { gekozenWapen = samen.echtWapen; samen.echtWapen = null; }
+    zetEchtTerug();
     controleerPrestaties(); bewaar();
     status = 'over';
     $('oTitel').textContent = reden ? reden : 'Samen gespeeld!';
@@ -4980,6 +5166,266 @@
     verlaatKamer();
     if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
   }
+  // ---------- Maatje in het spel ----------
+  function updateMaatje(dt) {
+    const m = spel.maatje, lvl = maatjes.lvl[m.id] || 1;
+    // gewoon: schuin achter je schip zweven
+    const hx = schip.x - 34, hy = schip.y + 16;
+    if (m.id === 'kat') {
+      const bereik = 110 + 30 * lvl, snel = 200 + 40 * lvl;
+      if (!m.doel || m.doel.weg) {
+        m.doel = null;
+        let bd = bereik * bereik;
+        for (const mu of spel.muntjes) { if (mu.weg) continue; const a = (mu.x - schip.x) ** 2 + (mu.y - schip.y) ** 2; if (a < bd) { bd = a; m.doel = mu; } }
+      }
+      const tx = m.doel ? m.doel.x : hx, ty = m.doel ? m.doel.y : hy;
+      const dx = tx - m.x, dy = ty - m.y, afst = Math.hypot(dx, dy) || 1, stap = Math.min(afst, snel * dt);
+      m.x += dx / afst * stap; m.y += dy / afst * stap;
+      if (m.doel && afst < 12) {
+        const mu = m.doel; m.doel = null; pakMunt(mu);
+        if (lvl >= 3 && Math.random() < 0.08 * lvl) { bank++; spel.munten++; opslag.set('neon-invasie-munten', bank); tekst(m.x, m.y - 12, '+1', K.geel); }
+      }
+      return;
+    }
+    m.x += (hx - m.x) * Math.min(1, dt * 6); m.y += (hy - m.y) * Math.min(1, dt * 6);
+    if (m.id === 'uil') {
+      m.vuurT -= dt;
+      if (m.vuurT > 0) return;
+      let doel = null, bd = 320 * 320;
+      for (const e of spel.vijanden) {
+        if (e.dood || !zichtbaar(e)) continue;
+        const a = (e.x - m.x) ** 2 + (e.y - m.y) ** 2;
+        if (a < bd) { bd = a; doel = e; }
+      }
+      if (!doel) return;
+      m.vuurT = 1.7 - 0.2 * lvl;
+      const h = Math.atan2(doel.y - m.y, doel.x - m.x);
+      spel.kogels.push({ x: m.x, y: m.y, vx: Math.cos(h) * 480, vy: Math.sin(h) * 480, door: lvl >= 4 ? 1 : 0, geraakt: [], mult: 1 + 0.25 * lvl, maatje: true });
+      toon(1200, 0.06, 'triangle', 0.02, 400);
+      return;
+    }
+    if (m.id === 'draak') {
+      const r = 14 + 3 * lvl;
+      for (const b of spel.vijandKogels)
+        if (!b.weg && (b.x - m.x) ** 2 + (b.y - m.y) ** 2 < r * r) { b.weg = true; knal(b.x, b.y, '#ff4f8b', 4, 60); }
+      m.spuwT -= dt;
+      if (m.spuwT > 0) return;
+      m.spuwT = 14 - 1.5 * lvl;
+      const bereik = 110 + 12 * lvl;
+      for (const e of spel.vijanden)
+        if (!e.dood && Math.hypot(e.x - schip.x, e.y - schip.y) < bereik) { raakVijand(e, 2 + lvl); e.brandT = Math.max(e.brandT || 0, 2); }
+      ring(schip.x, schip.y, '#ff4f8b', bereik); knal(schip.x, schip.y, ['#ff4f8b', '#ffd23d', '#ff8a1f'], 26, bereik * 1.6);
+    }
+  }
+
+  // ---------- Winkel: maatjes ----------
+  function renderMaatjes() {
+    const l = $('wMaatjes'); l.innerHTML = '';
+    for (const m of MAATJES) {
+      const lvl = maatjes.lvl[m.id] || 0, prijs = m.prijzen[lvl];
+      const rij = maak('div', 'rij');
+      const info = maak('div', 'info');
+      const naam = maak('div', 'naam', m.naam); naam.style.color = m.kleur;
+      info.append(naam, maak('div', 'uitleg', m.uitleg(Math.max(1, lvl))));
+      const pips = maak('div', 'pips'); for (let i = 0; i < 5; i++) pips.append(maak('i', i < lvl ? 'aan' : ''));
+      info.append(pips);
+      const knoppen = maak('div', 'knoppen'); knoppen.style.cssText = 'display:flex;flex-direction:column;gap:4px';
+      const koop = maak('button');
+      if (prijs === undefined) { koop.textContent = 'Max'; koop.disabled = true; }
+      else { muntKnop(koop, prijs); koop.onclick = () => koopMaatje(m); if (lvl) koop.title = 'Level omhoog'; }
+      if (lvl) {
+        const kies = maak('button', '', maatjes.actief === m.id ? 'Gekozen' : 'Kies');
+        kies.disabled = maatjes.actief === m.id;
+        kies.onclick = () => { maatjes.actief = m.id; bewaarMaatjes(); sfx.munt(); renderWinkel(); };
+        knoppen.append(kies);
+      }
+      knoppen.append(koop);
+      rij.append(spriteCanvas(sprites['maatje_' + m.id], 56, 50, 2.2), info, knoppen);
+      l.append(rij);
+    }
+  }
+  function koopMaatje(m) {
+    const lvl = maatjes.lvl[m.id] || 0, prijs = m.prijzen[lvl];
+    if (prijs === undefined || bank < prijs) return;
+    audio(); bank -= prijs; maatjes.lvl[m.id] = lvl + 1;
+    if (!lvl) maatjes.actief = m.id;
+    bewaarMaatjes(); bewaar(); sfx.koop(); renderWinkel();
+  }
+
+  // ---------- Winkel: kisten ----------
+  const ZELDZAAM = {
+    gewoon: { naam: 'Gewoon', kleur: '#cfd3ff' }, zeldzaam: { naam: 'Zeldzaam', kleur: '#3df2ff' },
+    episch: { naam: 'Episch', kleur: '#b56bff' }, legendarisch: { naam: 'Legendarisch', kleur: '#ffd23d' }
+  };
+  const KISTEN = [
+    { id: 'brons', naam: 'Bronzen kist', prijs: 500, kleur: '#d08a4a', kansen: { gewoon: 75, zeldzaam: 22, episch: 3, legendarisch: 0 }, munten: [200, 450], xp: 300 },
+    { id: 'zilver', naam: 'Zilveren kist', prijs: 1500, kleur: '#dfe6f2', kansen: { gewoon: 35, zeldzaam: 45, episch: 17, legendarisch: 3 }, munten: [600, 1100], xp: 800 },
+    { id: 'goud', naam: 'Gouden kist', prijs: 4000, kleur: '#ffd23d', kansen: { gewoon: 0, zeldzaam: 40, episch: 42, legendarisch: 18 }, munten: [1500, 2500], xp: 2000 }
+  ];
+  const kistSpullen = zeld => { const r = []; for (const [cat, g] of Object.entries(UITERLIJK)) for (const it of g.items) if (it.kist === zeld && !heeftUiterlijk(cat, it)) r.push({ cat, it }); return r; };
+  const kiesUit = l => l[Math.floor(Math.random() * l.length)];
+  function trekKist(k) {
+    let worp = Math.random() * 100, zeld = 'gewoon';
+    for (const [z, kans] of Object.entries(k.kansen)) { if (worp < kans) { zeld = z; break; } worp -= kans; }
+    const munten = n => { bank += n; return n + ' munten'; };
+    const spul = () => {
+      const l = kistSpullen(zeld);
+      if (!l.length) return null;
+      const { cat, it } = kiesUit(l);
+      uiterlijk.bezit.push(cat + ':' + it.id);
+      return `${UITERLIJK[cat].naam}: ${it.naam}`;
+    };
+    const w = Math.random();
+    let wat;
+    if (zeld === 'gewoon') {
+      if (w < 0.5) wat = munten(Math.round(rand(k.munten[0], k.munten[1]) / 10) * 10);
+      else if (w < 0.8) { xpErbij(k.xp); wat = k.xp + ' XP'; }
+      else { kistData.boost += 2; wat = 'Muntenboost: 2 spellen dubbele munten'; }
+    } else if (zeld === 'zeldzaam') {
+      if (w < 0.5) wat = spul();
+      else if (w < 0.75) { kistData.boost += 3; wat = 'Muntenboost: 3 spellen dubbele munten'; }
+      if (!wat) wat = munten(Math.round(rand(800, 1200) / 10) * 10);
+    } else if (zeld === 'episch') {
+      if (w < 0.5) wat = spul();
+      else if (w < 0.8) {
+        const id = maatjes.actief;
+        if (id && (maatjes.lvl[id] || 0) < 5) { maatjes.lvl[id]++; bewaarMaatjes(); wat = `Maatje-snoepje: ${MAATJES.find(m => m.id === id).naam} gaat naar level ${maatjes.lvl[id]}!`; }
+      }
+      if (!wat) wat = munten(2500);
+    } else {
+      if (w < 0.7) wat = spul();
+      if (!wat) wat = munten(6000);
+    }
+    return { zeld, wat };
+  }
+  function openKist(k) {
+    if (bank < k.prijs) return;
+    audio(); bank -= k.prijs; kistData.open++;
+    const r = trekKist(k);
+    bewaarKisten(); bewaar();
+    const z = ZELDZAAM[r.zeld], u = $('wKistUit');
+    u.hidden = false; u.innerHTML = '';
+    u.style.setProperty('--kleur', z.kleur);
+    u.append(maak('div', 'zeld', k.naam + ' · ' + z.naam), maak('div', 'wat', r.wat));
+    // de animatie opnieuw laten afspelen
+    u.style.animation = 'none'; void u.offsetWidth; u.style.animation = '';
+    if (r.zeld === 'legendarisch' || r.zeld === 'episch') sfx.power(); else sfx.koop();
+    renderWinkel();
+  }
+  function renderKisten() {
+    const l = $('wKisten'); l.innerHTML = '';
+    for (const k of KISTEN) {
+      const rij = maak('div', 'rij'), info = maak('div', 'info');
+      const naam = maak('div', 'naam', k.naam); naam.style.color = k.kleur;
+      const kansen = Object.entries(k.kansen).filter(([, n]) => n > 0).map(([z, n]) => `${ZELDZAAM[z].naam} ${n}%`).join(' · ');
+      info.append(naam, maak('div', 'uitleg', kansen));
+      const b = maak('button'); muntKnop(b, k.prijs); b.onclick = () => openKist(k);
+      rij.append(info, b); l.append(rij);
+    }
+    const nog = Object.keys(ZELDZAAM).reduce((n, z) => n + kistSpullen(z).length, 0);
+    $('wBoost').textContent = (kistData.boost > 0 ? `Muntenboost: nog ${kistData.boost} spel${kistData.boost > 1 ? 'len' : ''} dubbele munten. ` : '') + `Nog ${nog} kist-spullen te vinden.`;
+  }
+
+  // ---------- Mijn basis ----------
+  const BASIS_DELEN = [
+    { id: 'mijn', naam: 'Muntenmijn', kleur: K.geel, prijzen: [800, 1600, 3000, 5000, 8000], plek: [62, 58],
+      uitleg: l => (l ? `Maakt ${MIJN_PER_UUR[l]} munten per uur, ook als je niet speelt (tot 12 uur).` : 'Maakt munten, ook als je niet speelt. Hij bewaart tot 12 uur.') + (l < 5 ? ` Volgend level: ${MIJN_PER_UUR[l + 1]} per uur.` : '') },
+    { id: 'lab', naam: 'Laboratorium', kleur: K.groen, prijzen: [1000, 2500, 5000], plek: [258, 58],
+      uitleg: l => `Je krijgt ${5 * l}% meer XP.` + (l < 3 ? ` Volgend level: ${5 * (l + 1)}%.` : '') },
+    { id: 'generator', naam: 'Schildgenerator', kleur: K.cyaan, prijzen: [1500, 3500, 7000], plek: [62, 146],
+      uitleg: l => (l ? `Je begint elk spel met een schild van ${[0, 4, 7, 10][l]} s.` : 'Je begint elk spel met een schild.') + (l < 3 ? ` Volgend level: ${[0, 4, 7, 10][l + 1]} s.` : '') },
+    { id: 'toren', naam: 'Kanontoren', kleur: K.oranje, prijzen: [1200, 3000, 6000, 10000], plek: [258, 146],
+      uitleg: l => `Je doet ${5 * l}% meer schade tegen bazen.` + (l < 4 ? ` Volgend level: ${5 * (l + 1)}%.` : '') },
+    { id: 'radar', naam: 'Radar', kleur: K.roze, prijzen: [2000, 4500], plek: [160, 28],
+      uitleg: l => `Er vallen ${10 * l}% meer power-ups.` + (l < 2 ? ` Volgend level: ${10 * (l + 1)}%.` : '') }
+  ];
+  function haalMijnOp() {
+    const n = mijnOpbrengst();
+    basis.t = Date.now();
+    if (n > 0) { bank += n; bewaar(); }
+    bewaarBasis();
+    return n;
+  }
+  function openBasis() { status = 'basis'; spel = null; toonLaag('basis'); renderBasis(); }
+  function renderBasis() {
+    $('bSaldo').textContent = bank;
+    const m = mijnOpbrengst();
+    $('bMijn').textContent = basisLvl('mijn') ? (m > 0 ? `De mijn heeft ${m} munten voor je.` : 'De mijn is aan het graven...') + (Date.now() - basis.t > 12 * 3.6e6 ? ' De mijn zit vol!' : '') : 'Bouw een muntenmijn om munten te verdienen terwijl je niet speelt.';
+    $('bOphalen').hidden = !(m > 0);
+    $('bOphalen').textContent = `Ophalen (${m})`;
+    const l = $('bLijst'); l.innerHTML = '';
+    for (const d of BASIS_DELEN) {
+      const lvl = basisLvl(d.id), prijs = d.prijzen[lvl];
+      const rij = maak('div', 'rij'), info = maak('div', 'info');
+      const naam = maak('div', 'naam', d.naam); naam.style.color = d.kleur;
+      const pips = maak('div', 'pips'); for (let i = 0; i < d.prijzen.length; i++) pips.append(maak('i', i < lvl ? 'aan' : ''));
+      info.append(naam, maak('div', 'uitleg', d.uitleg(lvl)), pips);
+      const b = maak('button');
+      if (prijs === undefined) { b.textContent = 'Max'; b.disabled = true; }
+      else { muntKnop(b, prijs); b.onclick = () => bouwBasis(d); }
+      rij.append(info, b); l.append(rij);
+    }
+    tekenBasis();
+  }
+  function bouwBasis(d) {
+    const lvl = basisLvl(d.id), prijs = d.prijzen[lvl];
+    if (prijs === undefined || bank < prijs) return;
+    audio();
+    if (d.id === 'mijn') haalMijnOp(); // eerst leeghalen, dan telt het nieuwe level vanaf nu
+    bank -= prijs; basis.lvl[d.id] = lvl + 1;
+    bewaarBasis(); bewaar(); sfx.koop(); renderBasis();
+  }
+  function tekenBasis() {
+    const c = $('bTekening'), g = c.getContext('2d'), W2 = c.width, H2 = c.height;
+    g.fillStyle = '#0b0a1f'; g.fillRect(0, 0, W2, H2);
+    let z = 7; const r = () => (z = (z * 16807) % 2147483647) / 2147483647;
+    g.fillStyle = '#ffffff';
+    for (let i = 0; i < 50; i++) { g.globalAlpha = 0.3 + r() * 0.6; g.fillRect(Math.floor(r() * W2), Math.floor(r() * H2), 1, 1); }
+    g.globalAlpha = 1;
+    const cx = 160, cy = 100;
+    // buizen naar de gebouwen
+    for (const d of BASIS_DELEN) {
+      const aan = basisLvl(d.id) > 0;
+      g.strokeStyle = aan ? d.kleur : '#2e2a5c'; g.lineWidth = aan ? 3 : 2; g.globalAlpha = aan ? 0.7 : 1;
+      g.setLineDash(aan ? [] : [4, 4]);
+      g.beginPath(); g.moveTo(cx, cy); g.lineTo(d.plek[0], d.plek[1]); g.stroke();
+    }
+    g.setLineDash([]); g.globalAlpha = 1;
+    // de kern
+    g.shadowColor = K.cyaan; g.shadowBlur = 14;
+    g.fillStyle = '#1c1a38'; g.beginPath(); g.arc(cx, cy, 26, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = K.cyaan; g.lineWidth = 3; g.stroke();
+    g.shadowBlur = 0;
+    g.fillStyle = K.cyaan; g.beginPath(); g.arc(cx, cy, 8, 0, Math.PI * 2); g.fill();
+    for (const d of BASIS_DELEN) {
+      const lvl = basisLvl(d.id), [x, y] = d.plek;
+      if (!lvl) {
+        g.strokeStyle = '#2e2a5c'; g.lineWidth = 2; g.setLineDash([4, 4]);
+        g.strokeRect(x - 20, y - 15, 40, 30); g.setLineDash([]);
+        g.fillStyle = '#4a4680'; g.font = '16px ' + FONT_D; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('?', x, y + 1);
+        continue;
+      }
+      g.shadowColor = d.kleur; g.shadowBlur = 10;
+      g.fillStyle = '#1c1a38'; g.fillRect(x - 22, y - 16, 44, 32);
+      g.strokeStyle = d.kleur; g.lineWidth = 2; g.strokeRect(x - 22, y - 16, 44, 32);
+      g.shadowBlur = 0; g.fillStyle = d.kleur; g.strokeStyle = d.kleur;
+      // een klein plaatje per gebouw
+      if (d.id === 'mijn') { g.beginPath(); g.arc(x, y - 2, 7, 0, Math.PI * 2); g.fill(); g.fillStyle = '#1c1a38'; g.fillRect(x - 1, y - 6, 2, 8); }
+      else if (d.id === 'lab') { g.beginPath(); g.moveTo(x - 3, y - 10); g.lineTo(x + 3, y - 10); g.lineTo(x + 3, y - 4); g.lineTo(x + 9, y + 6); g.lineTo(x - 9, y + 6); g.lineTo(x - 3, y - 4); g.closePath(); g.fill(); }
+      else if (d.id === 'generator') { g.lineWidth = 2; g.beginPath(); g.arc(x, y - 1, 9, Math.PI, 0); g.stroke(); g.beginPath(); g.arc(x, y - 1, 5, Math.PI, 0); g.stroke(); g.fillRect(x - 10, y, 20, 3); }
+      else if (d.id === 'toren') { g.fillRect(x - 8, y - 2, 16, 9); g.save(); g.translate(x, y - 2); g.rotate(-0.6); g.fillRect(0, -2, 13, 4); g.restore(); }
+      else if (d.id === 'radar') { g.lineWidth = 2; g.beginPath(); g.arc(x, y + 4, 10, Math.PI * 1.1, Math.PI * 1.9); g.stroke(); g.beginPath(); g.moveTo(x, y + 4); g.lineTo(x + 6, y - 6); g.stroke(); }
+      // levels als stipjes onderaan
+      for (let i = 0; i < lvl; i++) g.fillRect(x - 18 + i * 8, y + 10, 5, 3);
+    }
+    // munten die klaarliggen bij de mijn
+    const m = mijnOpbrengst();
+    if (m > 0) { g.fillStyle = K.geel; g.font = '10px ' + FONT_D; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('+' + m, 62, 30); }
+  }
+  $('basisKnop').onclick = () => { audio(); openBasis(); };
+  $('basisTerug').onclick = naarMenu;
+  $('bOphalen').onclick = () => { const n = haalMijnOp(); if (n > 0) { sfx.munt(); toonToast(`+${n} munten uit je mijn`); } renderBasis(); };
+
   // ---------- Toernooi: knock-out duels, alleen de beheerder kan er een maken ----------
   // Het apparaat van de beheerder houdt het schema bij en deelt het met alle spelers in een
   // kamer met een toernooicode. Elk duel is een gewoon Samen-duel: de bovenste speler is de host.
@@ -5250,15 +5696,28 @@
     zendToer();
     if (toer.beheer) setTimeout(toerVerwerk, 50);
   }
+  // de prijs groeit met het aantal spelers: iets voor meedoen, meer per gewonnen duel, en de kampioen het meest
+  function toerPrijs(T, id) {
+    const n = T.spelers.length;
+    if (!T.spelers.some(s => s.id === id)) return null;
+    let winst = 0; // vrije doorgangen tellen niet
+    for (const rd of T.rondes) for (const p of rd) if (p.w === id && p.a && p.b) winst++;
+    const kampioen = T.kampioen === id;
+    const munten = 10 * n + 20 * n * winst + (kampioen ? 100 * n : 0);
+    return { munten, xp: Math.round(munten / 2), winst, kampioen };
+  }
   function toerKampioenCheck() {
     const T = toer.T;
-    if (!T || T.fase !== 'klaar' || T.kampioen !== toerId) return;
-    let gewonnen = [];
-    try { gewonnen = JSON.parse(opslag.get('neon-invasie-toernooi-gewonnen', '[]')); } catch (e) {}
-    if (!Array.isArray(gewonnen) || gewonnen.includes(T.id)) return;
-    gewonnen.push(T.id); opslag.set('neon-invasie-toernooi-gewonnen', JSON.stringify(gewonnen.slice(-50)));
-    bank += 1000; xpErbij(500); bewaar();
-    toonToast('Je hebt het toernooi gewonnen! +1000 munten en 500 XP');
+    if (!T || T.fase !== 'klaar') return;
+    const prijs = toerPrijs(T, toerId);
+    if (!prijs) return;
+    let gehad = [];
+    try { gehad = JSON.parse(opslag.get('neon-invasie-toernooi-gewonnen', '[]')); } catch (e) {}
+    if (!Array.isArray(gehad) || gehad.includes(T.id)) return;
+    gehad.push(T.id); opslag.set('neon-invasie-toernooi-gewonnen', JSON.stringify(gehad.slice(-50)));
+    bank += prijs.munten; xpErbij(prijs.xp); bewaar();
+    toonToast((prijs.kampioen ? 'Je hebt het toernooi gewonnen!' : prijs.winst ? `Toernooi afgelopen! Je won ${prijs.winst} duel${prijs.winst > 1 ? 's' : ''}.` : 'Toernooi afgelopen! Bedankt voor het meedoen.')
+      + ` +${prijs.munten} munten en ${prijs.xp} XP`);
   }
 
   function renderToernooi() {
