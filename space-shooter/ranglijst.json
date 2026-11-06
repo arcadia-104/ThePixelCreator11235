@@ -1,1 +1,38 @@
-{"v":1,"bijgewerkt":null,"spelers":[]}
+{
+ "v": 1,
+ "bijgewerkt": "2026-11-06T08:37:02.209Z",
+ "spelers": [
+  {
+   "naam": "pixelcreator",
+   "xp": 66989,
+   "rang": 11,
+   "records": {
+    "normaal": 54270,
+    "moeilijk": 0,
+    "extreem": 81375,
+    "arena-normaal": 18073,
+    "arena-moeilijk": 12451,
+    "arena-extreem": 44320
+   },
+   "rush": 0,
+   "rushRuimte": 69.46950000000339,
+   "toernooi": 0
+  },
+  {
+   "naam": "WW",
+   "xp": 1402,
+   "rang": 1,
+   "records": {
+    "normaal": 0,
+    "moeilijk": 0,
+    "extreem": 1720,
+    "arena-normaal": 0,
+    "arena-moeilijk": 0,
+    "arena-extreem": 0
+   },
+   "rush": 0,
+   "rushRuimte": 0,
+   "toernooi": 0
+  }
+ ]
+}
