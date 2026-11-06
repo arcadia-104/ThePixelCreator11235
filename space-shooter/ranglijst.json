@@ -1,10 +1,10 @@
 {
  "v": 1,
- "bijgewerkt": "2026-11-06T08:37:02.209Z",
+ "bijgewerkt": "2026-11-06T08:44:05.806Z",
  "spelers": [
   {
    "naam": "pixelcreator",
-   "xp": 66989,
+   "xp": 70350,
    "rang": 11,
    "records": {
     "normaal": 54270,
@@ -14,7 +14,7 @@
     "arena-moeilijk": 12451,
     "arena-extreem": 44320
    },
-   "rush": 0,
+   "rush": 159.3560000000222,
    "rushRuimte": 69.46950000000339,
    "toernooi": 0
   },
