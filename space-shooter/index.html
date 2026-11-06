@@ -238,6 +238,17 @@
   .kistuit .wat { font-family: var(--font-display); font-size: 16px; margin-top: 4px; }
   @keyframes kistpop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); } }
   #bTekening { width: 100%; max-width: 320px; height: auto; align-self: center; image-rendering: pixelated; }
+  .pilootkaart canvas { width: 48px; height: 48px; image-rendering: pixelated; }
+  #pGroot { width: 144px; height: 144px; image-rendering: pixelated; align-self: center; border: 2px solid #2e2a5c; border-radius: 6px; cursor: pointer; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-self: stretch; }
+  .chips button { padding: 6px 8px; font-size: 11px; box-shadow: none; border-color: #2e2a5c; display: inline-flex; align-items: center; gap: 4px; }
+  .chips button.gekozen { border-color: var(--cyan); color: var(--cyan); box-shadow: 0 0 8px rgba(61, 242, 255, 0.35); }
+  .chips .staal { width: 18px; height: 18px; }
+  .testlabel { margin: 0; font-family: var(--font-display); font-size: 11px; letter-spacing: 0.1em; color: #15132b; background: var(--orange); padding: 4px 10px; border-radius: 4px; box-shadow: 0 0 10px var(--orange); }
+  .rbrij .wat { font-size: 16px; color: var(--muted); line-height: 1.05; }
+  .rbrij .wat b { color: var(--yellow); font-weight: normal; }
+  .creatief { width: min(280px, 100%); }
+  .creatief button { font-size: 11px; padding: 8px 4px; border-color: var(--orange); color: var(--orange); box-shadow: none; }
   .ronde { font-family: var(--font-display); font-size: 13px; color: var(--muted); letter-spacing: 0.08em; margin: 8px 0 0; text-align: left; }
   .potje { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; background: var(--panel); border-radius: 6px; padding: 6px 10px; text-align: left; border: 2px solid transparent; font: inherit; color: var(--fg); box-shadow: none; }
   .potje.ik { border-color: var(--cyan); }
@@ -259,6 +270,12 @@
 
     <section id="menu" class="laag">
       <h1>SPACE<br><span>SHOOTER</span></h1>
+      <p class="testlabel" id="testLabel" hidden>TESTVERSIE · CREATIEF</p>
+      <div class="knopraster creatief" id="creatiefKnoppen" hidden>
+        <button id="cMunten">Oneindig munten: aan</button>
+        <button id="cOnsterfelijk">Onsterfelijk: uit</button>
+        <button id="cRang" style="grid-column: span 2">Een rang hoger</button>
+      </div>
       <p class="sub" id="melding" hidden></p>
       <p class="sub">Sleep je vinger om te bewegen. Je schiet vanzelf. Moeilijker niveau = meer punten en munten. In de Arena vlieg je alle kanten op en richt je met je rechterduim.</p>
       <div class="stats">
@@ -268,6 +285,11 @@
       <button id="rangKaart" class="rangkaart" aria-label="Jouw rang">
         <canvas id="mBadge" width="40" height="44"></canvas>
         <span class="info"><span class="naam" id="mRang">Brons I</span><span class="voortgang"><i id="mRangBalk"></i></span><span class="uitleg" id="mRangXp"></span></span>
+      </button>
+      <button id="pilootKaart" class="rangkaart pilootkaart" aria-label="Jouw piloot">
+        <canvas id="mPiloot" width="48" height="48"></canvas>
+        <span class="info"><span class="naam" id="mPilootNaam">Piloot</span><span class="uitleg" id="mPilootVaard"></span></span>
+        <span class="uitleg">Aanpassen</span>
       </button>
       <div class="knoprij">
         <button id="speelKnop" class="groot">Spelen</button>
@@ -283,6 +305,7 @@
           <button id="basisKnop" style="grid-column: span 2">Mijn basis</button>
           <button id="samenKnop" style="grid-column: span 2">Samen spelen</button>
           <button id="toernooiKnop" style="grid-column: span 2">Toernooi</button>
+          <button id="ranglijstKnop" style="grid-column: span 2">Ranglijst</button>
           <button id="rushKnop" style="grid-column: span 2">Bazenrush</button>
           <button id="startGolfKnop" style="grid-column: span 2">Begin bij golf 1</button>
           <button id="overzetKnop" style="grid-column: span 2">Voortgang overzetten</button>
@@ -381,6 +404,50 @@
         <button id="sRush" class="groot" hidden>Bazenrush samen (open ruimte)</button>
       </div>
       <div class="knoprij"><button id="samenTerug">Terug</button></div>
+    </section>
+
+    <section id="ranglijst" class="laag lang" hidden>
+      <h2>Ranglijst</h2>
+      <p class="sub" id="rlStatus"></p>
+      <div class="tabs" role="tablist">
+        <button id="rltab-score" role="tab" data-rl="score">Score</button>
+        <button id="rltab-rush" role="tab" data-rl="rush">Bazenrush</button>
+        <button id="rltab-rang" role="tab" data-rl="rang">Rang</button>
+        <button id="rltab-toernooi" role="tab" data-rl="toernooi">Toernooi</button>
+      </div>
+      <div id="rlFilter" class="chips"></div>
+      <div id="rlLijst" class="lijst"></div>
+      <div class="naamrij"><input id="rlNaam" maxlength="12" aria-label="Jouw naam op de ranglijst" placeholder="Jouw naam op de ranglijst" autocomplete="off"></div>
+      <button id="rlStuur">Stuur mijn scores</button>
+      <p class="sub" id="rlStuurTekst" style="font-size:17px"></p>
+      <button id="rlBeheer" hidden>Ranglijst beheren</button>
+      <div class="knoprij"><button id="ranglijstTerug">Terug</button></div>
+    </section>
+
+    <section id="rlbeheer" class="laag lang" hidden>
+      <h2>Ranglijst beheren</h2>
+      <p class="sub" id="rbStatus"></p>
+      <h3>Wacht op jouw OK</h3>
+      <div id="rbWacht" class="lijst"></div>
+      <h3>Op de ranglijst</h3>
+      <div id="rbLijst" class="lijst"></div>
+      <button id="rbOpslaan" class="groot">Opslaan in ranglijst.json</button>
+      <p class="sub" id="rbOpslaanTekst" style="font-size:17px"></p>
+      <div class="knoprij"><button id="rlbeheerTerug">Terug</button></div>
+    </section>
+
+    <section id="piloot" class="laag lang" hidden>
+      <div class="winkelkop">
+        <h2>Jouw piloot</h2>
+        <span class="saldo"><span class="munt"></span><span id="pSaldo">0</span></span>
+      </div>
+      <canvas id="pGroot" width="144" height="144" aria-label="Jouw piloot, tik voor een ander gezicht"></canvas>
+      <p class="sub" id="pInfo"></p>
+      <div class="naamrij"><input id="pNaam" maxlength="12" aria-label="Naam van je piloot" placeholder="Naam van je piloot" autocomplete="off"></div>
+      <div id="pDelen" class="paneel"></div>
+      <h3>Vaardigheid</h3>
+      <div id="pVaard" class="lijst"></div>
+      <div class="knoprij"><button id="pilootTerug">Terug</button></div>
     </section>
 
     <section id="basis" class="laag lang" hidden>
@@ -520,6 +587,32 @@
   </div>
 </main>
 
+<script>
+  // Als er iets kapotgaat: laat de fout op het scherm zien, zodat je er een screenshot van kunt maken.
+  // Dit staat in een eigen script, zodat het ook werkt als het grote script hieronder niet kan starten.
+  (function () {
+    var getoond = false;
+    function toon(tekst) {
+      if (getoond) return;
+      getoond = true;
+      var doos = document.createElement('div');
+      doos.setAttribute('role', 'alert');
+      doos.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:99999;background:#2a0b1a;color:#fff;border:2px solid #ff4f8b;border-radius:8px;padding:10px 12px;font:15px/1.3 monospace;word-break:break-word';
+      doos.textContent = 'Er ging iets mis in het spel. Maak een screenshot hiervan en stuur hem naar de maker. Fout: ' + tekst + ' | ' + navigator.userAgent;
+      var weg = document.createElement('button');
+      weg.textContent = 'Sluiten';
+      weg.style.cssText = 'display:block;margin-top:8px;font:inherit;padding:4px 10px';
+      weg.onclick = function () { doos.remove(); };
+      doos.appendChild(weg);
+      (document.body || document.documentElement).appendChild(doos);
+    }
+    window.addEventListener('error', function (e) {
+      // fouten uit extensies of PeerJS negeren, alleen die van het spel zelf tonen
+      if (e.filename && e.filename.indexOf(location.host) < 0) return;
+      toon((e.message || 'onbekend') + ' (regel ' + (e.lineno || '?') + ':' + (e.colno || '?') + ')');
+    });
+  })();
+</script>
 <script>
 (() => {
   'use strict';
@@ -1068,7 +1161,7 @@
     { id: 'bom',     naam: 'Bommenwerper', prijs: 1200, uitleg: 'Bommen die ontploffen en alles eromheen raken.' },
     { id: 'bliksem', naam: 'Bliksemkanon', prijs: 1400, uitleg: 'Een bliksemschicht die overspringt naar aliens die dichtbij zijn.' },
     { id: 'zwerm',   naam: 'Zwermraketten', prijs: 1600, uitleg: 'Kleine raketten die zelf een alien zoeken.' },
-    { id: 'ijs',     naam: 'IJskanon',      prijs: 1800, uitleg: 'IJsscherven bevriezen aliens: ze gaan veel langzamer. Een bevroren alien krijgt dubbele schade.' }
+    { id: 'ijs',     naam: 'IJskanon',      prijs: 1800, uitleg: 'IJsscherven bevriezen aliens: ze gaan veel langzamer. Een bevroren alien krijgt dubbele schade (een baas 25% extra).' }
   ];
   const WAPEN_TRAAG = { blaster: 1, hagel: 2, laser: 1, bom: 2.4, vlam: 0.25, bliksem: 2.2, boemerang: 2.2, zwerm: 4.2, ijs: 1.5 };
 
@@ -1265,6 +1358,45 @@
   ];
   const maatjes = (() => { try { const m = JSON.parse(opslag.get('neon-invasie-maatjes', 'null')); if (m && m.lvl) return m; } catch (e) {} return { lvl: {}, actief: '' }; })();
   const bewaarMaatjes = () => opslag.set('neon-invasie-maatjes', JSON.stringify(maatjes));
+  // ---------- Piloot: jouw eigen karakter dat het schip bestuurt ----------
+  const PILOOT_DELEN = {
+    soort: { naam: 'Soort', items: [
+      { id: 'mens', naam: 'Mens', prijs: 0 }, { id: 'kat', naam: 'Kat', prijs: 300 },
+      { id: 'robot', naam: 'Robot', prijs: 500 }, { id: 'alien', naam: 'Alien', prijs: 800 } ] },
+    haar: { naam: 'Haar of hoofddeksel', items: [
+      { id: 'kort', naam: 'Kort haar', prijs: 0 }, { id: 'geen', naam: 'Kaal', prijs: 0 }, { id: 'lang', naam: 'Lang haar', prijs: 100 },
+      { id: 'pet', naam: 'Pet', prijs: 200 }, { id: 'koptelefoon', naam: 'Koptelefoon', prijs: 300 },
+      { id: 'helm', naam: 'Ruimtehelm', prijs: 400 }, { id: 'kroon', naam: 'Kroon', prijs: 1500 } ] },
+    ogen: { naam: 'Ogen', items: [
+      { id: 'normaal', naam: 'Gewoon', prijs: 0 }, { id: 'groot', naam: 'Grote ogen', prijs: 100 },
+      { id: 'zonnebril', naam: 'Zonnebril', prijs: 400 }, { id: 'cyber', naam: 'Cyberoog', prijs: 700 } ] },
+    huid: { naam: 'Kleur van je gezicht', kleur: true, items: [
+      { id: '#f2c9a0', prijs: 0 }, { id: '#c68a5a', prijs: 0 }, { id: '#8a5a3a', prijs: 0 }, { id: '#ffd23d', prijs: 100 },
+      { id: '#7dff3a', prijs: 150 }, { id: '#9fe8ff', prijs: 150 }, { id: '#ff4f8b', prijs: 200 } ] },
+    haarkleur: { naam: 'Haarkleur', kleur: true, items: [
+      { id: '#3a2a1a', prijs: 0 }, { id: '#e8c26a', prijs: 0 }, { id: '#b5481f', prijs: 0 }, { id: '#1a1a2a', prijs: 0 },
+      { id: '#ff4f8b', prijs: 150 }, { id: '#3df2ff', prijs: 150 }, { id: '#ffffff', prijs: 200 } ] },
+    pak: { naam: 'Kleur van je pak', kleur: true, items: [
+      { id: '#3df2ff', prijs: 0 }, { id: '#ff4f8b', prijs: 0 }, { id: '#ff8a1f', prijs: 0 },
+      { id: '#7dff3a', prijs: 100 }, { id: '#b56bff', prijs: 150 }, { id: '#ffd23d', prijs: 300 } ] }
+  };
+  const VAARDIGHEDEN = [
+    { id: 'schutter', naam: 'Scherpschutter', prijs: 0, uitleg: 'Je schiet 10% sneller.' },
+    { id: 'muntjager', naam: 'Muntenjager', prijs: 1500, uitleg: 'Je krijgt 15% meer munten.' },
+    { id: 'denker', naam: 'Snelle denker', prijs: 2000, uitleg: 'Je speciale aanval is 25% sneller weer klaar.' },
+    { id: 'schildmeester', naam: 'Schildmeester', prijs: 2000, uitleg: 'Power-ups duren 3 seconden langer.' },
+    { id: 'gelukspoot', naam: 'Gelukspoot', prijs: 2500, uitleg: 'Er vallen 25% meer power-ups.' },
+    { id: 'taai', naam: 'Taaie', prijs: 3000, uitleg: 'Je hebt 1 hartje extra.' }
+  ];
+  const piloot = (() => {
+    const std = { naam: '', soort: 'mens', haar: 'kort', ogen: 'normaal', huid: '#f2c9a0', haarkleur: '#3a2a1a', pak: '#3df2ff', vaardigheid: 'schutter' };
+    try { const p = JSON.parse(opslag.get('neon-invasie-piloot', 'null')); if (p && typeof p === 'object') return { ...std, ...p }; } catch (e) {}
+    return std;
+  })();
+  const pilootBezit = (() => { try { const b = JSON.parse(opslag.get('neon-invasie-piloot-bezit', '[]')); if (Array.isArray(b)) return b; } catch (e) {} return []; })();
+  const bewaarPiloot = () => { opslag.set('neon-invasie-piloot', JSON.stringify(piloot)); opslag.set('neon-invasie-piloot-bezit', JSON.stringify(pilootBezit)); };
+  // een vaardigheid telt niet in een toernooiduel (daar is iedereen gelijk)
+  const vaard = id => piloot.vaardigheid === id && !toerEcht;
   // kisten: hoeveel spellen muntenboost je nog hebt
   const kistData = (() => { try { const k = JSON.parse(opslag.get('neon-invasie-kisten', 'null')); if (k && typeof k.boost === 'number') return k; } catch (e) {} return { boost: 0, open: 0 }; })();
   const bewaarKisten = () => opslag.set('neon-invasie-kisten', JSON.stringify(kistData));
@@ -1294,6 +1426,11 @@
   for (const k in NIVEAUS) for (const m of ['', 'arena-']) records[m + k] = +opslag.get('neon-invasie-record-' + m + k, 0) || 0;
   records.normaal = Math.max(records.normaal, +opslag.get('neon-invasie-record', 0) || 0);
   let bank = +opslag.get('neon-invasie-munten', 0) || 0;
+  // de testversie (geopend als bestand op je laptop) is "creatief", de website is "overleven"
+  const TESTVERSIE = location.protocol === 'file:';
+  const creatief = (() => { try { const c = JSON.parse(opslag.get('neon-invasie-creatief', 'null')); if (c) return c; } catch (e) {} return { munten: true, onsterfelijk: false }; })();
+  const creatiefAan = id => TESTVERSIE && !!creatief[id];
+  if (creatiefAan('munten')) bank = Math.max(bank, 999999);
   // tijdens een toernooiduel: je echte upgrades, schip en wapenlevels (die worden dan even op 0 gezet)
   let toerEcht = null;
   let upgrades = { vuur: 0, kanon: 0, leven: 0, duur: 0, magneet: 0, drone: 0, kracht: 0, muntbonus: 0, geluk: 0, bazenschild: 0, herstel: 0 };
@@ -1768,7 +1905,7 @@
   function schipInfo() {
     return alleSchepen().find(s => s.id === gekozenSchip) || SCHEPEN[0];
   }
-  const hartjesVan = s => s.hartjes + upgrades.leven;
+  const hartjesVan = s => s.hartjes + upgrades.leven + (vaard('taai') ? 1 : 0);
   // meer dan 6 hartjes kan alleen als je schip er zoveel heeft
   const maxHartjes = () => Math.max(6, hartjesVan(schipInfo()));
   function snelheid() { return Math.min(2.6, 1.1 + (spel.golf - 1) * 0.09) * N().snel * (uit('turbo') ? 1.5 : 1); }
@@ -1792,7 +1929,7 @@
     return sprites[k];
   }
   function vermenigvuldiger() { return Math.min(4, 1 + Math.floor(spel.streak / 15)); }
-  function duurVan(id) { return (id === 'schild' ? 10 : 8) + upgrades.duur * 2 + (schipInfo().puExtra || 0); }
+  function duurVan(id) { return (id === 'schild' ? 10 : 8) + upgrades.duur * 2 + (schipInfo().puExtra || 0) + (vaard('schildmeester') ? 3 : 0); }
 
   // testen: meteen bij een baas beginnen. Zo'n spel telt niet mee voor je record en golf-prestaties.
   const START_GOLVEN = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
@@ -1817,6 +1954,8 @@
     if (spel.arena) schip.y = schip.doelY = A.cy + 60;
     if (schipInfo().startSchild) spel.actief.schild = duurVan('schild');
     if (basisLvl('generator') && !toerEcht) spel.actief.schild = Math.max(spel.actief.schild, [0, 4, 7, 10][basisLvl('generator')]);
+    spel.piloot = { uitdr: 'blij', uitdrT: 1.5, zeg: null, zegT: 0, stil: 0 };
+    pilootZeg(['Klaar voor de start!', 'Daar gaan we!', 'Kom maar op, aliens!'][Math.floor(Math.random() * 3)], 'blij', true);
     if (missie) { startMissieSpel(missie); return; }
     if (rush) {
       if (rush === 'ruimte') {
@@ -1836,6 +1975,7 @@
 
   function startGolf(n) {
     spel.golf = n; spel.golfKlaar = false;
+    if (n > 1 && n % 3 === 0 && !isBaasGolf(n)) pilootZeg(`Golf ${n}, kom maar op!`, 'blij');
     spel.wachtrij = maakGolf(n); spel.spawnT = 1.4; spel.geraaktGolf = false;
     if (!spel.rush && !spel.missie) { opdrachtTel('golf', n, true); if (spel.arena) opdrachtTel('arena', n, true); }
     if (!spel.test && !spel.rush) {
@@ -1848,6 +1988,7 @@
       if (upgrades.bazenschild) spel.actief.schild = Math.max(spel.actief.schild, duurVan('schild'));
       const info = BAZEN[(baasNr(n) - 1) % BAZEN.length];
       banner(info.mega ? 'MEGA-EINDBAAS!' : 'EINDBAAS!', info.naam, 2.6);
+      pilootZeg(info.mega ? 'Wow, die is GROOT!' : 'Daar komt een baas!', 'boos', true);
       sfx.alarm();
     } else {
       banner('GOLF ' + n, n === 1 ? (spel.uitdaging ? spel.uitdaging.naam : 'Sleep om te bewegen') : '');
@@ -2110,10 +2251,10 @@
         if (!stil) e.hoek += (e.woedend ? 0.7 : 0.45) * dt;
         { const [cx, cy] = baasMidden(e); e.x = cx + Math.cos(e.hoek) * 110; e.y = cy + Math.sin(e.hoek) * 90; }
         if (sp.weg) break;
-        if (!stil) e.aanvalT -= dt;
+        if (!stil) e.aanvalT -= e.rdt || dt;
         if (e.aanvalT <= 0) { baasAanval(e); e.aanvalT = baasPauze(e); }
         if (e.salvo > 0) {
-          e.salvoT -= dt;
+          e.salvoT -= e.rdt || dt;
           if (e.salvoT <= 0) { e.salvo--; e.salvoT = 0.14; vijandSchiet(e.x, e.y, mik, 210 * Math.sqrt(snelheid())); }
         }
         break;
@@ -2324,7 +2465,7 @@
   }
 
   function pakMunt(m) {
-    const x = (schipInfo().muntX || 1) * N().munten * (spel.arena ? MODI.arena.beloning : 1) * (1 + 0.1 * upgrades.muntbonus) * rangBonus() * (spel.boost ? 2 : 1);
+    const x = (schipInfo().muntX || 1) * N().munten * (spel.arena ? MODI.arena.beloning : 1) * (1 + 0.1 * upgrades.muntbonus) * rangBonus() * (spel.boost ? 2 : 1) * (vaard('muntjager') ? 1.15 : 1);
     const n = Math.floor(x) + (Math.random() < x % 1 ? 1 : 0);
     if (spel.missie) spel.missie.munten++;
     opdrachtTel('munten');
@@ -2591,7 +2732,7 @@
     for (let i = 0; i < aantal; i++)
       spel.muntjes.push({ x: e.x + rand(-6, 6), y: e.y + rand(-6, 6), vx: rand(-spreiding, spreiding), vy: rand(-60, 20), t: rand(0, 6) });
     // power-up
-    const kans = e.soort === 'baas' || uit('geenpower') ? 0 : (e.soort === 'tank' ? 0.4 : e.soort === 'schutter' ? 0.1 : 0.04) * (schipInfo().puKans || 1) * (1 + 0.2 * upgrades.geluk) * (toerEcht ? 1 : 1 + 0.1 * basisLvl('radar'));
+    const kans = e.soort === 'baas' || uit('geenpower') ? 0 : (e.soort === 'tank' ? 0.4 : e.soort === 'schutter' ? 0.1 : 0.04) * (schipInfo().puKans || 1) * (1 + 0.2 * upgrades.geluk) * (toerEcht ? 1 : 1 + 0.1 * basisLvl('radar')) * (vaard('gelukspoot') ? 1.25 : 1);
     if (Math.random() < kans) {
       const lijst = ['drie', 'drie', 'snel', 'snel', 'schild', 'magneet', 'bom'];
       if (spel.levens < maxHartjes()) lijst.push('hart');
@@ -2604,6 +2745,7 @@
     const info = POWERUPS[p.type];
     sfx.power();
     tekst(schip.x, schip.y - 30, info.naam.toUpperCase(), info.kleur);
+    pilootZeg(p.type === 'hart' ? 'Een extra hartje!' : p.type === 'bom' ? 'BOEM!' : 'Yes, ' + info.naam.toLowerCase() + '!', 'blij');
     if (p.type === 'bom') {
       spel.flits = 0.35; spel.schud = 0.3; sfx.groteKnal();
       spel.vijandKogels.length = 0;
@@ -2617,13 +2759,17 @@
 
   function raakSchip() {
     if (spel.onkwetsbaar > 0 || spel.weg || spel.hostDood || spel.duelDood) return;
+    if (creatiefAan('onsterfelijk')) { spel.onkwetsbaar = 0.5; knal(schip.x, schip.y, K.oranje, 8, 90); return; }
     spel.geraaktGolf = true;
     if (spel.actief.schild > 0) {
       spel.actief.schild = 0; spel.onkwetsbaar = 1;
       knal(schip.x, schip.y, K.groen, 20, 160); sfx.knal();
+      pilootZeg('Pfoe, mijn schild!', 'schrik');
       return;
     }
     spel.levens--; spel.streak = 0; spel.onkwetsbaar = 2; spel.schud = 0.35;
+    if (spel.levens === 1) pilootZeg('Nog maar 1 hartje!', 'pijn', true);
+    else if (spel.levens > 1) pilootZeg(['Au!', 'Auw, dat deed pijn!', 'Hé, kijk uit!'][Math.floor(Math.random() * 3)], 'schrik');
     sfx.au(); tril(120);
     knal(schip.x, schip.y, schipInfo().kleur, 18, 150);
     if (spel.levens <= 0 && spel.duel) {
@@ -2845,6 +2991,7 @@
   }
   // ---------- Speciale aanval: elk schip heeft zijn eigen kracht ----------
   const KRACHT_WACHT = 20;
+  const krachtWacht = () => KRACHT_WACHT * (vaard('denker') ? 0.75 : 1);
   const KRACHTEN = {
     bliksem:      { naam: 'Bliksemstorm', uitleg: 'bliksem raakt alle aliens in beeld' },
     flamingo:     { naam: 'Power-regen',  uitleg: 'drie power-ups tegelijk' },
@@ -2868,20 +3015,20 @@
     const sp = spel;
     if (sp && sp.duel && sp.samen === 'host') {
       if (sp.weg || sp.duelDood || status !== 'spel' || sp.krachtT > 0) return;
-      sp.krachtT = KRACHT_WACHT; opdrachtTel('kracht');
+      sp.krachtT = krachtWacht(); opdrachtTel('kracht');
       stuurZwerm(sp.gast, 'gast'); banner('ZWERM GESTUURD!', '', 1.2);
       return;
     }
     if (sp && sp.samen === 'gast') {
       if (sp.weg || status !== 'spel' || sp.krachtT > 0) return;
-      samen.kt++; sp.krachtT = KRACHT_WACHT; ring(schip.x, schip.y, schipInfo().kleur, 160); toon(220, 0.4, 'sawtooth', 0.05, 700);
+      samen.kt++; sp.krachtT = krachtWacht(); ring(schip.x, schip.y, schipInfo().kleur, 160); toon(220, 0.4, 'sawtooth', 0.05, 700);
       return;
     }
     if (!sp || sp.weg || status !== 'spel' || sp.krachtT > 0) return;
     const id = KRACHTEN[schipInfo().id] ? schipInfo().id : 'eigen', k = KRACHTEN[id];
     const zicht = sp.vijanden.filter(e => !e.dood && zichtbaar(e));
     const dichtbij = r => zicht.filter(e => Math.hypot(e.x - schip.x, e.y - schip.y) < r);
-    sp.krachtT = KRACHT_WACHT; opdrachtTel('kracht');
+    sp.krachtT = krachtWacht(); opdrachtTel('kracht');
     banner(k.naam.toUpperCase(), '', 1.2); tril(60); toon(220, 0.4, 'sawtooth', 0.05, 700);
     if (id === 'bliksem') {
       for (const e of zicht) { sp.bliksems.push({ punten: kartel([[schip.x, schip.y], [e.x, e.y]]), l: 0.35 }); raakVijand(e, 4); }
@@ -2945,7 +3092,7 @@
     } else {
       ctx.strokeStyle = '#2e2a5c'; ctx.beginPath(); ctx.arc(kn.x, kn.y, kn.r, 0, Math.PI * 2); ctx.stroke();
       ctx.strokeStyle = kleur; ctx.beginPath();
-      ctx.arc(kn.x, kn.y, kn.r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - sp.krachtT / KRACHT_WACHT)); ctx.stroke();
+      ctx.arc(kn.x, kn.y, kn.r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - sp.krachtT / krachtWacht())); ctx.stroke();
     }
     ctx.shadowBlur = 0; ctx.globalAlpha = klaar ? 1 : 0.45;
     const spr = sprites['schip_' + schipInfo().id];
@@ -3012,7 +3159,7 @@
 
     // schieten
     if (!sp.weg && !sp.hostDood && !sp.duelDood) {
-      const interval = (0.26 - upgrades.vuur * 0.028) * (sp.actief.snel > 0 ? 0.5 : 1) * (schipInfo().vuurTraag || 1);
+      const interval = (0.26 - upgrades.vuur * 0.028) * (sp.actief.snel > 0 ? 0.5 : 1) * (schipInfo().vuurTraag || 1) * (vaard('schutter') ? 0.9 : 1);
       if (gekozenWapen === 'laser') updateLaser(dt, interval);
       else {
         const iv = interval * WAPEN_TRAAG[gekozenWapen];
@@ -3062,6 +3209,7 @@
         }
         else if (isBaasGolf(sp.golf)) {
           banner('BAAS VERSLAGEN!', '+' + bonus + ' munten', 2.4);
+          pilootZeg(['Opgeruimd!', 'Die is weg!', 'Te makkelijk!'][Math.floor(Math.random() * 3)], 'blij', true);
         }
         else banner('GOLF ' + sp.golf + ' GEHAALD', '+' + bonus + ' munten', 2.2);
       } else {
@@ -3078,6 +3226,7 @@
     // vijanden
     for (const e of sp.vijanden) {
       const edt = e.vriesT > 0 ? (e.vriesT -= dt, dt * (e.soort === 'baas' ? 0.7 : 0.4)) : dt;
+      e.rdt = dt; // echte tijd: een bevroren baas beweegt trager, maar valt gewoon aan
       e.t += edt; if (e.flash > 0) e.flash -= edt;
       if (sp.arena) { updateArenaVijand(e, edt, sf); continue; }
       switch (e.soort) {
@@ -3147,10 +3296,10 @@
           if (e.x < e.hw + 10 || e.x > W - e.hw - 10) { e.vx *= -1; e.x = clamp(e.x, e.hw + 10, W - e.hw - 10); }
           e.y = e.doelY + Math.sin(e.t * 1.3) * 8;
           if (sp.weg) break;
-          if (!stil) e.aanvalT -= edt;
+          if (!stil) e.aanvalT -= dt;
           if (e.aanvalT <= 0) { baasAanval(e); e.aanvalT = baasPauze(e); }
           if (e.salvo > 0) {
-            e.salvoT -= edt;
+            e.salvoT -= dt;
             if (e.salvoT <= 0) {
               e.salvo--; e.salvoT = 0.14;
               vijandSchiet(e.x, e.y + 20, Math.atan2(schip.y - e.y, schip.x - e.x), 210 * Math.sqrt(snelheid()));
@@ -3192,7 +3341,7 @@
         if (raakt(e, b.x, b.y, b.gast ? 8 : 3)) {
           knal(b.x, b.y, b.ijsK ? '#9fe8ff' : kogelKleur(), 3, 70); laatsteSchutter = b.gast ? 'gast' : 'host';
           // ijs breekt: een bevroren alien krijgt dubbele schade van het IJskanon
-          const vries = b.ijs || (!b.gast && schipInfo().vries) || 0, breek = b.ijsK && e.vriesT > 0 ? 2 : 1;
+          const vries = b.ijs || (!b.gast && schipInfo().vries) || 0, breek = b.ijsK && e.vriesT > 0 ? (e.soort === 'baas' ? 1.25 : 2) : 1;
           raakVijand(e, (b.mult || 1) * breek); if (vries) bevries(e, vries); laatsteSchutter = 'host';
           if (!b.gast && !b.maatje && schipInfo().brand) e.brandT = Math.max(e.brandT || 0, 2);
           if (b.door > 0) { b.door--; b.geraakt.push(e); } else { b.weg = true; break; }
@@ -3274,6 +3423,12 @@
     ctx.beginPath(); ctx.moveTo(x - 2.5, y + 13); ctx.lineTo(x + 2.5, y + 13); ctx.lineTo(x, y + 13 + f * 0.8); ctx.fill();
     ctx.globalCompositeOperation = 'source-over';
     teken(sprites['schip_' + info.id], x, y);
+    // de piloot in de cockpit: een glazen koepeltje met zijn hoofd erin
+    ctx.fillStyle = piloot.soort === 'robot' ? '#9aa3c7' : piloot.huid;
+    ctx.beginPath(); ctx.arc(x, y - 3, 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(200, 240, 255, 0.85)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(x, y - 3, 4.4, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; ctx.fillRect(x - 2.5, y - 6, 1.4, 1.4);
     ctx.restore();
   }
 
@@ -3598,6 +3753,8 @@
       ctx.shadowBlur = 0;
     }
 
+    tekenPilootHud();
+
     if (sp.banner) {
       const b = sp.banner, a = Math.min(1, b.t / 0.4, (2.2 - b.t + 0.4) / 0.4);
       ctx.globalAlpha = clamp(a, 0, 1); ctx.textAlign = 'center';
@@ -3609,10 +3766,12 @@
   }
 
   // ---------- Schermen ----------
-  const lagen = { basis: $('basis'), toernooi: $('toernooi'), opdrachten: $('opdrachten'), rang: $('rang'), overzet: $('overzet'), samen: $('samen'), missies: $('missies'), missieKlaar: $('missieKlaar'), menu: $('menu'), pauze: $('pauze'), over: $('over'), winkel: $('winkel'), prestaties: $('prestaties'), uitdaging: $('uitdaging') };
+  const lagen = { ranglijst: $('ranglijst'), rlbeheer: $('rlbeheer'), piloot: $('piloot'), basis: $('basis'), toernooi: $('toernooi'), opdrachten: $('opdrachten'), rang: $('rang'), overzet: $('overzet'), samen: $('samen'), missies: $('missies'), missieKlaar: $('missieKlaar'), menu: $('menu'), pauze: $('pauze'), over: $('over'), winkel: $('winkel'), prestaties: $('prestaties'), uitdaging: $('uitdaging') };
   function toonLaag(naam) {
     for (const [k, el] of Object.entries(lagen)) el.hidden = k !== naam;
     if (naam === 'over') $('opnieuwKnop').textContent = spel && spel.toernooi ? 'Naar het toernooi' : 'Opnieuw';
+    // na een spel: je (misschien nieuwe) beste scores naar de ranglijst-bewaker sturen
+    if (naam === 'over') { rlLaatstePoging = 0; setTimeout(stuurScoresStil, 1500); }
     $('pauzeKnop').hidden = naam !== null;
   }
 
@@ -3629,6 +3788,7 @@
     $('mMunten').textContent = bank;
     $('rushKnop').textContent = 'Bazenrush (' + (modus === 'arena' ? 'open ruimte' : 'klassiek') + ')';
     toonRangKaart();
+    toonPilootKaart();
     { const m = mijnOpbrengst(); $('basisKnop').textContent = 'Mijn basis' + (m > 0 ? ` (${m} munten klaar)` : ''); }
     { const d = zorgOpdrachten(), n = d.klaar.filter(k => k).length; $('opdrachtKnop').textContent = `Opdrachten van vandaag (${n}/3)` + (n === 3 ? ' ✓' : ''); }
     if (rangWelkom) { rangWelkom = false; toonToast(`Nieuw: rangen! Met wat je al gespeeld hebt ben je ${RANGEN[rangNr()].naam}.`); }
@@ -4993,7 +5153,7 @@
     const P = host.presence;
     if (P.fase === 'einde') { eindSamenGast(null, P.eind); return; }
     // wat ik zelf doe deel ik met de host
-    const iv = (0.26 - upgrades.vuur * 0.028) * (sp.actief.snel > 0 ? 0.5 : 1) * (schipInfo().vuurTraag || 1);
+    const iv = (0.26 - upgrades.vuur * 0.028) * (sp.actief.snel > 0 ? 0.5 : 1) * (schipInfo().vuurTraag || 1) * (vaard('schutter') ? 0.9 : 1);
     samen.kamer.presence({ rol: 'gast', bl: wl('blaster'), rang: toerEcht ? 0 : rangNr(), naam: mijnNaam(), schip: echtSchipId(), kleur: schipInfo().kleur, x: R(schip.x), y: R(schip.y),
       mik: R(sp.mik * 100) / 100, iv: R(iv * 1000) / 1000, door: schipInfo().doorboor || 0, kanon: upgrades.kanon, kracht: upgrades.kracht,
       drie: sp.actief.drie > 0, dood: sp.weg || !!sp.duelDood, kt: samen.kt, dt: samen.doodTel || 0, pv: samen.pvVerloren || 0, on: sp.onkwetsbaar > 0 }).catch(() => {});
@@ -5166,6 +5326,142 @@
     verlaatKamer();
     if (wakeLock) { try { wakeLock.release(); } catch (e) {} wakeLock = null; }
   }
+  // ---------- Piloot tekenen (16x16 pixels) ----------
+  // uitdr: normaal | blij | schrik | boos | pijn; dicht = ogen dicht (knipperen)
+  function tekenPiloot(g, x0, y0, maat, P, uitdr = 'normaal', dicht = false) {
+    const px = maat / 16;
+    const c = (x, y, k, w = 1, h = 1) => { g.fillStyle = k; g.fillRect(x0 + x * px, y0 + y * px, w * px + 0.3, h * px + 0.3); };
+    const huid = P.soort === 'robot' ? '#9aa3c7' : P.huid, donker = '#15132b', haar = P.haarkleur;
+    // schouders in je pak
+    c(2, 13, P.pak, 12, 3); c(6, 13, '#ffffff', 4, 1); c(7, 14, '#ffffff', 2, 1);
+    // hoofd
+    if (P.soort === 'robot') {
+      c(3, 3, huid, 10, 10); c(3, 3, '#c3c9e6', 10, 1); c(7, 1, '#c3c9e6', 2, 2); c(7, 0, P.huid, 2, 1);
+      c(2, 6, '#6c7499', 1, 4); c(13, 6, '#6c7499', 1, 4);
+    } else if (P.soort === 'alien') {
+      c(3, 2, huid, 10, 7); c(4, 9, huid, 8, 2); c(5, 11, huid, 6, 2);
+      c(4, 0, huid, 1, 2); c(11, 0, huid, 1, 2); c(3, 0, '#ffffff', 1, 1); c(12, 0, '#ffffff', 1, 1);
+    } else {
+      c(4, 3, huid, 8, 10); c(3, 5, huid, 10, 6);
+      if (P.soort === 'kat') { c(4, 1, huid, 2, 2); c(10, 1, huid, 2, 2); c(4, 2, '#ff9fb8', 1, 1); c(11, 2, '#ff9fb8', 1, 1); }
+    }
+    // haar of hoofddeksel
+    const h = P.haar;
+    if (P.soort !== 'robot') {
+      if (h === 'kort' || h === 'lang') { c(4, 2, haar, 8, 2); c(3, 3, haar, 10, 1); c(3, 4, haar, 1, 2); c(12, 4, haar, 1, 2); }
+      if (h === 'lang') { c(2, 4, haar, 2, 8); c(12, 4, haar, 2, 8); }
+      if (h === 'pet') { c(4, 1, P.pak, 8, 3); c(3, 4, P.pak, 11, 1); c(7, 1, '#ffffff', 2, 1); }
+      if (h === 'koptelefoon') { c(4, 1, donker, 8, 1); c(3, 2, donker, 1, 3); c(12, 2, donker, 1, 3); c(2, 5, P.pak, 2, 4); c(12, 5, P.pak, 2, 4); }
+      if (h === 'helm') { c(3, 1, '#e4e1ff', 10, 3); c(2, 3, '#e4e1ff', 1, 9); c(13, 3, '#e4e1ff', 1, 9); c(4, 1, P.pak, 8, 1); c(3, 12, '#e4e1ff', 10, 1); }
+    }
+    if (h === 'kroon') { c(4, 0, '#ffd23d', 8, 3); c(5, 0, donker, 1, 1); c(7, 0, donker, 2, 1); c(10, 0, donker, 1, 1); c(7, 1, '#ff4f8b', 2, 1); }
+    // wenkbrauwen als je boos bent
+    if (uitdr === 'boos') { c(5, 5, donker, 1, 1); c(6, 6, donker, 1, 1); c(10, 5, donker, 1, 1); c(9, 6, donker, 1, 1); }
+    // ogen
+    const o = P.ogen, ey = 7;
+    if (dicht && o !== 'zonnebril') { c(5, ey, donker, 2, 1); c(9, ey, donker, 2, 1); }
+    else if (o === 'zonnebril') { c(4, ey - 1, donker, 8, 1); c(4, ey, donker, 3, 2); c(9, ey, donker, 3, 2); c(5, ey, '#3df2ff', 1, 1); c(10, ey, '#3df2ff', 1, 1); }
+    else if (o === 'groot' || uitdr === 'schrik') { c(5, ey - 1, '#ffffff', 2, 2); c(9, ey - 1, '#ffffff', 2, 2); c(6, ey, donker, 1, 1); c(9, ey, donker, 1, 1); }
+    else { c(6, ey, donker, 1, 2); c(9, ey, donker, 1, 2); }
+    if (o === 'cyber' && !dicht) { c(9, ey - 1, '#ff3d3d', 2, 2); c(8, ey - 2, '#6c7499', 4, 1); }
+    // mond
+    if (uitdr === 'blij') { c(6, 10, donker, 1, 1); c(9, 10, donker, 1, 1); c(7, 11, donker, 2, 1); }
+    else if (uitdr === 'schrik') { c(7, 10, donker, 2, 2); }
+    else if (uitdr === 'boos') { c(6, 11, donker, 4, 1); }
+    else if (uitdr === 'pijn') { c(6, 11, donker, 1, 1); c(7, 10, donker, 1, 1); c(8, 11, donker, 1, 1); c(9, 10, donker, 1, 1); c(12, 5, '#7fd8ff', 1, 2); }
+    else c(7, 11, donker, 2, 1);
+    if (P.soort === 'kat') { c(1, 9, '#e4e1ff', 3, 1); c(12, 9, '#e4e1ff', 3, 1); c(7, 9, '#ff9fb8', 2, 1); }
+  }
+
+  // de piloot zegt iets in een tekstballon; belangrijk = altijd, anders hooguit zo nu en dan
+  function pilootZeg(tekst, uitdr = 'normaal', belangrijk = false) {
+    const P = spel && spel.piloot;
+    if (!P) return;
+    P.uitdr = uitdr; P.uitdrTot = tijd + 1.5;
+    if (!belangrijk && tijd < (P.rustTot || 0)) return;
+    P.zeg = tekst; P.zegTot = tijd + 2.4; P.rustTot = tijd + (belangrijk ? 2 : 4.5);
+  }
+  function tekenPilootHud() {
+    const sp = spel, P = sp.piloot;
+    if (!P) return;
+    const maat = 32, x = W / 2 - maat / 2, y = 6;
+    const baas = sp.vijanden.some(e => e.soort === 'baas' && !e.dood);
+    const uitdr = tijd < (P.uitdrTot || 0) ? P.uitdr : sp.levens === 1 ? 'pijn' : baas ? 'boos' : 'normaal';
+    ctx.save();
+    ctx.fillStyle = 'rgba(28, 26, 56, 0.85)'; ctx.fillRect(x - 3, y - 3, maat + 6, maat + 6);
+    ctx.strokeStyle = piloot.pak; ctx.lineWidth = 2; ctx.shadowColor = piloot.pak; ctx.shadowBlur = 6;
+    ctx.strokeRect(x - 3, y - 3, maat + 6, maat + 6); ctx.shadowBlur = 0;
+    ctx.beginPath(); ctx.rect(x - 2, y - 2, maat + 4, maat + 4); ctx.clip();
+    tekenPiloot(ctx, x, y, maat, piloot, uitdr, tijd % 3.3 < 0.12);
+    ctx.restore();
+    if (P.zeg && tijd < P.zegTot) {
+      ctx.save();
+      ctx.globalAlpha = clamp((P.zegTot - tijd) / 0.3, 0, 1);
+      ctx.font = `18px ${FONT_B}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const w = ctx.measureText(P.zeg).width + 14, bx = clamp(W / 2 - w / 2, 4, W - 4 - w), by = y + maat + 8;
+      ctx.fillStyle = 'rgba(240, 238, 255, 0.95)';
+      ctx.fillRect(bx, by, w, 20);
+      ctx.beginPath(); ctx.moveTo(W / 2 - 5, by); ctx.lineTo(W / 2 + 5, by); ctx.lineTo(W / 2, by - 5); ctx.fill();
+      ctx.fillStyle = '#15132b'; ctx.fillText(P.zeg, bx + w / 2, by + 10.5);
+      ctx.restore();
+    }
+  }
+
+  // ---------- Piloot maken ----------
+  const heeftPilootDeel = (cat, it) => it.prijs === 0 || pilootBezit.includes(cat + ':' + it.id);
+  const pilootNaam = () => piloot.naam || mijnNaam();
+  function toonPilootKaart() {
+    const c = $('mPiloot'), g = c.getContext('2d');
+    g.imageSmoothingEnabled = false; g.clearRect(0, 0, c.width, c.height);
+    tekenPiloot(g, 0, 0, c.width, piloot, 'blij');
+    $('mPilootNaam').textContent = pilootNaam();
+    $('mPilootVaard').textContent = VAARDIGHEDEN.find(v => v.id === piloot.vaardigheid).naam;
+  }
+  let pilootUitdr = 'blij';
+  function openPiloot() { status = 'piloot'; spel = null; toonLaag('piloot'); $('pNaam').value = piloot.naam; renderPiloot(); }
+  function renderPiloot() {
+    $('pSaldo').textContent = bank;
+    const c = $('pGroot'), g = c.getContext('2d');
+    g.imageSmoothingEnabled = false; g.fillStyle = '#0b0a1f'; g.fillRect(0, 0, c.width, c.height);
+    tekenPiloot(g, 8, 8, c.width - 16, piloot, pilootUitdr);
+    const v = VAARDIGHEDEN.find(x => x.id === piloot.vaardigheid);
+    $('pInfo').textContent = `${pilootNaam()} · ${v.naam}: ${v.uitleg}`;
+    const w = $('pDelen'); w.innerHTML = '';
+    for (const [cat, groep] of Object.entries(PILOOT_DELEN)) {
+      w.append(maak('h3', '', groep.naam));
+      const rij = maak('div', 'chips');
+      for (const it of groep.items) {
+        const b = maak('button', piloot[cat] === it.id ? 'gekozen' : '');
+        if (groep.kleur) { const st = maak('span', 'staal'); st.style.background = it.id; b.append(st); b.setAttribute('aria-label', 'Kleur ' + it.id); }
+        else b.append(document.createTextNode(it.naam));
+        if (!heeftPilootDeel(cat, it)) { b.append(maak('span', 'munt')); b.append(document.createTextNode(String(it.prijs))); b.disabled = bank < it.prijs; }
+        b.onclick = () => {
+          if (!heeftPilootDeel(cat, it)) { if (bank < it.prijs) return; bank -= it.prijs; pilootBezit.push(cat + ':' + it.id); bewaar(); sfx.koop(); }
+          else sfx.munt();
+          piloot[cat] = it.id; bewaarPiloot(); renderPiloot();
+        };
+        rij.append(b);
+      }
+      w.append(rij);
+    }
+    const l = $('pVaard'); l.innerHTML = '';
+    for (const v of VAARDIGHEDEN) {
+      const rij = maak('div', 'rij'), info = maak('div', 'info');
+      info.append(maak('div', 'naam', v.naam), maak('div', 'uitleg', v.uitleg));
+      const b = maak('button');
+      const heeft = v.prijs === 0 || pilootBezit.includes('v:' + v.id);
+      if (piloot.vaardigheid === v.id) { b.textContent = 'Gekozen'; b.disabled = true; }
+      else if (heeft) { b.textContent = 'Kies'; b.onclick = () => { piloot.vaardigheid = v.id; bewaarPiloot(); sfx.munt(); renderPiloot(); }; }
+      else { muntKnop(b, v.prijs); b.onclick = () => { if (bank < v.prijs) return; bank -= v.prijs; pilootBezit.push('v:' + v.id); piloot.vaardigheid = v.id; bewaar(); bewaarPiloot(); sfx.koop(); renderPiloot(); }; }
+      rij.append(info, b); l.append(rij);
+    }
+  }
+  $('pilootKaart').onclick = () => { audio(); openPiloot(); };
+  $('pilootTerug').onclick = naarMenu;
+  $('pNaam').addEventListener('input', () => { piloot.naam = $('pNaam').value.trim().slice(0, 12); bewaarPiloot(); $('pInfo').textContent = $('pInfo').textContent.replace(/^[^·]*·/, pilootNaam() + ' ·'); });
+  // tik op je piloot: hij trekt een ander gezicht
+  $('pGroot').onclick = () => { const l = ['blij', 'normaal', 'schrik', 'boos', 'pijn']; pilootUitdr = l[(l.indexOf(pilootUitdr) + 1) % l.length]; sfx.munt(); renderPiloot(); };
+
   // ---------- Maatje in het spel ----------
   function updateMaatje(dt) {
     const m = spel.maatje, lvl = maatjes.lvl[m.id] || 1;
@@ -5425,6 +5721,244 @@
   $('basisKnop').onclick = () => { audio(); openBasis(); };
   $('basisTerug').onclick = naarMenu;
   $('bOphalen').onclick = () => { const n = haalMijnOp(); if (n > 0) { sfx.munt(); toonToast(`+${n} munten uit je mijn`); } renderBasis(); };
+
+  // ---------- Ranglijst ----------
+  // Er is geen server. Het spel van de beheerder is de "bewaker": als die openstaat, sturen de spellen
+  // van alle spelers hun beste scores erheen (via PeerJS, zoals Samen spelen). De beheerder keurt ze goed
+  // en slaat ranglijst.json op in de map van het spel; na een push staat die op de website, en
+  // iedereen ziet hem bij Ranglijst.
+  const RL_VERSIE = 1;
+  const RL_URL = /github\.io$/.test(location.host) ? 'ranglijst.json' : 'https://arcadia-104.github.io/ThePixelCreator11235/space-shooter/ranglijst.json';
+  const RL_LIJSTEN = [
+    ...['normaal', 'moeilijk', 'extreem'].map(n => ({ id: n, naam: 'Klassiek ' + NIVEAUS[n].naam })),
+    ...['normaal', 'moeilijk', 'extreem'].map(n => ({ id: 'arena-' + n, naam: 'Arena ' + NIVEAUS[n].naam }))
+  ];
+  const rl = { tab: 'score', lijst: 'normaal', rush: 'rush', data: null, fout: false, bewaker: null, bezet: false, stuurBezig: false };
+  function mijnRanglijstData() {
+    const rec = {};
+    for (const l of RL_LIJSTEN) rec[l.id] = records[l.id] || 0;
+    return { v: RL_VERSIE, tid: toerId, naam: mijnNaam(), xp: Math.round(xp), rang: rangNr(), records: rec,
+      rush: +opslag.get(rushSleutel(false), 0) || 0, rushRuimte: +opslag.get(rushSleutel(true), 0) || 0,
+      toernooi: +opslag.get('neon-invasie-toernooi-titels', 0) || 0 };
+  }
+  // scores naar de bewaker sturen; stil als die er niet is (dan lukt het een volgende keer)
+  async function stuurScores(handmatig) {
+    if (TESTVERSIE) return 'test';
+    const data = mijnRanglijstData(), sleutel = JSON.stringify(data);
+    if (!handmatig && opslag.get('neon-invasie-rl-verstuurd', '') === sleutel) return 'al';
+    if (rl.bewaker && !rl.bezet) { rlOntvang(data); opslag.set('neon-invasie-rl-verstuurd', sleutel); return 'ok'; }
+    if (window.claude && window.claude.use) return 'niet';
+    if (rl.stuurBezig || !(await laadPeerJS())) return 'niet';
+    rl.stuurBezig = true;
+    const ok = await new Promise(klaar => {
+      let peer, klaarGemeld = false;
+      const einde = r => { if (klaarGemeld) return; klaarGemeld = true; try { peer.destroy(); } catch (e) {} klaar(r); };
+      try { peer = new window.Peer(); } catch (e) { klaar(false); return; }
+      const t = setTimeout(() => einde(false), 9000);
+      peer.on('open', () => {
+        const c = peer.connect(PEER_VOORVOEGSEL + 'ranglijst', { reliable: true, serialization: 'json' });
+        c.on('open', () => c.send(data));
+        c.on('data', d => { if (d && d.ok) { clearTimeout(t); einde(true); } });
+      });
+      peer.on('error', () => { clearTimeout(t); einde(false); });
+    });
+    rl.stuurBezig = false;
+    if (ok) opslag.set('neon-invasie-rl-verstuurd', sleutel);
+    return ok ? 'ok' : 'niet';
+  }
+  // na elk spel en af en toe in het menu proberen
+  let rlLaatstePoging = 0;
+  function stuurScoresStil() {
+    if (Date.now() - rlLaatstePoging < 60000) return;
+    rlLaatstePoging = Date.now();
+    stuurScores(false).catch(() => {});
+  }
+  setTimeout(stuurScoresStil, 6000);
+  setInterval(() => { if (status === 'menu' || status === 'over') stuurScoresStil(); }, 180000);
+
+  async function openRanglijst() {
+    status = 'ranglijst'; spel = null; toonLaag('ranglijst');
+    $('rlNaam').value = spelerNaam; $('rlStuurTekst').textContent = '';
+    $('rlBeheer').hidden = !isBeheerder();
+    renderRanglijst();
+    try {
+      const r = await fetch(RL_URL + '?t=' + Date.now(), { cache: 'no-store' });
+      rl.data = r.ok ? await r.json() : { spelers: [] }; rl.fout = false;
+    } catch (e) { rl.fout = true; }
+    if (status === 'ranglijst') renderRanglijst();
+  }
+  function renderRanglijst() {
+    for (const t of ['score', 'rush', 'rang', 'toernooi']) $('rltab-' + t).setAttribute('aria-selected', String(t === rl.tab));
+    const f = $('rlFilter'); f.innerHTML = '';
+    const keuzes = rl.tab === 'score' ? RL_LIJSTEN : rl.tab === 'rush' ? [{ id: 'rush', naam: 'Klassiek' }, { id: 'rushRuimte', naam: 'Open ruimte' }] : [];
+    for (const k of keuzes) {
+      const gekozen = rl.tab === 'score' ? rl.lijst === k.id : rl.rush === k.id;
+      const b = maak('button', gekozen ? 'gekozen' : '', k.naam);
+      b.onclick = () => { if (rl.tab === 'score') rl.lijst = k.id; else rl.rush = k.id; renderRanglijst(); };
+      f.append(b);
+    }
+    const l = $('rlLijst'); l.innerHTML = '';
+    if (!rl.data) { $('rlStatus').textContent = rl.fout ? 'De ranglijst kon niet laden. Heb je internet?' : 'Laden...'; return; }
+    const sp = Array.isArray(rl.data.spelers) ? rl.data.spelers : [];
+    let rijen;
+    if (rl.tab === 'score') rijen = sp.map(x => [x.naam, (x.records || {})[rl.lijst] | 0]).filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]).map(r => [r[0], r[1].toLocaleString('nl-NL')]);
+    else if (rl.tab === 'rush') rijen = sp.map(x => [x.naam, +x[rl.rush] || 0]).filter(r => r[1] > 0).sort((a, b) => a[1] - b[1]).map(r => [r[0], tijdTekst(r[1])]);
+    else if (rl.tab === 'rang') rijen = sp.map(x => [x.naam, x.xp | 0, x.rang | 0]).sort((a, b) => b[1] - a[1]).map(r => [r[0], (RANGEN[r[2]] || RANGEN[0]).naam + ' · ' + r[1].toLocaleString('nl-NL') + ' XP']);
+    else rijen = sp.map(x => [x.naam, x.toernooi | 0]).filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]).map(r => [r[0], r[1] + ' keer kampioen']);
+    const datum = rl.data.bijgewerkt ? new Date(rl.data.bijgewerkt).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' }) : null;
+    $('rlStatus').textContent = (rijen.length ? '' : 'Hier staat nog niemand op. ') + (datum ? 'Bijgewerkt op ' + datum + '.' : '');
+    rijen.slice(0, 50).forEach((r, i) => {
+      const ik = r[0] === mijnNaam();
+      const rij = maak('div', 'rang' + (i < 3 ? ' top' : '') + (ik ? ' ik' : ''));
+      rij.append(maak('span', 'plek', String(i + 1)), maak('span', 'wie', String(r[0]).slice(0, 12)), maak('span', 'hoeveel', r[1]));
+      l.append(rij);
+    });
+  }
+  document.querySelectorAll('[data-rl]').forEach(b => { b.onclick = () => { rl.tab = b.dataset.rl; renderRanglijst(); }; });
+  $('ranglijstKnop').onclick = () => { audio(); openRanglijst(); };
+  $('ranglijstTerug').onclick = naarMenu;
+  $('rlNaam').addEventListener('input', () => { spelerNaam = $('rlNaam').value.trim().slice(0, 12); opslag.set('neon-invasie-naam', spelerNaam); });
+  $('rlStuur').onclick = async () => {
+    audio(); $('rlStuurTekst').textContent = 'Versturen...';
+    const r = await stuurScores(true);
+    $('rlStuurTekst').textContent = r === 'test' ? 'Dit is de testversie: scores worden hier niet verstuurd.'
+      : r === 'ok' ? 'Verstuurd! De beheerder moet je scores nog goedkeuren en online zetten.'
+      : 'De ranglijst-bewaker staat nu niet aan. Je scores worden later vanzelf verstuurd, na een potje.';
+  };
+  $('rlBeheer').onclick = () => openRlBeheer();
+
+  // --- de bewaker (alleen de beheerder) ---
+  const rlb = (() => { try { const b = JSON.parse(opslag.get('neon-invasie-rl-beheer', 'null')); if (b && b.spelers && b.wacht) return b; } catch (e) {} return { spelers: {}, wacht: {} }; })();
+  const bewaarRlb = () => opslag.set('neon-invasie-rl-beheer', JSON.stringify(rlb));
+  // twee keer dezelfde speler: van alles het beste houden
+  function rlSamen(oud, nieuw) {
+    if (!oud) return nieuw;
+    const r = { ...nieuw, records: { ...nieuw.records } };
+    for (const k in oud.records || {}) r.records[k] = Math.max(r.records[k] || 0, oud.records[k] || 0);
+    r.xp = Math.max(r.xp || 0, oud.xp || 0); r.rang = Math.max(r.rang || 0, oud.rang || 0); r.toernooi = Math.max(r.toernooi || 0, oud.toernooi || 0);
+    for (const k of ['rush', 'rushRuimte']) { const a = +oud[k] || 0, b = +nieuw[k] || 0; r[k] = a && b ? Math.min(a, b) : a || b; }
+    return r;
+  }
+  function rlSchoon(d) {
+    const rec = {};
+    for (const l of RL_LIJSTEN) rec[l.id] = Math.max(0, Math.min(1e8, +((d.records || {})[l.id]) || 0));
+    return { naam: String(d.naam || 'Speler').slice(0, 12), xp: Math.max(0, +d.xp || 0), rang: clamp(+d.rang || 0, 0, RANGEN.length - 1), records: rec,
+      rush: Math.max(0, +d.rush || 0), rushRuimte: Math.max(0, +d.rushRuimte || 0), toernooi: Math.max(0, Math.min(999, +d.toernooi || 0)) };
+  }
+  const rlZelfde = (a, b) => JSON.stringify(rlSamen(a, b)) === JSON.stringify(rlSamen(a, a));
+  function rlOntvang(d) {
+    if (!d || d.v !== RL_VERSIE || typeof d.tid !== 'string') return;
+    const id = d.tid.slice(0, 12), schoon = rlSchoon(d), oud = rlb.spelers[id];
+    // niets nieuws (en dezelfde naam)? dan hoeft de beheerder niks te doen
+    if (oud && oud.naam === schoon.naam && rlZelfde(oud, schoon)) return;
+    rlb.wacht[id] = { ...rlSamen(rlb.wacht[id], schoon), naam: schoon.naam, binnen: Date.now() };
+    bewaarRlb();
+    if (status === 'rlbeheer') renderRlBeheer();
+    else toonToast('Nieuwe scores van ' + schoon.naam + ' voor de ranglijst');
+  }
+  async function startBewaker() {
+    if (TESTVERSIE || rl.bewaker || !isBeheerder() || (window.claude && window.claude.use)) return;
+    if (!(await laadPeerJS())) return;
+    try {
+      const peer = new window.Peer(PEER_VOORVOEGSEL + 'ranglijst');
+      rl.bewaker = peer;
+      peer.on('connection', c => {
+        c.on('data', d => { rlOntvang(d); try { c.send({ ok: true }); } catch (e) {} setTimeout(() => { try { c.close(); } catch (e) {} }, 1500); });
+      });
+      peer.on('disconnected', () => { try { peer.reconnect(); } catch (e) {} });
+      peer.on('error', e => {
+        if (e && e.type === 'unavailable-id') {
+          rl.bewaker = null; rl.bezet = true;
+          try { peer.destroy(); } catch (x) {}
+          if (status === 'rlbeheer') renderRlBeheer();
+          setTimeout(startBewaker, 30000);
+        }
+      });
+      peer.on('open', () => { rl.bezet = false; if (status === 'rlbeheer') renderRlBeheer(); stuurScores(false).catch(() => {}); });
+    } catch (e) { rl.bewaker = null; }
+  }
+  // op de laptop van de beheerder draait de bewaker vanzelf zolang het spel openstaat
+  setTimeout(startBewaker, 2500);
+
+  function openRlBeheer() { status = 'rlbeheer'; toonLaag('rlbeheer'); startBewaker(); renderRlBeheer(); if (TESTVERSIE) $('rbStatus').textContent = 'Dit is de testversie: hier komen geen scores binnen. Beheer de ranglijst in het echte spel.'; }
+  function rlSamenvatting(d, oud) {
+    const delen = [];
+    const beste = Object.entries(d.records).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1])[0];
+    if (beste) {
+      const was = oud ? oud.records[beste[0]] || 0 : 0;
+      delen.push(`${RL_LIJSTEN.find(l => l.id === beste[0]).naam}: <b>${beste[1].toLocaleString('nl-NL')}</b>` + (oud && was < beste[1] ? ` (was ${was.toLocaleString('nl-NL')})` : ''));
+    }
+    delen.push(`${(RANGEN[d.rang] || RANGEN[0]).naam}, ${Math.round(d.xp).toLocaleString('nl-NL')} XP`);
+    if (d.rush) delen.push('Bazenrush ' + tijdTekst(d.rush));
+    if (d.rushRuimte) delen.push('Rush open ruimte ' + tijdTekst(d.rushRuimte));
+    if (d.toernooi) delen.push(d.toernooi + 'x kampioen');
+    return delen.join(' · ');
+  }
+  function renderRlBeheer() {
+    $('rbStatus').textContent = rl.bezet ? 'Er draait al een bewaker (misschien in een ander venster van dit spel). Gebruik dat venster, of sluit het.'
+      : rl.bewaker ? 'De bewaker staat aan: zolang dit spel openstaat, komen de scores van spelers vanzelf binnen.' : 'De bewaker start...';
+    const w = $('rbWacht'); w.innerHTML = '';
+    const wacht = Object.entries(rlb.wacht).sort((a, b) => b[1].binnen - a[1].binnen);
+    if (!wacht.length) w.append(maak('p', 'sub', 'Niks nieuws.'));
+    for (const [id, d] of wacht) {
+      const oud = rlb.spelers[id];
+      const rij = maak('div', 'rij rbrij'), info = maak('div', 'info');
+      info.append(maak('div', 'naam', d.naam + (oud ? (oud.naam !== d.naam ? ` (was ${oud.naam})` : '') : ' · nieuw')));
+      // de naam komt van een andere speler: als tekst neerzetten, de cijfers zijn al schoongemaakt
+      const wat = maak('div', 'wat'); wat.innerHTML = rlSamenvatting(d, oud); info.append(wat);
+      const ja = maak('button', '', 'OK'), nee = maak('button', '', 'Nee');
+      ja.onclick = () => { const { binnen, ...rest } = d; rlb.spelers[id] = { ...rlSamen(oud, rest), naam: d.naam }; delete rlb.wacht[id]; bewaarRlb(); sfx.munt(); renderRlBeheer(); };
+      nee.onclick = () => { delete rlb.wacht[id]; bewaarRlb(); renderRlBeheer(); };
+      const kn = maak('div'); kn.style.cssText = 'display:flex;flex-direction:column;gap:4px'; kn.append(ja, nee);
+      rij.append(info, kn); w.append(rij);
+    }
+    const l = $('rbLijst'); l.innerHTML = '';
+    const spelers = Object.entries(rlb.spelers).sort((a, b) => b[1].xp - a[1].xp);
+    if (!spelers.length) l.append(maak('p', 'sub', 'Nog niemand.'));
+    for (const [id, d] of spelers) {
+      const rij = maak('div', 'rij rbrij'), info = maak('div', 'info');
+      const wat = maak('div', 'wat'); wat.innerHTML = rlSamenvatting(d);
+      info.append(maak('div', 'naam', d.naam), wat);
+      const weg = maak('button', '', 'Weg');
+      weg.onclick = () => { if (weg.dataset.zeker !== '1') { weg.dataset.zeker = '1'; weg.textContent = 'Zeker?'; return; } delete rlb.spelers[id]; bewaarRlb(); renderRlBeheer(); };
+      rij.append(info, weg); l.append(rij);
+    }
+  }
+  // ranglijst.json opslaan in de map van het spel (Chrome onthoudt het bestand voor de volgende keer)
+  const rlIdb = (actie, waarde) => new Promise(klaar => {
+    try {
+      const o = indexedDB.open('neon-invasie-rl', 1);
+      o.onupgradeneeded = () => o.result.createObjectStore('h');
+      o.onsuccess = () => {
+        const tx = o.result.transaction('h', actie === 'zet' ? 'readwrite' : 'readonly'), st = tx.objectStore('h');
+        const r = actie === 'zet' ? st.put(waarde, 'bestand') : st.get('bestand');
+        r.onsuccess = () => klaar(r.result); r.onerror = () => klaar(null);
+      };
+      o.onerror = () => klaar(null);
+    } catch (e) { klaar(null); }
+  });
+  $('rbOpslaan').onclick = async () => {
+    const json = JSON.stringify({ v: RL_VERSIE, bijgewerkt: new Date().toISOString(), spelers: Object.values(rlb.spelers) }, null, 1);
+    const t = $('rbOpslaanTekst');
+    if (window.showSaveFilePicker) {
+      try {
+        let h = await rlIdb('lees');
+        if (h && (await h.requestPermission({ mode: 'readwrite' })) !== 'granted') h = null;
+        if (!h) {
+          h = await window.showSaveFilePicker({ suggestedName: 'ranglijst.json', types: [{ description: 'Ranglijst', accept: { 'application/json': ['.json'] } }] });
+          await rlIdb('zet', h);
+        }
+        const w = await h.createWritable(); await w.write(json); await w.close();
+        t.textContent = `Opgeslagen in ${h.name}. Zet hem nu online met "Ranglijst online zetten" (Super + Space), of commit en push hem zelf.`;
+        sfx.koop(); return;
+      } catch (e) { if (e && e.name === 'AbortError') { t.textContent = 'Niet opgeslagen.'; return; } }
+    }
+    // geen bestand kunnen kiezen: gewoon downloaden
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([json], { type: 'application/json' })); a.download = 'ranglijst.json'; a.click();
+    t.textContent = 'Gedownload. Zet ranglijst.json in de map space-shooter van het spel en push hem.';
+  };
+  $('rlbeheerTerug').onclick = () => openRanglijst();
 
   // ---------- Toernooi: knock-out duels, alleen de beheerder kan er een maken ----------
   // Het apparaat van de beheerder houdt het schema bij en deelt het met alle spelers in een
@@ -5716,6 +6250,7 @@
     if (!Array.isArray(gehad) || gehad.includes(T.id)) return;
     gehad.push(T.id); opslag.set('neon-invasie-toernooi-gewonnen', JSON.stringify(gehad.slice(-50)));
     bank += prijs.munten; xpErbij(prijs.xp); bewaar();
+    if (prijs.kampioen) opslag.set('neon-invasie-toernooi-titels', (+opslag.get('neon-invasie-toernooi-titels', 0) || 0) + 1);
     toonToast((prijs.kampioen ? 'Je hebt het toernooi gewonnen!' : prijs.winst ? `Toernooi afgelopen! Je won ${prijs.winst} duel${prijs.winst > 1 ? 's' : ''}.` : 'Toernooi afgelopen! Bedankt voor het meedoen.')
       + ` +${prijs.munten} munten en ${prijs.xp} XP`);
   }
@@ -5924,6 +6459,25 @@
   };
 
   // ---------- Start ----------
+  // geopend als bestand op je eigen laptop (niet de website)? Dan is dit de testversie
+  if (TESTVERSIE) {
+    $('testLabel').hidden = false; $('creatiefKnoppen').hidden = false;
+    const zet = () => {
+      $('cMunten').textContent = 'Oneindig munten: ' + (creatief.munten ? 'aan' : 'uit');
+      $('cOnsterfelijk').textContent = 'Onsterfelijk: ' + (creatief.onsterfelijk ? 'aan' : 'uit');
+      opslag.set('neon-invasie-creatief', JSON.stringify(creatief));
+    };
+    zet();
+    $('cMunten').onclick = () => { creatief.munten = !creatief.munten; if (creatief.munten) bank = Math.max(bank, 999999); bewaar(); zet(); audio(); sfx.munt(); naarMenu(); };
+    $('cOnsterfelijk').onclick = () => { creatief.onsterfelijk = !creatief.onsterfelijk; zet(); audio(); sfx.munt(); };
+    $('cRang').onclick = () => { const r = rangNr(); if (RANGEN[r + 1]) xpErbij(RANGEN[r + 1].xp - xp); audio(); naarMenu(); };
+    // na elke aankoop meteen weer vol
+    setInterval(() => {
+      if (!creatiefAan('munten') || bank >= 999999) return;
+      bank = 999999; opslag.set('neon-invasie-munten', bank);
+      for (const id of ['wSaldo', 'bSaldo', 'pSaldo', 'mMunten']) if ($(id)) $(id).textContent = bank;
+    }, 400);
+  }
   pasMaatAan();
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { bouwSprites(); });
   naarMenu();

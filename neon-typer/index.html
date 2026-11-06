@@ -1,0 +1,1032 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Neon Typer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=VT323&display=swap">
+<style>
+  /* Layout: arcadescherm met vallende woorden, hulptoetsenbord eronder, records ernaast. Bewust alleen donker (neon-glow thema, zelfde familie als Neon Dino). */
+  :root {
+    --bg: #0f0e1f;
+    --bg-deep: #06050f;
+    --panel: #1c1a38;
+    --fg: #e4e1ff;
+    --muted: #8a86c2;
+    --accent: #b967ff;
+    --cyan: #3df2ff;
+    --pink: #ff4f8b;
+    --green: #7dff6a;
+    --yellow: #f5f56a;
+    --font-display: "Silkscreen", "Courier New", monospace;
+    --font-body: "VT323", "Courier New", monospace;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  [hidden] { display: none !important; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 20px;
+    padding-block: 20px 32px;
+    padding-inline: 16px;
+    box-sizing: border-box;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 {
+    font-family: var(--font-display); font-weight: 700; font-size: 28px; margin: 0;
+    color: var(--cyan); letter-spacing: 0.06em;
+    text-shadow: 0 0 8px var(--cyan), 0 0 22px var(--accent);
+  }
+  h1 span { color: var(--pink); text-shadow: 0 0 8px var(--pink), 0 0 22px var(--pink); }
+  .knoppen { display: flex; gap: 8px; flex-wrap: wrap; }
+  button {
+    font-family: var(--font-display); font-size: 13px; letter-spacing: 0.08em;
+    background: var(--panel); color: var(--fg);
+    border: 2px solid var(--accent); border-radius: 4px;
+    padding: 8px 12px; cursor: pointer;
+    box-shadow: 0 0 10px rgba(185, 103, 255, 0.35);
+  }
+  button:hover { background: #2e2a5c; }
+  button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+  button[aria-pressed="true"] { border-color: var(--pink); box-shadow: 0 0 10px rgba(255, 79, 139, 0.45); }
+  .scherm {
+    border: 2px solid var(--accent); border-radius: 6px; overflow: hidden;
+    box-shadow: 0 0 24px rgba(185, 103, 255, 0.45), inset 0 0 0 1px rgba(61, 242, 255, 0.2);
+    background: var(--bg-deep);
+  }
+  canvas { display: block; width: 100%; aspect-ratio: 900 / 480; max-width: 100%; }
+
+  .toetsenbord {
+    background: var(--panel); border-radius: 6px; padding: 14px 16px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .rij { display: flex; gap: 6px; }
+  .rij:nth-child(2) { margin-left: 22px; }
+  .rij:nth-child(3) { margin-left: 56px; }
+  .toets {
+    --vinger: var(--muted);
+    position: relative;
+    width: clamp(24px, 6.5vw, 50px); aspect-ratio: 1;
+    display: grid; place-items: center;
+    font-family: var(--font-display); font-size: clamp(11px, 2.4vw, 16px); text-transform: uppercase;
+    color: var(--vinger); border: 2px solid var(--vinger); border-radius: 5px;
+    background: var(--bg-deep); opacity: 0.9;
+    transition: background 80ms, box-shadow 80ms, transform 80ms;
+  }
+  .toets.op-slot { opacity: 0.22; }
+  .toets.nieuw { animation: nieuw 1s ease-in-out infinite alternate; }
+  .toets.volgende { background: var(--vinger); color: var(--bg-deep); box-shadow: 0 0 16px var(--vinger); transform: translateY(-2px); }
+  .toets.fout { background: var(--pink); color: var(--bg-deep); box-shadow: 0 0 16px var(--pink); }
+  .toets.bult::after {
+    content: ""; position: absolute; bottom: 5px; width: 30%; height: 2px; border-radius: 1px; background: currentColor;
+  }
+  .spatie { width: clamp(150px, 40vw, 300px); aspect-ratio: auto; height: clamp(22px, 5vw, 34px); font-size: 11px; }
+  @keyframes nieuw { from { box-shadow: 0 0 0 var(--vinger); } to { box-shadow: 0 0 14px var(--vinger); } }
+  .vingers { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; font-size: 18px; color: var(--muted); }
+  .hint { font-size: 22px; min-height: 1.2em; color: var(--fg); text-align: center; }
+  .hint b { font-family: var(--font-display); font-weight: 400; color: var(--cyan); }
+  .blind-bord { font-family: var(--font-display); font-size: 14px; color: var(--pink); letter-spacing: 0.1em; text-align: center; padding: 20px 0; }
+
+  .onder { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .onder section { background: var(--panel); border-radius: 6px; padding: 14px 16px; min-width: 0; }
+  .onder h2 {
+    font-family: var(--font-display); font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 8px;
+  }
+  .onder ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; line-height: 1.15; }
+  .records { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; margin: 0; }
+  .records dt { color: var(--muted); }
+  .records dd { margin: 0; font-family: var(--font-display); font-size: 15px; color: var(--yellow); font-variant-numeric: tabular-nums; text-align: right; }
+  kbd {
+    font-family: var(--font-display); font-size: 12px; color: var(--cyan);
+    border: 1px solid var(--cyan); border-radius: 3px; padding: 1px 5px;
+  }
+  .stip { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 1px; }
+  .modus { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; background: var(--panel); border-radius: 6px; padding: 10px 14px; }
+  .groep { display: flex; gap: 6px; flex-wrap: wrap; }
+  .groep button[aria-pressed="true"] { background: var(--accent); color: var(--bg-deep); border-color: var(--accent); }
+  .modus label { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  select, input[type="text"], textarea {
+    font-family: var(--font-body); font-size: 20px; color: var(--fg);
+    background: var(--bg-deep); border: 2px solid var(--accent); border-radius: 4px; padding: 4px 8px; min-width: 0;
+  }
+  select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--cyan); outline-offset: 1px; }
+  .lijst { background: var(--panel); border-radius: 6px; padding: 14px 16px; display: grid; gap: 10px; }
+  .lijst h2 { font-family: var(--font-display); font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin: 0; }
+  .lijst-rij { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .lijst-rij input { flex: 1 1 200px; }
+  .lijst textarea { width: 100%; box-sizing: border-box; min-height: 220px; resize: vertical; line-height: 1.15; }
+  .lijst p { margin: 0; color: var(--muted); line-height: 1.2; }
+  .lijst code { font-family: var(--font-body); color: var(--cyan); }
+  #lijstTelling { color: var(--green); }
+  @media (prefers-reduced-motion: reduce) { .toets.nieuw { animation: none; box-shadow: 0 0 10px var(--vinger); } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>NEON <span>TYPER</span></h1>
+    <div class="knoppen">
+      <button id="knopBlind" type="button" aria-pressed="false">Blind modus: uit</button>
+      <button id="knopPauze" type="button">Pauze</button>
+      <button id="knopGeluid" type="button">Geluid: aan</button>
+    </div>
+  </header>
+
+  <div class="modus">
+    <div class="groep" role="group" aria-label="Wat wil je oefenen">
+      <button type="button" data-modus="typen">Typen</button>
+      <button type="button" data-modus="en">Engels</button>
+      <button type="button" data-modus="fr">Frans</button>
+    </div>
+    <div class="groep taal-alleen" role="group" aria-label="Soort oefening">
+      <button type="button" data-soort="vertalen">Vertalen</button>
+      <button type="button" data-soort="luisteren">Luisteren</button>
+    </div>
+    <label class="taal-alleen" id="richtingLabel">Richting <select id="richting"></select></label>
+    <label class="taal-alleen">Lijst <select id="lijstKeuze"></select></label>
+  </div>
+
+  <div class="scherm"><canvas id="game" width="900" height="480" aria-label="Neon Typer speelveld"></canvas></div>
+
+  <div class="toetsenbord" id="toetsenbord">
+    <div id="toetsen">
+      <div class="rij"></div><div class="rij"></div><div class="rij"></div>
+      <div class="rij" style="margin-left:0;justify-content:center"><div class="toets spatie" style="--vinger: var(--accent)">duimen</div></div>
+    </div>
+    <div class="blind-bord" id="blindBord" hidden>BLIND MODUS · DUBBELE PUNTEN · KIJK NIET NAAR JE HANDEN</div>
+    <div class="hint" id="hint">&nbsp;</div>
+    <div class="vingers">
+      <span><span class="stip" style="background:var(--pink)"></span>pink</span>
+      <span><span class="stip" style="background:var(--yellow)"></span>ringvinger</span>
+      <span><span class="stip" style="background:var(--green)"></span>middelvinger</span>
+      <span><span class="stip" style="background:var(--cyan)"></span>wijsvinger</span>
+    </div>
+  </div>
+
+  <div class="lijst taal-alleen">
+    <h2 id="lijstKop">Woordenlijst</h2>
+    <div class="lijst-rij">
+      <input type="text" id="lijstNaam" aria-label="Naam van de lijst" placeholder="Naam, bijvoorbeeld Hoofdstuk 3">
+      <button type="button" id="knopNieuweLijst">Nieuwe lijst</button>
+      <button type="button" id="knopWisLijst">Lijst weggooien</button>
+    </div>
+    <textarea id="lijstTekst" aria-label="Woorden" spellcheck="false"></textarea>
+    <p id="lijstUitleg"></p>
+    <p id="lijstTelling"></p>
+  </div>
+
+  <div class="onder">
+    <section>
+      <h2>Zo speel je</h2>
+      <ul>
+        <li>Woorden vallen naar beneden. Typ ze weg voordat ze je stad raken.</li>
+        <li>Je eerste letter kiest het woord. Typ je verkeerd, dan is je combo weg.</li>
+        <li>Raakt een woord de grond, dan ben je een hartje kwijt. Na 3 hartjes is het game over.</li>
+        <li>Elk niveau gaat het sneller en komen er letters bij. Na niveau 8 doen alle letters mee.</li>
+        <li>Engels of Frans: typ de vertaling. Accenten hoeven niet, <code>e</code> telt ook voor <code>é</code>.</li>
+        <li>Luisteren: je hoort een woord en typt wat je hoort.</li>
+        <li>Woorden die je fout had komen vaker terug.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Toetsen</h2>
+      <ul>
+        <li><kbd>Spatie</kbd> start het spel</li>
+        <li><kbd>←</kbd> <kbd>→</kbd> kiest je startniveau</li>
+        <li><kbd>Esc</kbd> pauzeert</li>
+        <li><kbd>Backspace</kbd> laat je woord los (bij talen: haalt een letter weg)</li>
+        <li><kbd>Enter</kbd> laat het woord nog een keer horen</li>
+        <li>Vingers op <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd> en <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd>. Voel de streepjes op F en J.</li>
+      </ul>
+    </section>
+    <section>
+      <h2 id="recKop">Jouw records</h2>
+      <dl class="records">
+        <dt>Hoogste score</dt><dd id="recScore">0</dd>
+        <dt>Meeste aanslagen per minuut</dt><dd id="recApm">0 per min</dd>
+        <dt>Beste nauwkeurigheid</dt><dd id="recNauw">–</dd>
+        <dt>Hoogste niveau</dt><dd id="recNiveau">1</dd>
+      </dl>
+    </section>
+  </div>
+</div>
+
+<script>
+(() => {
+  const cv = document.getElementById('game');
+  const ctx = cv.getContext('2d');
+  const W = 900, H = 480, GROND = 420, KANON_X = W / 2, KANON_Y = GROND - 8;
+  let scale = 1;
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = cv.clientWidth || W;
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(w * H / W * dpr);
+    scale = cv.width / W;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  const KLEUR = {
+    bg: '#06050f', panel: '#1c1a38', fg: '#e4e1ff', muted: '#8a86c2', accent: '#b967ff',
+    cyan: '#3df2ff', pink: '#ff4f8b', green: '#7dff6a', yellow: '#f5f56a',
+  };
+
+  // ---------- letters, vingers en niveaus ----------
+  const RIJEN = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+  const VINGER = {};
+  const zet = (letters, vinger) => { for (const l of letters) VINGER[l] = vinger; };
+  zet('qaz', ['links', 'pink']); zet('wsx', ['links', 'ringvinger']); zet('edc', ['links', 'middelvinger']); zet('rtfgvb', ['links', 'wijsvinger']);
+  zet('yuhjnm', ['rechts', 'wijsvinger']); zet('ik', ['rechts', 'middelvinger']); zet('ol', ['rechts', 'ringvinger']); zet('p', ['rechts', 'pink']);
+  const VINGER_KLEUR = { pink: 'var(--pink)', ringvinger: 'var(--yellow)', middelvinger: 'var(--green)', wijsvinger: 'var(--cyan)' };
+
+  const NIEUWE_LETTERS = ['asdfjkl', 'ei', 'ru', 'tn', 'ogh', 'wvm', 'pcb', 'yzxq'];
+  const MAX_LES = NIEUWE_LETTERS.length;
+  const WOORDEN_PER_NIVEAU = 10;
+  function lettersTot(niveau) { return NIEUWE_LETTERS.slice(0, Math.min(niveau, MAX_LES)).join(''); }
+  function nieuwOp(niveau) { return niveau <= MAX_LES ? NIEUWE_LETTERS[niveau - 1] : ''; }
+
+  const WOORDEN = `als das jas kas las dak dal lak sla kaal ja al zak
+    les lees kei ijs dik lief sik slak slee fee idee kade laf alle die deel kiel kies kliek sjaal dief
+    rijs reis rie raak rek ruk ruil rul duur muur vuur raar riek fris jurk kruis ruis druk sluier
+    tas tak tent taart tafel tante kat lat stad nat net niet nest neus nieuw tien trein tuin taal tijd
+    land lente kunst rand dans dak duin denk zin snel fiets kist draak
+    hond hoed hoog goed groot geel geit gras grond haar hand huis hart hok hol oog oor ook ons oud
+    goud hoek heel heet hoofd honger hagel heer hier holt lucht licht nacht dag dorp door doos
+    water wolk wind wiel weg wit warm muis man maan melk mond mooi moe molen vis vos vork vogel vlag vlieg
+    wolf winter wereld vriend vrolijk morgen middag minuut
+    pen pop pad poes park plan bal bak boek boom bos brug bed beer bijl bloem brood beker computer
+    cadeau circus clown boot bus banaan pizza pakje paard papier
+    zee zon zand zes zeven zwart zwemmen zingen zomer yoga quiz taxi examen fax
+    spel snel spring sneller toets letter vinger typen blind record niveau score neon laser raket
+    planeet ster sterren komeet ruimte robot game punten combo winnen
+    appel peer kaas soep thee koek koekje snoep friet drop
+    school klas leraar huiswerk tekening vakantie fietsen lopen rennen springen vliegen dromen
+    kasteel ridder draak zwaard schild koning koningin prinses toren`.split(/\s+/).filter(Boolean);
+
+  function past(woord, letters) { for (const c of woord) if (!letters.includes(c)) return false; return true; }
+
+  function kiesWoord(niveau, bezet) {
+    const letters = lettersTot(niveau);
+    const nieuw = nieuwOp(niveau);
+    const minL = niveau <= 2 ? 2 : 3;
+    const maxL = niveau <= 2 ? 4 : niveau <= 5 ? 6 : niveau <= 9 ? 7 : 10;
+    let pool = WOORDEN.filter(w => w.length >= minL && w.length <= maxL && past(w, letters));
+    for (let poging = 0; poging < 30; poging++) {
+      let w;
+      const metNieuw = nieuw && pool.filter(x => [...nieuw].some(c => x.includes(c)));
+      if (pool.length < 25 && Math.random() < 0.5) w = oefenWoord(letters, nieuw, minL, Math.min(maxL, 5));
+      else if (metNieuw && metNieuw.length && Math.random() < 0.5) w = metNieuw[Math.floor(Math.random() * metNieuw.length)];
+      else if (pool.length) w = pool[Math.floor(Math.random() * pool.length)];
+      else w = oefenWoord(letters, nieuw, minL, maxL);
+      if (!bezet.has(w[0])) return w;
+    }
+    return null; // alle beginletters zijn al bezet, even wachten
+  }
+
+  function oefenWoord(letters, nieuw, minL, maxL) {
+    const n = minL + Math.floor(Math.random() * (maxL - minL + 1));
+    let w = '';
+    for (let i = 0; i < n; i++) {
+      const bron = nieuw && Math.random() < 0.45 ? nieuw : letters;
+      w += bron[Math.floor(Math.random() * bron.length)];
+    }
+    return w;
+  }
+
+  // ---------- opslag ----------
+  function lees(sleutel, standaard) { try { const v = JSON.parse(localStorage.getItem(sleutel)); return v ?? standaard; } catch { return standaard; } }
+  function schrijf(sleutel, waarde) { try { localStorage.setItem(sleutel, JSON.stringify(waarde)); } catch {} }
+
+  // records per modus: typen, en-vertalen, en-luisteren, fr-vertalen, fr-luisteren
+  const OPSLAG = 'neon-typer-records';
+  let alleRecs = lees(OPSLAG, {});
+  if ('score' in alleRecs) alleRecs = { typen: alleRecs }; // oud formaat: alleen typen
+  if (alleRecs.typen && alleRecs.typen.wpm && !alleRecs.typen.apm) alleRecs.typen.apm = alleRecs.typen.wpm * 5; // oud WPM-record omrekenen (1 woord = 5 aanslagen)
+  if (alleRecs.typen) delete alleRecs.typen.wpm;
+  let rec;
+  function kiesRecs() { rec = alleRecs[recSleutel()] = { score: 0, apm: 0, nauw: 0, niveau: 1, ...(alleRecs[recSleutel()] || {}) }; }
+  function bewaar() { schrijf(OPSLAG, alleRecs); }
+  function toonRecords() {
+    document.getElementById('recKop').textContent = 'Jouw records · ' + modusNaam();
+    document.getElementById('recScore').textContent = rec.score;
+    document.getElementById('recApm').textContent = rec.apm + ' per min';
+    document.getElementById('recNauw').textContent = rec.nauw ? rec.nauw + '%' : '–';
+    document.getElementById('recNiveau').textContent = rec.niveau;
+  }
+
+  // ---------- talen: modus, lijsten en kennis ----------
+  const TAAL = { en: { naam: 'Engels', stem: 'en' }, fr: { naam: 'Frans', stem: 'fr' } };
+  const VOORBEELD = {
+    en: [{ naam: 'Voorbeeld: dieren', tekst: 'dog = hond\ncat = kat\nhorse = paard\nbird = vogel\nfish = vis\nmouse = muis\nrabbit = konijn\ncow = koe\npig = varken\nsheep = schaap\nbig / large = groot\nsmall / little = klein' }],
+    fr: [{ naam: 'Voorbeeld: dieren', tekst: 'le chien = de hond\nle chat = de kat\nle cheval = het paard\nl\'oiseau = de vogel\nle poisson = de vis\nla souris = de muis\nle lapin = het konijn\nla vache = de koe\nle cochon = het varken\nle mouton = het schaap\ngrand = groot\npetit = klein' }],
+  };
+  const instel = { modus: 'typen', soort: 'vertalen', richting: 'naar', lijst: { en: 0, fr: 0 }, ...lees('neon-typer-instellingen', {}) };
+  const lijsten = { ...VOORBEELD, ...lees('neon-typer-lijsten', {}) };
+  const kennis = lees('neon-typer-kennis', {});
+  const isTaal = () => instel.modus !== 'typen';
+  function recSleutel() { return isTaal() ? `${instel.modus}-${instel.soort}` : 'typen'; }
+  function modusNaam() { return isTaal() ? `${TAAL[instel.modus].naam} ${instel.soort}` : 'Typen'; }
+
+  // accenten tellen niet mee: é = e, ç = c, ’ = '
+  function normLetter(c) { return c === '’' || c === '`' ? "'" : c.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  const schoon = s => s.replace(/\s+/g, ' ').trim();
+  const norm = s => [...s].map(normLetter).join('');
+
+  function leesLijst(tekst) {
+    const items = [];
+    for (const regel of tekst.split('\n')) {
+      const m = regel.match(/^(.*?)(?:=|\t)(.*)$/);
+      if (!m) continue;
+      const vreemd = m[1].split('/').map(schoon).filter(Boolean);
+      const nl = m[2].split('/').map(schoon).filter(Boolean);
+      if (vreemd.length && nl.length) items.push({ vreemd, nl });
+    }
+    return items;
+  }
+  const huidigeLijst = () => (lijsten[instel.modus] || [])[instel.lijst[instel.modus]] || null;
+  const huidigeItems = () => { const l = huidigeLijst(); return l ? leesLijst(l.tekst) : []; };
+  const kennisSleutel = item => `${instel.modus}|${item.vreemd[0]}`;
+  function pasKennisAan(item, d) {
+    const k = kennisSleutel(item);
+    kennis[k] = Math.max(-3, Math.min(5, (kennis[k] || 0) + d));
+    schrijf('neon-typer-kennis', kennis);
+  }
+
+  // woorden die je slecht kent komen vaker
+  function kiesItem(items, bezig) {
+    const vrij = items.filter(it => !bezig.has(it.vreemd[0]));
+    if (!vrij.length) return null;
+    const gewicht = vrij.map(it => 6 - (kennis[kennisSleutel(it)] || 0));
+    let r = Math.random() * gewicht.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < vrij.length; i++) { r -= gewicht[i]; if (r <= 0) return vrij[i]; }
+    return vrij[vrij.length - 1];
+  }
+
+  // ---------- spraak ----------
+  let stemmen = [];
+  function laadStemmen() { try { stemmen = speechSynthesis.getVoices(); } catch {} }
+  laadStemmen();
+  try { speechSynthesis.onvoiceschanged = laadStemmen; } catch {}
+  const stemVoor = taal => stemmen.find(v => v.lang.toLowerCase().startsWith(TAAL[taal].stem) && /google/i.test(v.name)) || stemmen.find(v => v.lang.toLowerCase().startsWith(TAAL[taal].stem));
+  function spreek(tekst) {
+    if (!geluidAan || !isTaal()) return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(tekst);
+      u.lang = instel.modus === 'en' ? 'en-GB' : 'fr-FR';
+      const s = stemVoor(instel.modus);
+      if (s) u.voice = s;
+      u.rate = 0.9;
+      speechSynthesis.speak(u);
+    } catch {}
+  }
+
+  // ---------- geluid ----------
+  let geluidAan = true, audio = null;
+  function piep(freq, duur = 0.06, type = 'square', vol = 0.05, glijNaar = null) {
+    if (!geluidAan) return;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const t = audio.currentTime;
+      const o = audio.createOscillator(), g = audio.createGain();
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      if (glijNaar) o.frequency.exponentialRampToValueAtTime(glijNaar, t + duur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + duur);
+      o.connect(g).connect(audio.destination); o.start(t); o.stop(t + duur);
+    } catch {}
+  }
+
+  // ---------- toetsenbord op het scherm ----------
+  const toetsEl = {};
+  const rijEls = document.querySelectorAll('#toetsen .rij');
+  RIJEN.forEach((rij, i) => {
+    for (const l of rij) {
+      const d = document.createElement('div');
+      d.className = 'toets' + (l === 'f' || l === 'j' ? ' bult' : '');
+      d.textContent = l;
+      d.style.setProperty('--vinger', VINGER_KLEUR[VINGER[l][1]]);
+      rijEls[i].append(d);
+      toetsEl[l] = d;
+    }
+  });
+  const hintEl = document.getElementById('hint');
+  let blind = false;
+
+  function toonToetsen() {
+    const taal = isTaal();
+    const letters = taal ? RIJEN.join('') : lettersTot(spel ? spel.niveau : startNiveau);
+    const nieuw = taal ? '' : nieuwOp(spel ? spel.niveau : startNiveau);
+    for (const [l, d] of Object.entries(toetsEl)) {
+      d.classList.toggle('op-slot', !letters.includes(l));
+      d.classList.toggle('nieuw', nieuw.includes(l));
+    }
+  }
+  function toonVolgende(letter) {
+    for (const d of Object.values(toetsEl)) d.classList.remove('volgende');
+    if (letter && toetsEl[letter]) {
+      toetsEl[letter].classList.add('volgende');
+      const [hand, vinger] = VINGER[letter];
+      hintEl.innerHTML = `${isTaal() ? 'Hint' : 'Volgende'}: <b>${letter.toUpperCase()}</b>, ${hand === 'links' ? 'linker' : 'rechter'} ${vinger}`;
+    } else if (letter) {
+      hintEl.innerHTML = `Hint: <b>${letter === ' ' ? 'spatie' : letter}</b>`;
+    } else if (spel && spel.status === 'spelen' && isTaal()) {
+      hintEl.textContent = instel.soort === 'luisteren' ? 'Typ wat je hoort. Enter = nog een keer horen' : 'Typ de vertaling. Accenten hoeven niet';
+    } else if (spel && spel.status === 'spelen') {
+      hintEl.textContent = 'Kies een woord: typ de eerste letter';
+    } else {
+      hintEl.innerHTML = '&nbsp;';
+    }
+  }
+  function flitsFout(letter) {
+    const d = toetsEl[letter];
+    if (!d) return;
+    d.classList.add('fout');
+    setTimeout(() => d.classList.remove('fout'), 160);
+  }
+
+  const knopBlind = document.getElementById('knopBlind');
+  function zetBlind(aan) {
+    blind = aan;
+    knopBlind.textContent = 'Blind modus: ' + (aan ? 'aan ×2' : 'uit');
+    knopBlind.setAttribute('aria-pressed', String(aan));
+    document.getElementById('toetsen').hidden = aan;
+    document.querySelector('.vingers').hidden = aan;
+    hintEl.hidden = aan;
+    document.getElementById('blindBord').hidden = !aan;
+    try { localStorage.setItem('neon-typer-blind', aan ? '1' : '0'); } catch {}
+    knopBlind.blur();
+  }
+  knopBlind.onclick = () => { if (!spel || spel.status !== 'spelen') zetBlind(!blind); };
+  try { zetBlind(localStorage.getItem('neon-typer-blind') === '1'); } catch { zetBlind(false); }
+
+  const knopGeluid = document.getElementById('knopGeluid');
+  knopGeluid.onclick = () => { geluidAan = !geluidAan; knopGeluid.textContent = 'Geluid: ' + (geluidAan ? 'aan' : 'uit'); knopGeluid.blur(); };
+  document.getElementById('knopPauze').onclick = e => { pauzeer(); e.currentTarget.blur(); };
+
+  // ---------- spelstatus ----------
+  let startNiveau = 1;
+  let spel = null;
+  const sterren = Array.from({ length: 90 }, () => ({ x: Math.random() * W, y: Math.random() * GROND, r: Math.random() * 1.4 + 0.3, v: Math.random() * 12 + 4 }));
+  const gebouwen = [];
+  for (let x = 0; x < W;) {
+    const b = 30 + Math.random() * 40;
+    if (Math.abs(x + b / 2 - KANON_X) > 60) gebouwen.push({ x, b, h: 14 + Math.random() * 34, ramen: Math.random() });
+    x += b + 4;
+  }
+
+  function nieuwSpel() {
+    const items = isTaal() ? huidigeItems() : [];
+    if (isTaal() && !items.length) { piep(140, 0.15, 'sawtooth', 0.04); return; }
+    spel = {
+      status: 'spelen', niveau: startNiveau, startNiveau, levens: 3, score: 0, combo: 0, besteCombo: 0,
+      woorden: [], doel: null, kogels: [], deeltjes: [], teksten: [],
+      tijd: 0, volgendeWoord: 0.5, woordenGehad: 0, goed: 0, fout: 0, letterTijd: 0,
+      schud: 0, banner: { tekst: bannerTekst(startNiveau), t: 2.6 }, nieuwRecord: false,
+      taal: isTaal(), luister: isTaal() && instel.soort === 'luisteren', items, buffer: '', foutenOpRij: 0, gemist: [],
+    };
+    toonToetsen();
+    toonVolgende(null);
+    piep(440, 0.08); setTimeout(() => piep(660, 0.1), 90);
+  }
+
+  function bannerTekst(n) {
+    if (isTaal()) return n === startNiveau ? modusNaam().toUpperCase() : `NIVEAU ${n} · SNELLER!`;
+    const nieuw = nieuwOp(n);
+    if (n === 1) return 'NIVEAU 1 · THUISRIJ: A S D F  J K L';
+    if (nieuw) return `NIVEAU ${n} · NIEUW: ${nieuw.toUpperCase().split('').join(' ')}`;
+    return `NIVEAU ${n} · SNELLER!`;
+  }
+
+  // talen gaan langzamer: je moet ook nadenken over de vertaling
+  const valSnelheid = () => spel.taal
+    ? Math.min(11 + spel.niveau * 2.5 + spel.tijd * 0.05, 60)
+    : Math.min(16 + spel.niveau * 4.5 + spel.tijd * 0.12, 120);
+  const wachtTijd = () => spel.taal
+    ? Math.max(5 - spel.niveau * 0.25 - spel.tijd * 0.003, 1.8)
+    : Math.max(3.1 - spel.niveau * 0.17 - spel.tijd * 0.004, 0.75);
+
+  function apm() { // goede aanslagen per minuut
+    const min = spel.letterTijd / 60;
+    return min > 0.05 ? Math.round(spel.goed / min) : 0;
+  }
+  function nauwkeurigheid() {
+    const t = spel.goed + spel.fout;
+    return t ? Math.round(spel.goed / t * 100) : 100;
+  }
+  const multiplier = () => Math.min(1 + Math.floor(spel.combo / 15) * 0.5, 4);
+
+  // ---------- invoer ----------
+  window.addEventListener('keydown', e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest && e.target.closest('input, textarea, select')) return; // typen in de woordenlijst
+    const k = e.key;
+    if (k === 'Escape') { pauzeer(); return; }
+    if (!spel || spel.status === 'over') {
+      if (k === ' ' || k === 'Enter') { e.preventDefault(); nieuwSpel(); }
+      else if (k === 'ArrowRight' || k === 'ArrowLeft') {
+        e.preventDefault();
+        const max = Math.max(rec.niveau, MAX_LES);
+        startNiveau = Math.min(max, Math.max(1, startNiveau + (k === 'ArrowRight' ? 1 : -1)));
+        toonToetsen();
+        piep(520 + startNiveau * 20, 0.04);
+      }
+      return;
+    }
+    if (spel.status === 'pauze') { if (k === ' ' || k === 'Enter') { e.preventDefault(); spel.status = 'spelen'; } return; }
+    if (spel.taal) {
+      if (k === 'Enter') { e.preventDefault(); const w = hoofdWoord(); if (w) spreek(w.item.vreemd[0]); return; }
+      if (k === 'Backspace') { e.preventDefault(); spel.buffer = spel.buffer.slice(0, -1); spel.foutenOpRij = 0; toonVolgende(null); return; }
+      if (k.length !== 1 || !/^[\p{L}' \-’`.?!,]$/u.test(k)) return;
+      e.preventDefault();
+      typTaal(normLetter(k));
+      return;
+    }
+    if (k === 'Backspace') { e.preventDefault(); spel.doel = null; toonVolgende(null); return; }
+    if (k === ' ' || k === "'" || k === '/') e.preventDefault();
+    if (k.length !== 1) return;
+    const l = k.toLowerCase();
+    if (!/[a-z]/.test(l)) return;
+    e.preventDefault();
+    typ(l);
+  });
+
+  function pauzeer() {
+    if (!spel) return;
+    if (spel.status === 'spelen') spel.status = 'pauze';
+    else if (spel.status === 'pauze') spel.status = 'spelen';
+  }
+  window.addEventListener('blur', () => { if (spel && spel.status === 'spelen') spel.status = 'pauze'; });
+
+  function typ(l) {
+    let w = spel.doel;
+    if (!w) {
+      // het laagste woord met deze beginletter (dat is het gevaarlijkst)
+      w = spel.woorden.filter(x => x.tekst[0] === l).sort((a, b) => b.y - a.y)[0] || null;
+      if (w) spel.doel = w;
+    }
+    if (w && w.tekst[w.getypt] === l) {
+      w.getypt++;
+      spel.goed++; spel.combo++;
+      spel.besteCombo = Math.max(spel.besteCombo, spel.combo);
+      spel.kogels.push({ x: KANON_X, y: KANON_Y - 20, doel: w, t: 0 });
+      piep(700 + w.getypt * 40, 0.035, 'square', 0.03);
+      if (w.getypt >= w.tekst.length) woordKapot(w);
+    } else {
+      spel.fout++; spel.combo = 0;
+      if (w) w.trillen = 0.25;
+      flitsFout(l);
+      piep(140, 0.12, 'sawtooth', 0.04);
+    }
+    toonVolgende(spel.doel ? spel.doel.tekst[spel.doel.getypt] : null);
+  }
+
+  function woordKapot(w) {
+    const punten = Math.round(w.tekst.length * 10 * spel.niveau * multiplier() * (blind ? 2 : 1));
+    spel.score += punten;
+    spel.woorden = spel.woorden.filter(x => x !== w);
+    spel.doel = null;
+    spel.teksten.push({ x: w.x, y: w.y, tekst: '+' + punten, t: 1 });
+    ontploffing(w.x, w.y, KLEUR.cyan, 26);
+    piep(300, 0.18, 'triangle', 0.06, 900);
+    spel.woordenGehad++;
+    if (spel.woordenGehad % WOORDEN_PER_NIVEAU === 0) niveauOmhoog();
+  }
+
+  // ---------- talen: typen tegen alle woorden tegelijk (vooraf-matching op wat je al typte) ----------
+  const passend = (w, buf) => w.normen.findIndex(n => n.startsWith(buf));
+  const laagste = lijst => lijst.slice().sort((a, b) => b.y - a.y)[0] || null;
+  function hoofdWoord() {
+    const kand = spel.buffer ? spel.woorden.filter(w => passend(w, spel.buffer) >= 0) : spel.woorden;
+    return laagste(kand);
+  }
+
+  function typTaal(c) {
+    if (c === ' ' && !spel.buffer) return;
+    const nb = spel.buffer + c;
+    const kand = spel.woorden.filter(w => passend(w, nb) >= 0);
+    if (kand.length) {
+      spel.buffer = nb;
+      spel.goed++; spel.combo++; spel.foutenOpRij = 0;
+      spel.besteCombo = Math.max(spel.besteCombo, spel.combo);
+      const doel = laagste(kand);
+      spel.kogels.push({ x: KANON_X, y: KANON_Y - 20, doel, t: 0 });
+      piep(700 + nb.length * 30, 0.035, 'square', 0.03);
+      const klaar = laagste(kand.filter(w => w.normen.includes(nb)));
+      if (klaar) taalWoordKapot(klaar);
+    } else {
+      spel.fout++; spel.combo = 0; spel.foutenOpRij++;
+      const cur = spel.buffer ? spel.woorden.filter(w => passend(w, spel.buffer) >= 0) : spel.woorden;
+      for (const w of cur) w.fout = true;
+      const h = laagste(cur);
+      if (h) h.trillen = 0.25;
+      if (h && spel.foutenOpRij >= 2) h.hulp = true;
+      flitsFout(c);
+      piep(140, 0.12, 'sawtooth', 0.04);
+    }
+    spel.doel = hoofdWoord();
+    toonTaalHint();
+  }
+
+  function volgendeLetter(w) {
+    const i = Math.max(0, passend(w, spel.buffer));
+    return w.normen[i][spel.buffer.length] || null;
+  }
+  function toonTaalHint() {
+    const h = hoofdWoord();
+    toonVolgende(h && h.hulp && spel.foutenOpRij >= 2 ? volgendeLetter(h) : null);
+  }
+
+  function taalWoordKapot(w) {
+    const lengte = w.normen[0].length;
+    const punten = Math.round(lengte * 10 * spel.niveau * multiplier() * (blind ? 2 : 1));
+    spel.score += punten;
+    spel.woorden = spel.woorden.filter(x => x !== w);
+    spel.buffer = ''; spel.foutenOpRij = 0;
+    pasKennisAan(w.item, w.fout || w.hulp ? -1 : 1);
+    spel.teksten.push({ x: w.x, y: w.y - 14, tekst: '+' + punten, t: 1 });
+    spel.teksten.push({ x: Math.min(W - 160, Math.max(160, w.x)), y: w.y + 16, tekst: `${w.item.vreemd[0]} = ${w.item.nl[0]}`, t: 1.6, kleur: KLEUR.green, groot: true });
+    ontploffing(w.x, w.y, KLEUR.cyan, 26);
+    piep(300, 0.18, 'triangle', 0.06, 900);
+    spreek(w.item.vreemd[0]);
+    if (spel.luister) spel.volgendeWoord = 1.2;
+    spel.woordenGehad++;
+    if (spel.woordenGehad % WOORDEN_PER_NIVEAU === 0) niveauOmhoog();
+  }
+
+  function nieuwTaalWoord() {
+    const item = kiesItem(spel.items, new Set(spel.woorden.map(w => w.item.vreemd[0])));
+    if (!item) return null;
+    let naarVreemd = instel.richting === 'naar' || (instel.richting === 'mix' && Math.random() < 0.5);
+    if (spel.luister) naarVreemd = true;
+    const code = instel.modus.toUpperCase();
+    const antwoorden = naarVreemd ? item.vreemd : item.nl;
+    const prompt = spel.luister ? '♪ luister' : (naarVreemd ? item.nl : item.vreemd).join(' / ');
+    const label = spel.luister ? 'Enter = nog een keer' : naarVreemd ? `NL → ${code}` : `${code} → NL`;
+    ctx.font = '28px VT323, monospace';
+    const b1 = ctx.measureText(prompt).width;
+    ctx.font = '24px VT323, monospace';
+    const b2 = Math.max(...antwoorden.map(a => ctx.measureText(a).width));
+    if (spel.luister) spreek(item.vreemd[0]);
+    return { item, prompt, label, antwoorden, normen: antwoorden.map(norm), breedte: Math.max(b1, b2, 90) + 28, fout: false, hulp: false };
+  }
+
+  function niveauOmhoog() {
+    spel.niveau++;
+    if (spel.niveau % 4 === 0 && spel.levens < 5) { spel.levens++; spel.teksten.push({ x: KANON_X, y: GROND - 60, tekst: '+1 HARTJE', t: 1.6, kleur: KLEUR.pink }); }
+    spel.banner = { tekst: bannerTekst(spel.niveau), t: 2.6 };
+    toonToetsen();
+    [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => piep(f, 0.12, 'square', 0.05), i * 90));
+  }
+
+  function ontploffing(x, y, kleur, n) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, v = 60 + Math.random() * 220;
+      spel.deeltjes.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0.5 + Math.random() * 0.5, kleur });
+    }
+  }
+
+  // ---------- update ----------
+  function update(dt) {
+    for (const s of sterren) { s.y += s.v * dt * (spel && spel.status === 'spelen' ? 1 + spel.niveau * 0.15 : 1); if (s.y > GROND) { s.y = 0; s.x = Math.random() * W; } }
+    if (!spel || spel.status !== 'spelen') return;
+    spel.tijd += dt;
+    if (spel.woorden.length) spel.letterTijd += dt;
+    spel.schud = Math.max(0, spel.schud - dt);
+    if (spel.banner) { spel.banner.t -= dt; if (spel.banner.t <= 0) spel.banner = null; }
+
+    spel.volgendeWoord -= dt;
+    // altijd minstens 2 woorden in beeld, zodat er nooit niks te typen is (luisteren: steeds één woord)
+    const n = spel.woorden.length;
+    const moet = spel.luister
+      ? n === 0 && spel.volgendeWoord <= 0
+      : (spel.volgendeWoord <= 0 || n < Math.min(2, spel.taal ? spel.items.length : 2)) && n < 7;
+    if (moet) {
+      let nieuw = null;
+      if (spel.taal) nieuw = nieuwTaalWoord();
+      else {
+        const tekst = kiesWoord(spel.niveau, new Set(spel.woorden.map(w => w.tekst[0])));
+        if (tekst) { ctx.font = '30px VT323, monospace'; nieuw = { tekst, getypt: 0, breedte: ctx.measureText(tekst).width + 24 }; }
+      }
+      if (nieuw) {
+        const breedte = nieuw.breedte, top = spel.taal ? 80 : 54;
+        let x, poging = 0;
+        do { x = 40 + breedte / 2 + Math.random() * (W - 80 - breedte); poging++; }
+        while (poging < 12 && spel.woorden.some(w => w.y < 120 && Math.abs(w.x - x) < (w.breedte + breedte) / 2 + 10));
+        spel.woorden.push({ ...nieuw, x, y: top, trillen: 0, v: valSnelheid() * (0.85 + Math.random() * 0.3) });
+        spel.volgendeWoord = wachtTijd();
+      } else spel.volgendeWoord = 0.3;
+    }
+
+    for (const w of [...spel.woorden]) {
+      w.v = Math.max(w.v, valSnelheid() * 0.85);
+      w.y += w.v * dt;
+      w.trillen = Math.max(0, w.trillen - dt);
+      if (w.y >= GROND - (spel.taal ? 26 : 14)) {
+        spel.woorden = spel.woorden.filter(x => x !== w);
+        if (spel.doel === w) { spel.doel = null; toonVolgende(null); }
+        if (spel.taal) {
+          pasKennisAan(w.item, -2);
+          if (!spel.gemist.includes(w.item)) spel.gemist.push(w.item);
+          spel.teksten.push({ x: Math.min(W - 180, Math.max(180, w.x)), y: GROND - 70, tekst: spel.luister ? `${w.item.vreemd[0]} = ${w.item.nl[0]}` : `${w.prompt} = ${w.antwoorden[0]}`, t: 2.8, kleur: KLEUR.pink, groot: true });
+          if (spel.luister) { spreek(w.item.vreemd[0]); spel.volgendeWoord = 2.2; }
+          if (spel.buffer && !spel.woorden.some(x => passend(x, spel.buffer) >= 0)) { spel.buffer = ''; spel.foutenOpRij = 0; }
+          spel.doel = hoofdWoord();
+          toonTaalHint();
+        }
+        spel.levens--; spel.combo = 0; spel.schud = 0.35;
+        ontploffing(w.x, GROND - 10, KLEUR.pink, 34);
+        piep(90, 0.35, 'sawtooth', 0.08, 40);
+        if (spel.levens <= 0) { gameOver(); return; }
+      }
+    }
+
+    for (const k of spel.kogels) k.t += dt * 7;
+    spel.kogels = spel.kogels.filter(k => k.t < 1);
+    for (const d of spel.deeltjes) { d.x += d.vx * dt; d.y += d.vy * dt; d.vy += 300 * dt; d.t -= dt; }
+    spel.deeltjes = spel.deeltjes.filter(d => d.t > 0);
+    for (const t of spel.teksten) { t.y -= 40 * dt; t.t -= dt; }
+    spel.teksten = spel.teksten.filter(t => t.t > 0);
+  }
+
+  function gameOver() {
+    spel.status = 'over';
+    spel.doel = null;
+    toonVolgende(null);
+    const s = { score: spel.score, apm: apm(), nauw: nauwkeurigheid(), niveau: spel.niveau };
+    spel.eind = s;
+    spel.nieuw = {};
+    if (s.score > rec.score) { rec.score = s.score; spel.nieuw.score = true; }
+    if (s.apm > rec.apm && spel.goed >= 25) { rec.apm = s.apm; spel.nieuw.apm = true; }
+    if (s.nauw > rec.nauw && spel.goed >= 50) { rec.nauw = s.nauw; spel.nieuw.nauw = true; }
+    if (s.niveau > rec.niveau) { rec.niveau = s.niveau; spel.nieuw.niveau = true; }
+    bewaar(); toonRecords();
+    if (Object.keys(spel.nieuw).length) [523, 659, 784, 1046, 1318].forEach((f, i) => setTimeout(() => piep(f, 0.15, 'square', 0.05), i * 110));
+  }
+
+  // ---------- tekenen ----------
+  function glow(kleur, blur) { ctx.shadowColor = kleur; ctx.shadowBlur = blur; }
+  function tekst(t, x, y, { font = '16px Silkscreen, monospace', kleur = KLEUR.fg, uitlijn = 'left', gloed = 0 } = {}) {
+    ctx.font = font; ctx.fillStyle = kleur; ctx.textAlign = uitlijn; ctx.textBaseline = 'middle';
+    glow(kleur, gloed); ctx.fillText(t, x, y); glow('transparent', 0);
+  }
+
+  function teken() {
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+    if (spel && spel.schud > 0) ctx.translate((Math.random() - 0.5) * 10 * spel.schud, (Math.random() - 0.5) * 10 * spel.schud);
+    ctx.fillStyle = KLEUR.bg; ctx.fillRect(-10, -10, W + 20, H + 20);
+
+    for (const s of sterren) { ctx.fillStyle = `rgba(228,225,255,${0.25 + s.r * 0.3})`; ctx.fillRect(s.x, s.y, s.r, s.r); }
+
+    // stad
+    for (const g of gebouwen) {
+      ctx.fillStyle = '#14122b'; ctx.fillRect(g.x, GROND - g.h, g.b, g.h);
+      ctx.strokeStyle = 'rgba(185,103,255,0.55)'; ctx.lineWidth = 1; ctx.strokeRect(g.x + 0.5, GROND - g.h + 0.5, g.b - 1, g.h);
+      ctx.fillStyle = 'rgba(245,245,106,0.5)';
+      for (let rx = g.x + 5; rx < g.x + g.b - 5; rx += 8) for (let ry = GROND - g.h + 5; ry < GROND - 4; ry += 9) if ((rx * 7 + ry * 3 + g.ramen * 100) % 5 < 2) ctx.fillRect(rx, ry, 3, 3);
+    }
+    // grond met raster
+    ctx.fillStyle = '#0b0a1a'; ctx.fillRect(0, GROND, W, H - GROND);
+    glow(KLEUR.accent, 12); ctx.strokeStyle = KLEUR.accent; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(0, GROND); ctx.lineTo(W, GROND); ctx.stroke(); glow('transparent', 0);
+    ctx.strokeStyle = 'rgba(185,103,255,0.25)'; ctx.lineWidth = 1;
+    const off = ((spel ? spel.tijd : performance.now() / 1000) * 20) % 15;
+    for (let y = GROND + off; y < H; y += 15) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    for (let i = -12; i <= 12; i++) { ctx.beginPath(); ctx.moveTo(KANON_X + i * 40, GROND); ctx.lineTo(KANON_X + i * 110, H); ctx.stroke(); }
+
+    // kanon, draait naar het doel
+    let hoek = -Math.PI / 2;
+    if (spel && spel.doel) hoek = Math.atan2(spel.doel.y - KANON_Y, spel.doel.x - KANON_X);
+    ctx.save(); ctx.translate(KANON_X, KANON_Y); ctx.rotate(hoek + Math.PI / 2);
+    glow(KLEUR.cyan, 14); ctx.fillStyle = KLEUR.cyan; ctx.fillRect(-4, -30, 8, 22); ctx.restore();
+    glow(KLEUR.pink, 14); ctx.fillStyle = KLEUR.pink;
+    ctx.beginPath(); ctx.arc(KANON_X, KANON_Y, 18, Math.PI, 0); ctx.fill(); glow('transparent', 0);
+
+    if (spel) {
+      // kogels
+      for (const k of spel.kogels) {
+        const x = k.x + (k.doel.x - k.x) * k.t, y = k.y + (k.doel.y - k.y) * k.t;
+        glow(KLEUR.cyan, 12); ctx.strokeStyle = KLEUR.cyan; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - (k.doel.x - k.x) * 0.06, y - (k.doel.y - k.y) * 0.06); ctx.stroke();
+      }
+      glow('transparent', 0);
+
+      // woorden
+      if (spel.taal) for (const w of spel.woorden) tekenTaalWoord(w);
+      else for (const w of spel.woorden) {
+        const isDoel = w === spel.doel;
+        const dx = w.trillen > 0 ? (Math.random() - 0.5) * 8 : 0;
+        const x = w.x - w.breedte / 2 + dx, y = w.y;
+        const gevaar = w.y > GROND - 120;
+        ctx.fillStyle = 'rgba(28,26,56,0.92)';
+        ctx.strokeStyle = isDoel ? KLEUR.pink : gevaar ? 'rgba(255,79,139,0.6)' : 'rgba(185,103,255,0.7)';
+        ctx.lineWidth = isDoel ? 2.5 : 1.5;
+        if (isDoel) glow(KLEUR.pink, 14);
+        ctx.beginPath(); ctx.roundRect(x, y - 17, w.breedte, 34, 6); ctx.fill(); ctx.stroke();
+        glow('transparent', 0);
+        ctx.font = '30px VT323, monospace'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+        const klaar = w.tekst.slice(0, w.getypt), rest = w.tekst.slice(w.getypt);
+        ctx.fillStyle = KLEUR.cyan; glow(KLEUR.cyan, 8); ctx.fillText(klaar, x + 12, y + 1); glow('transparent', 0);
+        ctx.fillStyle = KLEUR.fg; ctx.fillText(rest, x + 12 + ctx.measureText(klaar).width, y + 1);
+      }
+
+      for (const d of spel.deeltjes) { ctx.globalAlpha = Math.min(1, d.t * 2); ctx.fillStyle = d.kleur; ctx.fillRect(d.x, d.y, 3, 3); }
+      ctx.globalAlpha = 1;
+      for (const t of spel.teksten) { ctx.globalAlpha = Math.min(1, t.t * 2); tekst(t.tekst, t.x, t.y, { font: t.groot ? '30px VT323, monospace' : undefined, kleur: t.kleur || KLEUR.yellow, uitlijn: 'center', gloed: 8 }); }
+      ctx.globalAlpha = 1;
+
+      // HUD
+      ctx.fillStyle = 'rgba(6,5,15,0.75)'; ctx.fillRect(0, 0, W, 34);
+      tekst(`SCORE ${spel.score}`, 14, 18, { kleur: KLEUR.yellow, gloed: 6 });
+      tekst(`RECORD ${Math.max(rec.score, spel.score)}`, 200, 18, { kleur: KLEUR.muted });
+      tekst(`NIVEAU ${spel.niveau}`, 410, 18, { kleur: KLEUR.cyan, gloed: 6 });
+      const m = multiplier();
+      tekst(`COMBO ${spel.combo}${m > 1 ? ' ×' + m : ''}`, 540, 18, { kleur: m > 1 ? KLEUR.green : KLEUR.muted, gloed: m > 1 ? 6 : 0 });
+      tekst(`${apm()}/MIN`, 720, 18, { kleur: KLEUR.fg });
+      tekst('♥'.repeat(spel.levens), W - 14, 18, { font: '22px VT323, monospace', kleur: KLEUR.pink, uitlijn: 'right', gloed: 8 });
+      if (blind) tekst('BLIND ×2', W - 14, 50, { font: '12px Silkscreen, monospace', kleur: KLEUR.pink, uitlijn: 'right' });
+
+      if (spel.banner) {
+        ctx.globalAlpha = Math.min(1, spel.banner.t * 1.5);
+        tekst(spel.banner.tekst, W / 2, 110, { font: '24px Silkscreen, monospace', kleur: KLEUR.cyan, uitlijn: 'center', gloed: 16 });
+        ctx.globalAlpha = 1;
+      }
+
+      if (spel.status === 'pauze') {
+        ctx.fillStyle = 'rgba(6,5,15,0.75)'; ctx.fillRect(0, 0, W, H);
+        tekst('PAUZE', W / 2, H / 2 - 20, { font: '40px Silkscreen, monospace', kleur: KLEUR.cyan, uitlijn: 'center', gloed: 18 });
+        tekst('druk op spatie om verder te gaan', W / 2, H / 2 + 30, { font: '26px VT323, monospace', kleur: KLEUR.fg, uitlijn: 'center' });
+      }
+      if (spel.status === 'over') tekenEinde();
+    } else tekenStart();
+  }
+
+  // bovenaan de vraag, eronder je antwoord: getypte letters (met de echte accenten) en streepjes voor de rest
+  function tekenTaalWoord(w) {
+    const i = spel.buffer ? passend(w, spel.buffer) : -1;
+    const actief = i >= 0;
+    const isDoel = w === spel.doel && actief;
+    const dx = w.trillen > 0 ? (Math.random() - 0.5) * 8 : 0;
+    const x = w.x - w.breedte / 2 + dx, y = w.y;
+    const gevaar = w.y > GROND - 120;
+    ctx.fillStyle = 'rgba(28,26,56,0.94)';
+    ctx.strokeStyle = isDoel ? KLEUR.pink : actief ? KLEUR.cyan : gevaar ? 'rgba(255,79,139,0.6)' : 'rgba(185,103,255,0.7)';
+    ctx.lineWidth = isDoel ? 2.5 : 1.5;
+    if (isDoel) glow(KLEUR.pink, 14);
+    ctx.beginPath(); ctx.roundRect(x, y - 26, w.breedte, 52, 6); ctx.fill(); ctx.stroke();
+    glow('transparent', 0);
+    tekst(w.label, x + 4, y - 36, { font: '11px Silkscreen, monospace', kleur: KLEUR.muted });
+    tekst(w.prompt, x + 14, y - 10, { font: '28px VT323, monospace', kleur: spel.luister ? KLEUR.yellow : KLEUR.fg });
+    const ant = w.antwoorden[Math.max(0, i)];
+    const n = actief ? spel.buffer.length : 0;
+    const klaar = ant.slice(0, n);
+    let rest = ant.slice(n).replace(/[^ ]/g, '_');
+    ctx.font = '24px VT323, monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = KLEUR.cyan; glow(KLEUR.cyan, 8); ctx.fillText(klaar, x + 14, y + 13); glow('transparent', 0);
+    let rx = x + 14 + ctx.measureText(klaar).width;
+    if (w.hulp && spel.foutenOpRij >= 2 && (actief || !spel.buffer) && rest.length) {
+      ctx.fillStyle = KLEUR.yellow; ctx.fillText(ant[n], rx, y + 13);
+      rx += ctx.measureText(ant[n]).width; rest = rest.slice(1);
+    }
+    ctx.fillStyle = KLEUR.muted; ctx.fillText(rest, rx, y + 13);
+  }
+
+  function tekenStart() {
+    if (isTaal()) return tekenTaalStart();
+    ctx.fillStyle = 'rgba(6,5,15,0.6)'; ctx.fillRect(0, 0, W, H);
+    tekst('NEON TYPER', W / 2, 110, { font: '52px Silkscreen, monospace', kleur: KLEUR.cyan, uitlijn: 'center', gloed: 22 });
+    tekst('typ de vallende woorden weg voordat ze je stad raken', W / 2, 165, { font: '28px VT323, monospace', kleur: KLEUR.fg, uitlijn: 'center' });
+    tekst(`‹  STARTNIVEAU ${startNiveau}  ›`, W / 2, 230, { font: '22px Silkscreen, monospace', kleur: KLEUR.yellow, uitlijn: 'center', gloed: 10 });
+    const l = startNiveau >= MAX_LES ? 'alle letters' : 'letters: ' + lettersTot(startNiveau).toUpperCase().split('').join(' ');
+    tekst(l, W / 2, 265, { font: '26px VT323, monospace', kleur: KLEUR.muted, uitlijn: 'center' });
+    const knipper = Math.floor(performance.now() / 500) % 2;
+    if (knipper) tekst('DRUK OP SPATIE', W / 2, 330, { font: '22px Silkscreen, monospace', kleur: KLEUR.pink, uitlijn: 'center', gloed: 14 });
+  }
+
+  function tekenTaalStart() {
+    ctx.fillStyle = 'rgba(6,5,15,0.6)'; ctx.fillRect(0, 0, W, H);
+    const t = TAAL[instel.modus].naam;
+    tekst(`${t.toUpperCase()} · ${instel.soort.toUpperCase()}`, W / 2, 100, { font: '40px Silkscreen, monospace', kleur: KLEUR.cyan, uitlijn: 'center', gloed: 22 });
+    const uitleg = instel.soort === 'luisteren' ? 'je hoort een woord: typ wat je hoort'
+      : instel.richting === 'naar' ? `je ziet Nederlands, typ het ${t}` : instel.richting === 'van' ? `je ziet ${t}, typ het Nederlands` : 'door elkaar: soms Nederlands, soms ' + t;
+    tekst(uitleg, W / 2, 155, { font: '28px VT323, monospace', kleur: KLEUR.fg, uitlijn: 'center' });
+    const lijst = huidigeLijst(), n = huidigeItems().length;
+    tekst(lijst ? `lijst: ${lijst.naam || 'zonder naam'} (${n} woorden)` : 'nog geen lijst', W / 2, 205, { font: '28px VT323, monospace', kleur: KLEUR.yellow, uitlijn: 'center' });
+    tekst(`‹  STARTNIVEAU ${startNiveau}  ›`, W / 2, 255, { font: '18px Silkscreen, monospace', kleur: KLEUR.muted, uitlijn: 'center' });
+    if (instel.soort === 'luisteren' && stemmen.length && !stemVoor(instel.modus))
+      tekst(`let op: deze computer heeft geen ${t.toLowerCase()}e stem, de uitspraak kan raar klinken`, W / 2, 295, { font: '24px VT323, monospace', kleur: KLEUR.pink, uitlijn: 'center' });
+    if (!n) tekst('zet eerst woordjes in je lijst onder het spel', W / 2, 340, { font: '26px VT323, monospace', kleur: KLEUR.pink, uitlijn: 'center' });
+    else if (Math.floor(performance.now() / 500) % 2) tekst('DRUK OP SPATIE', W / 2, 340, { font: '22px Silkscreen, monospace', kleur: KLEUR.pink, uitlijn: 'center', gloed: 14 });
+  }
+
+  function tekenEinde() {
+    const e = spel.eind, n = spel.nieuw;
+    ctx.fillStyle = 'rgba(6,5,15,0.82)'; ctx.fillRect(0, 0, W, H);
+    tekst('GAME OVER', W / 2, 80, { font: '44px Silkscreen, monospace', kleur: KLEUR.pink, uitlijn: 'center', gloed: 20 });
+    if (Object.keys(n).length) tekst('NIEUW RECORD!', W / 2, 126, { font: '22px Silkscreen, monospace', kleur: KLEUR.yellow, uitlijn: 'center', gloed: 14 });
+    const regels = [
+      ['Score', e.score, rec.score, n.score],
+      ['Aanslagen/min', e.apm, rec.apm, n.apm],
+      ['Nauwkeurigheid', e.nauw + '%', rec.nauw ? rec.nauw + '%' : '–', n.nauw],
+      ['Niveau', e.niveau, rec.niveau, n.niveau],
+    ];
+    tekst('DEZE KEER', 560, 170, { font: '13px Silkscreen, monospace', kleur: KLEUR.muted, uitlijn: 'right' });
+    tekst('RECORD', 720, 170, { font: '13px Silkscreen, monospace', kleur: KLEUR.muted, uitlijn: 'right' });
+    regels.forEach(([naam, nu, best, nieuw], i) => {
+      const y = 205 + i * 38;
+      tekst(naam, 180, y, { font: '28px VT323, monospace', kleur: KLEUR.fg });
+      tekst(String(nu), 560, y, { font: '18px Silkscreen, monospace', kleur: nieuw ? KLEUR.yellow : KLEUR.fg, uitlijn: 'right', gloed: nieuw ? 10 : 0 });
+      tekst(String(best), 720, y, { font: '18px Silkscreen, monospace', kleur: KLEUR.muted, uitlijn: 'right' });
+      if (nieuw) tekst('★', 745, y, { font: '18px Silkscreen, monospace', kleur: KLEUR.yellow, gloed: 10 });
+    });
+    if (spel.taal && spel.gemist.length) {
+      const lijst = spel.gemist.slice(0, 4).map(it => `${it.vreemd[0]} = ${it.nl[0]}`).join('   ·   ');
+      tekst('oefen deze nog:', W / 2, 360, { font: '22px VT323, monospace', kleur: KLEUR.muted, uitlijn: 'center' });
+      tekst(lijst, W / 2, 385, { font: '24px VT323, monospace', kleur: KLEUR.pink, uitlijn: 'center' });
+    } else tekst(`langste combo: ${spel.besteCombo}`, W / 2, 370, { font: '24px VT323, monospace', kleur: KLEUR.muted, uitlijn: 'center' });
+    if (Math.floor(performance.now() / 500) % 2) tekst('SPATIE = NOG EEN KEER', W / 2, 420, { font: '18px Silkscreen, monospace', kleur: KLEUR.cyan, uitlijn: 'center', gloed: 12 });
+  }
+
+  // ---------- modus kiezen en woordenlijsten bewerken ----------
+  const $ = id => document.getElementById(id);
+  const bewaarInstel = () => schrijf('neon-typer-instellingen', instel);
+  const bewaarLijsten = () => schrijf('neon-typer-lijsten', lijsten);
+  const magWisselen = () => !spel || spel.status !== 'spelen';
+
+  function toonModus() {
+    if (spel && spel.status !== 'spelen') spel = null; // terug naar het startscherm van de nieuwe modus
+    for (const b of document.querySelectorAll('[data-modus]')) b.setAttribute('aria-pressed', String(b.dataset.modus === instel.modus));
+    for (const b of document.querySelectorAll('[data-soort]')) b.setAttribute('aria-pressed', String(b.dataset.soort === instel.soort));
+    for (const el of document.querySelectorAll('.taal-alleen')) el.hidden = !isTaal();
+    if (isTaal()) {
+      const t = TAAL[instel.modus].naam;
+      $('richtingLabel').hidden = instel.soort === 'luisteren';
+      $('richting').innerHTML = `<option value="naar">NL → ${t}</option><option value="van">${t} → NL</option><option value="mix">Door elkaar</option>`;
+      $('richting').value = instel.richting;
+      const ls = lijsten[instel.modus];
+      if (instel.lijst[instel.modus] >= ls.length) instel.lijst[instel.modus] = Math.max(0, ls.length - 1);
+      $('lijstKeuze').innerHTML = ls.map((l, i) => `<option value="${i}"></option>`).join('');
+      [...$('lijstKeuze').options].forEach((o, i) => { o.textContent = ls[i].naam || 'Lijst zonder naam'; });
+      $('lijstKeuze').value = String(instel.lijst[instel.modus]);
+      const l = huidigeLijst();
+      $('lijstNaam').value = l ? l.naam : '';
+      $('lijstTekst').value = l ? l.tekst : '';
+      $('lijstNaam').disabled = $('lijstTekst').disabled = !l;
+      $('lijstKop').textContent = `Woordenlijst ${t}`;
+      $('lijstUitleg').innerHTML = `Eén woord per regel: <code>${t} = Nederlands</code>. Meer goede antwoorden? Zet er <code>/</code> tussen, bijvoorbeeld <code>${instel.modus === 'en' ? 'big / large = groot' : 'grand / gros = groot'}</code>. Je kunt ook twee kolommen uit een spreadsheet plakken.`;
+      telLijst();
+    }
+    kiesRecs(); toonRecords(); toonToetsen(); toonVolgende(null);
+  }
+  function telLijst() {
+    const n = huidigeItems().length;
+    $('lijstTelling').textContent = huidigeLijst() ? `${n} ${n === 1 ? 'woord' : 'woorden'} gevonden. Wordt vanzelf bewaard.` : 'Nog geen lijst. Klik op Nieuwe lijst.';
+  }
+
+  for (const b of document.querySelectorAll('[data-modus]')) b.onclick = () => { b.blur(); if (!magWisselen()) return; instel.modus = b.dataset.modus; bewaarInstel(); toonModus(); };
+  for (const b of document.querySelectorAll('[data-soort]')) b.onclick = () => { b.blur(); if (!magWisselen()) return; instel.soort = b.dataset.soort; bewaarInstel(); toonModus(); };
+  $('richting').onchange = e => { instel.richting = e.target.value; bewaarInstel(); e.target.blur(); };
+  $('lijstKeuze').onchange = e => { if (!magWisselen()) return; instel.lijst[instel.modus] = +e.target.value; bewaarInstel(); e.target.blur(); toonModus(); };
+  $('lijstTekst').oninput = e => { const l = huidigeLijst(); if (!l) return; l.tekst = e.target.value; bewaarLijsten(); telLijst(); };
+  $('lijstNaam').oninput = e => {
+    const l = huidigeLijst(); if (!l) return;
+    l.naam = e.target.value; bewaarLijsten();
+    const o = $('lijstKeuze').selectedOptions[0]; if (o) o.textContent = l.naam || 'Lijst zonder naam';
+  };
+  $('knopNieuweLijst').onclick = () => {
+    if (!magWisselen()) return;
+    const ls = lijsten[instel.modus];
+    ls.push({ naam: `Lijst ${ls.length + 1}`, tekst: '' });
+    instel.lijst[instel.modus] = ls.length - 1;
+    bewaarLijsten(); bewaarInstel(); toonModus();
+    $('lijstNaam').select();
+  };
+  let wisKlaar = false;
+  $('knopWisLijst').onclick = e => {
+    if (!magWisselen() || !huidigeLijst()) return;
+    if (!wisKlaar) { // eerst bevestigen
+      wisKlaar = true; e.target.textContent = 'Zeker weten?';
+      setTimeout(() => { wisKlaar = false; e.target.textContent = 'Lijst weggooien'; }, 3000);
+      return;
+    }
+    wisKlaar = false; e.target.textContent = 'Lijst weggooien';
+    lijsten[instel.modus].splice(instel.lijst[instel.modus], 1);
+    instel.lijst[instel.modus] = 0;
+    bewaarLijsten(); bewaarInstel(); toonModus(); e.target.blur();
+  };
+
+  // ---------- lus ----------
+  let vorige = performance.now();
+  function lus(nu) {
+    const dt = Math.min((nu - vorige) / 1000, 0.05);
+    vorige = nu;
+    update(dt);
+    teken();
+    requestAnimationFrame(lus);
+  }
+  toonModus();
+  requestAnimationFrame(lus);
+})();
+</script>
