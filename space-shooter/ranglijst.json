@@ -1,15 +1,15 @@
 {
  "v": 1,
- "bijgewerkt": "2026-11-06T08:44:05.806Z",
+ "bijgewerkt": "2026-11-06T09:33:03.403Z",
  "spelers": [
   {
    "naam": "pixelcreator",
-   "xp": 70350,
-   "rang": 11,
+   "xp": 89446,
+   "rang": 13,
    "records": {
     "normaal": 54270,
     "moeilijk": 0,
-    "extreem": 81375,
+    "extreem": 594230,
     "arena-normaal": 18073,
     "arena-moeilijk": 12451,
     "arena-extreem": 44320
