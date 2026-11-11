@@ -81,6 +81,9 @@
   .toets.bult::after {
     content: ""; position: absolute; bottom: 5px; width: 30%; height: 2px; border-radius: 1px; background: currentColor;
   }
+  .toets.breed { width: calc(clamp(24px, 6.5vw, 50px) * 1.6); aspect-ratio: auto; height: clamp(24px, 6.5vw, 50px); font-size: clamp(9px, 1.8vw, 12px); }
+  .rij .shift-l { width: calc(clamp(24px, 6.5vw, 50px) * 1.2); margin-left: calc(clamp(24px, 6.5vw, 50px) * -1.2 - 6px); }
+  .toets.druk { background: color-mix(in srgb, var(--vinger) 45%, transparent); color: var(--fg); }
   .spatie { width: clamp(150px, 40vw, 300px); aspect-ratio: auto; height: clamp(22px, 5vw, 34px); font-size: 11px; }
   @keyframes nieuw { from { box-shadow: 0 0 0 var(--vinger); } to { box-shadow: 0 0 14px var(--vinger); } }
   .vingers { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; font-size: 18px; color: var(--muted); }
@@ -136,6 +139,7 @@
   <div class="modus">
     <div class="groep" role="group" aria-label="Wat wil je oefenen">
       <button type="button" data-modus="typen">Typen</button>
+      <button type="button" data-modus="zinnen">Zinnen</button>
       <button type="button" data-modus="en">Engels</button>
       <button type="button" data-modus="fr">Frans</button>
     </div>
@@ -184,6 +188,7 @@
         <li>Je eerste letter kiest het woord. Typ je verkeerd, dan is je combo weg.</li>
         <li>Raakt een woord de grond, dan ben je een hartje kwijt. Na 3 hartjes is het game over.</li>
         <li>Elk niveau gaat het sneller en komen er letters bij. Na niveau 8 doen alle letters mee.</li>
+        <li>Zinnen: typ de hele zin, met hoofdletters, spaties en leestekens. Fout getypt? Haal het weg met Backspace.</li>
         <li>Engels of Frans: typ de vertaling. Accenten hoeven niet, <code>e</code> telt ook voor <code>é</code>.</li>
         <li>Luisteren: je hoort een woord en typt wat je hoort.</li>
         <li>Woorden die je fout had komen vaker terug.</li>
@@ -195,7 +200,8 @@
         <li><kbd>Spatie</kbd> start het spel</li>
         <li><kbd>←</kbd> <kbd>→</kbd> kiest je startniveau</li>
         <li><kbd>Esc</kbd> pauzeert</li>
-        <li><kbd>Backspace</kbd> laat je woord los (bij talen: haalt een letter weg)</li>
+        <li><kbd>Backspace</kbd> laat je woord los (bij zinnen en talen: haalt een letter weg)</li>
+        <li><kbd>Shift</kbd> maakt een hoofdletter. Gebruik de Shift aan de andere kant: <kbd>T</kbd> met rechter Shift, <kbd>J</kbd> met linker Shift</li>
         <li><kbd>Enter</kbd> laat het woord nog een keer horen</li>
         <li>Vingers op <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd> en <kbd>J</kbd><kbd>K</kbd><kbd>L</kbd>. Voel de streepjes op F en J.</li>
       </ul>
@@ -239,7 +245,7 @@
   const VINGER = {};
   const zet = (letters, vinger) => { for (const l of letters) VINGER[l] = vinger; };
   zet('qaz', ['links', 'pink']); zet('wsx', ['links', 'ringvinger']); zet('edc', ['links', 'middelvinger']); zet('rtfgvb', ['links', 'wijsvinger']);
-  zet('yuhjnm', ['rechts', 'wijsvinger']); zet('ik', ['rechts', 'middelvinger']); zet('ol', ['rechts', 'ringvinger']); zet('p', ['rechts', 'pink']);
+  zet('yuhjnm', ['rechts', 'wijsvinger']); zet('ik,', ['rechts', 'middelvinger']); zet('ol.', ['rechts', 'ringvinger']); zet('p/', ['rechts', 'pink']);
   const VINGER_KLEUR = { pink: 'var(--pink)', ringvinger: 'var(--yellow)', middelvinger: 'var(--green)', wijsvinger: 'var(--cyan)' };
 
   const NIEUWE_LETTERS = ['asdfjkl', 'ei', 'ru', 'tn', 'ogh', 'wvm', 'pcb', 'yzxq'];
@@ -265,6 +271,27 @@
     appel peer kaas soep thee koek koekje snoep friet drop
     school klas leraar huiswerk tekening vakantie fietsen lopen rennen springen vliegen dromen
     kasteel ridder draak zwaard schild koning koningin prinses toren`.split(/\s+/).filter(Boolean);
+
+  // zinnen: 4 soorten, van kort naar lang. Alleen letters, spaties en . , ?
+  const ZINNEN = [
+    `De kat slaapt.|Ik heb een hond.|Tim is mijn vriend.|Het regent weer.|Wij gaan naar huis.|Sam eet een appel.|De zon is warm.|Lisa leest een boek.|Ik typ heel snel.|Waar is mijn pen?|Het konijn springt.|Papa bakt een taart.|Kom je ook spelen?|De dino rent hard.|Mijn fiets is rood.|Wat eet jij graag?`,
+    `Morgen gaan we naar Amsterdam.|Jij en Noor spelen met de bal.|In de winter valt er sneeuw.|Max heeft een nieuwe computer.|Hoe laat begint de film?|De raket vliegt naar Mars.|Oma woont in een klein huis.|Wie heeft mijn koekje gepakt?|Op zaterdag gaan we zwemmen.|Het mormel zoekt eikels.|Mijn broer bouwt een kasteel.|Zullen we naar het park gaan?|De leraar vertelt een verhaal.|Ik oefen elke dag met typen.`,
+    `Als het mooi weer is, gaan we naar het strand.|Emma, Daan en Sofie spelen samen buiten.|Heb jij Neon Dino al gespeeld?|Na school maak ik eerst mijn huiswerk.|De hond blaft, de kat schrikt en rent weg.|In Frankrijk eten ze vaak stokbrood.|Waarom is de lucht eigenlijk blauw?|Het ruimteschip schiet op de grote baas.|Vandaag heb ik Engels, Frans en gym.|Blind typen? Kijk niet naar je handen.|Koning Willem woont in Den Haag.|De ridder pakt zijn zwaard en zijn schild.`,
+    `Toen we in Parijs waren, zagen we de Eiffeltoren.|Mijn vingers liggen op de thuisrij, mijn ogen op het scherm.|Het konijntje verstopt zich, want de vos komt eraan.|Weet jij hoeveel sterren er aan de hemel staan?|Op woensdag fietsen Ruben en Fleur samen naar de bieb.|De piraten zoeken een schat, maar ze vinden niets.|Met Shift maak je hoofdletters, met Backspace haal je iets weg.|Zou een robot ooit sneller typen dan een mens?|In de zomer gaan we kamperen in Spanje, bij een groot meer.|Gisteren regende het, maar vandaag schijnt de zon weer.|Als de laatste meteoor valt, is de stad gered.`,
+  ].map(t => t.split('|'));
+  const ZINNEN_PER_NIVEAU = 3;
+  const zinSoort = n => n <= 2 ? 0 : n <= 4 ? 1 : n <= 6 ? 2 : 3;
+  const tijdPerTeken = n => Math.max(0.32, 1 - (n - 1) * 0.07); // niveau 1: 1 seconde per teken
+
+  function kiesZin(niveau, gehad) {
+    const soort = zinSoort(niveau);
+    const uit = soort > 0 && Math.random() < 0.3 ? soort - 1 : soort; // soms een makkelijkere tussendoor
+    let pool = ZINNEN[uit].filter(z => !gehad.includes(z));
+    if (!pool.length) pool = ZINNEN[uit];
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  const toetsVoor = c => c === '?' ? '/' : c.toLowerCase();
+  const metShift = c => c === '?' || c !== c.toLowerCase();
 
   function past(woord, letters) { for (const c of woord) if (!letters.includes(c)) return false; return true; }
 
@@ -326,9 +353,10 @@
   const instel = { modus: 'typen', soort: 'vertalen', richting: 'naar', lijst: { en: 0, fr: 0 }, ...lees('neon-typer-instellingen', {}) };
   const lijsten = { ...VOORBEELD, ...lees('neon-typer-lijsten', {}) };
   const kennis = lees('neon-typer-kennis', {});
-  const isTaal = () => instel.modus !== 'typen';
-  function recSleutel() { return isTaal() ? `${instel.modus}-${instel.soort}` : 'typen'; }
-  function modusNaam() { return isTaal() ? `${TAAL[instel.modus].naam} ${instel.soort}` : 'Typen'; }
+  const isTaal = () => instel.modus in TAAL;
+  const isZinnen = () => instel.modus === 'zinnen';
+  function recSleutel() { return isTaal() ? `${instel.modus}-${instel.soort}` : instel.modus; }
+  function modusNaam() { return isTaal() ? `${TAAL[instel.modus].naam} ${instel.soort}` : isZinnen() ? 'Zinnen' : 'Typen'; }
 
   // accenten tellen niet mee: é = e, ç = c, ’ = '
   function normLetter(c) { return c === '’' || c === '`' ? "'" : c.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
@@ -412,14 +440,30 @@
       toetsEl[l] = d;
     }
   });
+  // extra toetsen voor zinnen: Shift, Backspace en leestekens
+  function extraToets(sleutel, label, vinger, rij, ervoor, klasse = '') {
+    const d = document.createElement('div');
+    d.className = 'toets extra ' + klasse;
+    d.textContent = label;
+    d.style.setProperty('--vinger', VINGER_KLEUR[vinger]);
+    if (ervoor) rijEls[rij].prepend(d); else rijEls[rij].append(d);
+    toetsEl[sleutel] = d;
+  }
+  extraToets('backspace', '⌫ back', 'pink', 0, false, 'breed');
+  for (const l of ',./') extraToets(l, l, VINGER[l][1], 2, false);
+  extraToets('shiftL', '⇧ shift', 'pink', 2, true, 'breed shift-l');
+  extraToets('shiftR', '⇧ shift', 'pink', 2, false, 'breed');
+  toetsEl[' '] = document.querySelector('#toetsen .spatie');
   const hintEl = document.getElementById('hint');
   let blind = false;
 
   function toonToetsen() {
-    const taal = isTaal();
+    const taal = isTaal() || isZinnen();
     const letters = taal ? RIJEN.join('') : lettersTot(spel ? spel.niveau : startNiveau);
     const nieuw = taal ? '' : nieuwOp(spel ? spel.niveau : startNiveau);
     for (const [l, d] of Object.entries(toetsEl)) {
+      if (l === ' ') continue;
+      if (d.classList.contains('extra')) { d.hidden = !isZinnen(); continue; }
       d.classList.toggle('op-slot', !letters.includes(l));
       d.classList.toggle('nieuw', nieuw.includes(l));
     }
@@ -441,7 +485,7 @@
     }
   }
   function flitsFout(letter) {
-    const d = toetsEl[letter];
+    const d = toetsEl[toetsVoor(letter)];
     if (!d) return;
     d.classList.add('fout');
     setTimeout(() => d.classList.remove('fout'), 160);
@@ -485,14 +529,16 @@
       woorden: [], doel: null, kogels: [], deeltjes: [], teksten: [],
       tijd: 0, volgendeWoord: 0.5, woordenGehad: 0, goed: 0, fout: 0, letterTijd: 0,
       schud: 0, banner: { tekst: bannerTekst(startNiveau), t: 2.6 }, nieuwRecord: false,
+      zinnen: isZinnen(), zin: null, gehadZinnen: [],
       taal: isTaal(), luister: isTaal() && instel.soort === 'luisteren', items, buffer: '', foutenOpRij: 0, gemist: [],
     };
     toonToetsen();
-    toonVolgende(null);
+    if (spel.zinnen) toonZinHint(); else toonVolgende(null);
     piep(440, 0.08); setTimeout(() => piep(660, 0.1), 90);
   }
 
   function bannerTekst(n) {
+    if (isZinnen()) return n === startNiveau ? `ZINNEN · NIVEAU ${n}` : `NIVEAU ${n} · ${zinSoort(n) > zinSoort(n - 1) ? 'LANGERE ZINNEN' : 'SNELLER!'}`;
     if (isTaal()) return n === startNiveau ? modusNaam().toUpperCase() : `NIVEAU ${n} · SNELLER!`;
     const nieuw = nieuwOp(n);
     if (n === 1) return 'NIVEAU 1 · THUISRIJ: A S D F  J K L';
@@ -536,6 +582,13 @@
       return;
     }
     if (spel.status === 'pauze') { if (k === ' ' || k === 'Enter') { e.preventDefault(); spel.status = 'spelen'; } return; }
+    if (spel.zinnen) {
+      if (k === 'Backspace') { e.preventDefault(); zinBackspace(); return; }
+      if (k.length !== 1) return;
+      e.preventDefault();
+      typZin(k, e);
+      return;
+    }
     if (spel.taal) {
       if (k === 'Enter') { e.preventDefault(); const w = hoofdWoord(); if (w) spreek(w.item.vreemd[0]); return; }
       if (k === 'Backspace') { e.preventDefault(); spel.buffer = spel.buffer.slice(0, -1); spel.foutenOpRij = 0; toonVolgende(null); return; }
@@ -558,7 +611,19 @@
     if (spel.status === 'spelen') spel.status = 'pauze';
     else if (spel.status === 'pauze') spel.status = 'spelen';
   }
-  window.addEventListener('blur', () => { if (spel && spel.status === 'spelen') spel.status = 'pauze'; });
+  window.addEventListener('blur', () => {
+    if (spel && spel.status === 'spelen') spel.status = 'pauze';
+    for (const z of ['ShiftLeft', 'ShiftRight']) shiftIn[z] = false;
+    toetsEl.shiftL.classList.remove('druk'); toetsEl.shiftR.classList.remove('druk');
+  });
+
+  // welke Shift zit er ingedrukt (links of rechts), om te zien of je de goede gebruikt
+  const shiftIn = { ShiftLeft: false, ShiftRight: false };
+  for (const soort of ['keydown', 'keyup']) window.addEventListener(soort, e => {
+    if (!(e.code in shiftIn)) return;
+    shiftIn[e.code] = soort === 'keydown';
+    toetsEl[e.code === 'ShiftLeft' ? 'shiftL' : 'shiftR'].classList.toggle('druk', shiftIn[e.code]);
+  });
 
   function typ(l) {
     let w = spel.doel;
@@ -593,6 +658,118 @@
     piep(300, 0.18, 'triangle', 0.06, 900);
     spel.woordenGehad++;
     if (spel.woordenGehad % WOORDEN_PER_NIVEAU === 0) niveauOmhoog();
+  }
+
+  // ---------- zinnen: één zin tegelijk, fouten moet je zelf weghalen met Backspace ----------
+  const goedTot = z => { let i = 0; while (i < z.getypt.length && z.getypt[i] === z.tekst[i]) i++; return i; };
+  const MAX_FOUT = 3;
+
+  function nieuweZin() {
+    const tekst = kiesZin(spel.niveau, spel.gehadZinnen);
+    spel.gehadZinnen = [...spel.gehadZinnen.slice(-12), tekst];
+    ctx.font = '30px VT323, monospace';
+    const tw = ctx.measureText('M').width;
+    const top = 70, bodem = GROND - 30;
+    spel.zin = {
+      tekst, getypt: '', fouten: 0, tw, breedte: tekst.length * tw + 28, x: W / 2, y: top, trillen: 0,
+      v: (bodem - top) / (tekst.length * tijdPerTeken(spel.niveau) + 5),
+    };
+    spel.doel = spel.zin;
+    toonZinHint();
+  }
+
+  function cursorX(z, i) { return z.x - z.breedte / 2 + 14 + i * z.tw; }
+
+  function typZin(k, e) {
+    const z = spel.zin;
+    if (!z) return;
+    const p = goedTot(z);
+    if (z.getypt.length === p && k === z.tekst[p]) {
+      z.getypt += k;
+      spel.goed++; spel.combo++;
+      spel.besteCombo = Math.max(spel.besteCombo, spel.combo);
+      spel.kogels.push({ x: KANON_X, y: KANON_Y - 20, doel: { x: cursorX(z, p), y: z.y }, t: 0 });
+      piep(700 + (p % 12) * 30, 0.035, 'square', 0.03);
+      if (metShift(k)) shiftTip(z, k, p, e);
+      if (z.getypt === z.tekst) { zinKlaar(z); return; }
+    } else if (z.getypt.length - p >= MAX_FOUT) {
+      toetsEl.backspace.classList.add('fout'); setTimeout(() => toetsEl.backspace.classList.remove('fout'), 160);
+      piep(110, 0.15, 'sawtooth', 0.05);
+    } else {
+      z.getypt += k;
+      spel.fout++; spel.combo = 0; z.fouten++;
+      z.trillen = 0.25;
+      flitsFout(k);
+      piep(140, 0.12, 'sawtooth', 0.04);
+    }
+    toonZinHint();
+  }
+
+  // hoofdletter: Shift met de andere hand dan de letter
+  function shiftTip(z, k, p, e) {
+    const tx = cursorX(z, p), ty = z.y + 44;
+    if (!e.shiftKey) { spel.teksten.push({ x: tx, y: ty, tekst: 'gebruik Shift, niet Caps Lock', t: 1.4, kleur: KLEUR.yellow }); return; }
+    const hand = VINGER[toetsVoor(k)][0];
+    const goed = hand === 'links' ? 'ShiftRight' : 'ShiftLeft', fout = hand === 'links' ? 'ShiftLeft' : 'ShiftRight';
+    if (shiftIn[fout] && !shiftIn[goed]) spel.teksten.push({ x: tx, y: ty, tekst: `andere Shift! (${hand === 'links' ? 'rechts' : 'links'})`, t: 1.4, kleur: KLEUR.yellow });
+  }
+
+  function zinBackspace() {
+    const z = spel.zin;
+    if (!z || !z.getypt) return;
+    z.getypt = z.getypt.slice(0, -1);
+    piep(400, 0.03, 'triangle', 0.03);
+    toonZinHint();
+  }
+
+  function zinKlaar(z) {
+    const perfect = z.fouten === 0;
+    const punten = Math.round(z.tekst.length * 10 * spel.niveau * multiplier() * (blind ? 2 : 1) * (perfect ? 1.5 : 1));
+    spel.score += punten;
+    spel.teksten.push({ x: z.x, y: z.y - 10, tekst: '+' + punten + (perfect ? '  FOUTLOOS!' : ''), t: 1.2, kleur: perfect ? KLEUR.green : KLEUR.yellow });
+    for (let i = 0; i < 5; i++) ontploffing(z.x - z.breedte / 2 + (i + 0.5) * z.breedte / 5, z.y, i % 2 ? KLEUR.pink : KLEUR.cyan, 16);
+    piep(300, 0.18, 'triangle', 0.06, 900);
+    spel.zin = null; spel.doel = null; spel.volgendeWoord = 0.8;
+    spel.woordenGehad++;
+    if (spel.woordenGehad % ZINNEN_PER_NIVEAU === 0) niveauOmhoog();
+    toonZinHint();
+  }
+
+  function updateZin(dt) { // geeft true bij game over
+    const z = spel.zin;
+    if (!z) { if (spel.volgendeWoord <= 0) nieuweZin(); return false; }
+    z.y += z.v * dt;
+    z.trillen = Math.max(0, z.trillen - dt);
+    if (z.y < GROND - 30) return false;
+    spel.zin = null; spel.doel = null; spel.volgendeWoord = 1.5;
+    spel.levens--; spel.combo = 0; spel.schud = 0.35;
+    ontploffing(z.x, GROND - 10, KLEUR.pink, 40);
+    piep(90, 0.35, 'sawtooth', 0.08, 40);
+    toonZinHint();
+    if (spel.levens <= 0) { gameOver(); return true; }
+    return false;
+  }
+
+  function toonZinHint() {
+    for (const d of Object.values(toetsEl)) d.classList.remove('volgende');
+    const z = spel && spel.status === 'spelen' ? spel.zin : null;
+    if (!z) { hintEl.innerHTML = spel && spel.status === 'spelen' ? 'Let op, daar komt een zin…' : '&nbsp;'; return; }
+    const p = goedTot(z);
+    if (z.getypt.length > p) {
+      toetsEl.backspace.classList.add('volgende');
+      hintEl.innerHTML = 'Foutje! Haal het weg met <b>Backspace</b>, rechter pink';
+      return;
+    }
+    const c = z.tekst[p];
+    if (c === ' ') { toetsEl[' '].classList.add('volgende'); hintEl.innerHTML = 'Volgende: <b>spatie</b>, duim'; return; }
+    const t = toetsVoor(c), [hand, vinger] = VINGER[t];
+    toetsEl[t].classList.add('volgende');
+    let h = `Volgende: <b>${metShift(c) ? 'Shift + ' : ''}${c.toUpperCase()}</b>, ${hand === 'links' ? 'linker' : 'rechter'} ${vinger}`;
+    if (metShift(c)) {
+      toetsEl[hand === 'links' ? 'shiftR' : 'shiftL'].classList.add('volgende');
+      h += `, ${hand === 'links' ? 'rechter' : 'linker'} pink op Shift`;
+    }
+    hintEl.innerHTML = h;
   }
 
   // ---------- talen: typen tegen alle woorden tegelijk (vooraf-matching op wat je al typte) ----------
@@ -693,14 +870,15 @@
     for (const s of sterren) { s.y += s.v * dt * (spel && spel.status === 'spelen' ? 1 + spel.niveau * 0.15 : 1); if (s.y > GROND) { s.y = 0; s.x = Math.random() * W; } }
     if (!spel || spel.status !== 'spelen') return;
     spel.tijd += dt;
-    if (spel.woorden.length) spel.letterTijd += dt;
+    if (spel.woorden.length || spel.zin) spel.letterTijd += dt;
     spel.schud = Math.max(0, spel.schud - dt);
     if (spel.banner) { spel.banner.t -= dt; if (spel.banner.t <= 0) spel.banner = null; }
 
     spel.volgendeWoord -= dt;
+    if (spel.zinnen && updateZin(dt)) return;
     // altijd minstens 2 woorden in beeld, zodat er nooit niks te typen is (luisteren: steeds één woord)
     const n = spel.woorden.length;
-    const moet = spel.luister
+    const moet = spel.zinnen ? false : spel.luister
       ? n === 0 && spel.volgendeWoord <= 0
       : (spel.volgendeWoord <= 0 || n < Math.min(2, spel.taal ? spel.items.length : 2)) && n < 7;
     if (moet) {
@@ -814,6 +992,7 @@
       glow('transparent', 0);
 
       // woorden
+      if (spel.zin) tekenZin(spel.zin);
       if (spel.taal) for (const w of spel.woorden) tekenTaalWoord(w);
       else for (const w of spel.woorden) {
         const isDoel = w === spel.doel;
@@ -893,8 +1072,42 @@
     ctx.fillStyle = KLEUR.muted; ctx.fillText(rest, rx, y + 13);
   }
 
+  // goed getypt = cyaan, fout = roze blokje, hoofdletters en leestekens die nog komen = geel, spaties = puntje
+  function tekenZin(z) {
+    const dx = z.trillen > 0 ? (Math.random() - 0.5) * 8 : 0;
+    const x = z.x - z.breedte / 2 + dx, y = z.y;
+    const gevaar = y > GROND - 120;
+    ctx.fillStyle = 'rgba(28,26,56,0.94)';
+    ctx.strokeStyle = gevaar ? KLEUR.pink : KLEUR.accent; ctx.lineWidth = 2.5;
+    glow(gevaar ? KLEUR.pink : KLEUR.accent, 14);
+    ctx.beginPath(); ctx.roundRect(x, y - 24, z.breedte, 48, 6); ctx.fill(); ctx.stroke();
+    glow('transparent', 0);
+    const p = goedTot(z);
+    ctx.font = '30px VT323, monospace'; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+    for (let i = 0; i < z.tekst.length; i++) {
+      const cx = x + 14 + (i + 0.5) * z.tw;
+      let c = z.tekst[i], kleur = KLEUR.fg;
+      if (i < p) kleur = KLEUR.cyan;
+      else if (i < z.getypt.length) {
+        c = z.getypt[i] === ' ' ? '_' : z.getypt[i]; kleur = KLEUR.bg;
+        ctx.fillStyle = KLEUR.pink; ctx.fillRect(cx - z.tw / 2, y - 15, z.tw, 30);
+      } else if (c === ' ') { c = '·'; kleur = KLEUR.muted; }
+      else if (metShift(c) || ',.'.includes(c)) kleur = KLEUR.yellow;
+      ctx.fillStyle = kleur;
+      if (i < p) glow(KLEUR.cyan, 6);
+      ctx.fillText(c, cx, y + 1);
+      glow('transparent', 0);
+    }
+    if (Math.floor(performance.now() / 400) % 2) {
+      const n = z.getypt.length;
+      ctx.fillStyle = n > p ? KLEUR.pink : KLEUR.cyan;
+      ctx.fillRect(x + 14 + n * z.tw, y + 15, z.tw, 3);
+    }
+  }
+
   function tekenStart() {
     if (isTaal()) return tekenTaalStart();
+    if (isZinnen()) return tekenZinStart();
     ctx.fillStyle = 'rgba(6,5,15,0.6)'; ctx.fillRect(0, 0, W, H);
     tekst('NEON TYPER', W / 2, 110, { font: '52px Silkscreen, monospace', kleur: KLEUR.cyan, uitlijn: 'center', gloed: 22 });
     tekst('typ de vallende woorden weg voordat ze je stad raken', W / 2, 165, { font: '28px VT323, monospace', kleur: KLEUR.fg, uitlijn: 'center' });
@@ -903,6 +1116,16 @@
     tekst(l, W / 2, 265, { font: '26px VT323, monospace', kleur: KLEUR.muted, uitlijn: 'center' });
     const knipper = Math.floor(performance.now() / 500) % 2;
     if (knipper) tekst('DRUK OP SPATIE', W / 2, 330, { font: '22px Silkscreen, monospace', kleur: KLEUR.pink, uitlijn: 'center', gloed: 14 });
+  }
+
+  function tekenZinStart() {
+    ctx.fillStyle = 'rgba(6,5,15,0.6)'; ctx.fillRect(0, 0, W, H);
+    tekst('ZINNEN', W / 2, 95, { font: '48px Silkscreen, monospace', kleur: KLEUR.cyan, uitlijn: 'center', gloed: 22 });
+    tekst('typ de hele zin, met hoofdletters, spaties en leestekens', W / 2, 150, { font: '28px VT323, monospace', kleur: KLEUR.fg, uitlijn: 'center' });
+    tekst('hoofdletter = Shift aan de andere kant · foutje = Backspace', W / 2, 185, { font: '26px VT323, monospace', kleur: KLEUR.muted, uitlijn: 'center' });
+    tekst(`‹  STARTNIVEAU ${startNiveau}  ›`, W / 2, 245, { font: '22px Silkscreen, monospace', kleur: KLEUR.yellow, uitlijn: 'center', gloed: 10 });
+    tekst(['korte zinnen', 'korte zinnen', 'met namen en vragen', 'met namen en vragen', 'met komma\'s', 'met komma\'s'][startNiveau - 1] || 'lange zinnen', W / 2, 280, { font: '26px VT323, monospace', kleur: KLEUR.muted, uitlijn: 'center' });
+    if (Math.floor(performance.now() / 500) % 2) tekst('DRUK OP SPATIE', W / 2, 340, { font: '22px Silkscreen, monospace', kleur: KLEUR.pink, uitlijn: 'center', gloed: 14 });
   }
 
   function tekenTaalStart() {
@@ -978,7 +1201,7 @@
       $('lijstUitleg').innerHTML = `Eén woord per regel: <code>${t} = Nederlands</code>. Meer goede antwoorden? Zet er <code>/</code> tussen, bijvoorbeeld <code>${instel.modus === 'en' ? 'big / large = groot' : 'grand / gros = groot'}</code>. Je kunt ook twee kolommen uit een spreadsheet plakken.`;
       telLijst();
     }
-    kiesRecs(); toonRecords(); toonToetsen(); toonVolgende(null);
+    kiesRecs(); toonRecords(); toonToetsen(); if (isZinnen()) toonZinHint(); else toonVolgende(null);
   }
   function telLijst() {
     const n = huidigeItems().length;
