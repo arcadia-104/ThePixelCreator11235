@@ -62,8 +62,9 @@
     display: flex; flex-direction: column; align-items: center; gap: 6px;
   }
   .rij { display: flex; gap: 6px; }
-  .rij:nth-child(2) { margin-left: 22px; }
-  .rij:nth-child(3) { margin-left: 56px; }
+  .rij:nth-child(2) { margin-left: 28px; }
+  .rij:nth-child(3) { margin-left: 50px; }
+  .rij:nth-child(4) { margin-left: 84px; }
   .toets {
     --vinger: var(--muted);
     position: relative;
@@ -155,7 +156,7 @@
 
   <div class="toetsenbord" id="toetsenbord">
     <div id="toetsen">
-      <div class="rij"></div><div class="rij"></div><div class="rij"></div>
+      <div class="rij"></div><div class="rij"></div><div class="rij"></div><div class="rij"></div>
       <div class="rij" style="margin-left:0;justify-content:center"><div class="toets spatie" style="--vinger: var(--accent)">duimen</div></div>
     </div>
     <div class="blind-bord" id="blindBord" hidden>BLIND MODUS · DUBBELE PUNTEN · KIJK NIET NAAR JE HANDEN</div>
@@ -188,7 +189,7 @@
         <li>Je eerste letter kiest het woord. Typ je verkeerd, dan is je combo weg.</li>
         <li>Raakt een woord de grond, dan ben je een hartje kwijt. Na 3 hartjes is het game over.</li>
         <li>Elk niveau gaat het sneller en komen er letters bij. Na niveau 8 doen alle letters mee.</li>
-        <li>Zinnen: typ de hele zin, met hoofdletters, spaties en leestekens. Fout getypt? Haal het weg met Backspace.</li>
+        <li>Zinnen: typ weetjes over het oude Griekenland, met hoofdletters, cijfers, spaties en leestekens. Fout getypt? Haal het weg met Backspace.</li>
         <li>Engels of Frans: typ de vertaling. Accenten hoeven niet, <code>e</code> telt ook voor <code>é</code>.</li>
         <li>Luisteren: je hoort een woord en typt wat je hoort.</li>
         <li>Woorden die je fout had komen vaker terug.</li>
@@ -244,8 +245,8 @@
   const RIJEN = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
   const VINGER = {};
   const zet = (letters, vinger) => { for (const l of letters) VINGER[l] = vinger; };
-  zet('qaz', ['links', 'pink']); zet('wsx', ['links', 'ringvinger']); zet('edc', ['links', 'middelvinger']); zet('rtfgvb', ['links', 'wijsvinger']);
-  zet('yuhjnm', ['rechts', 'wijsvinger']); zet('ik,', ['rechts', 'middelvinger']); zet('ol.', ['rechts', 'ringvinger']); zet('p/', ['rechts', 'pink']);
+  zet('1qaz', ['links', 'pink']); zet('2wsx', ['links', 'ringvinger']); zet('3edc', ['links', 'middelvinger']); zet('45rtfgvb6', ['links', 'wijsvinger']);
+  zet('7yuhjnm', ['rechts', 'wijsvinger']); zet('8ik,', ['rechts', 'middelvinger']); zet('9ol.', ['rechts', 'ringvinger']); zet('0p/', ['rechts', 'pink']);
   const VINGER_KLEUR = { pink: 'var(--pink)', ringvinger: 'var(--yellow)', middelvinger: 'var(--green)', wijsvinger: 'var(--cyan)' };
 
   const NIEUWE_LETTERS = ['asdfjkl', 'ei', 'ru', 'tn', 'ogh', 'wvm', 'pcb', 'yzxq'];
@@ -272,12 +273,12 @@
     school klas leraar huiswerk tekening vakantie fietsen lopen rennen springen vliegen dromen
     kasteel ridder draak zwaard schild koning koningin prinses toren`.split(/\s+/).filter(Boolean);
 
-  // zinnen: 4 soorten, van kort naar lang. Alleen letters, spaties en . , ?
+  // zinnen: weetjes over het oude Griekenland, 4 soorten van kort naar lang. Alleen letters, cijfers, spaties en . , ?
   const ZINNEN = [
-    `De kat slaapt.|Ik heb een hond.|Tim is mijn vriend.|Het regent weer.|Wij gaan naar huis.|Sam eet een appel.|De zon is warm.|Lisa leest een boek.|Ik typ heel snel.|Waar is mijn pen?|Het konijn springt.|Papa bakt een taart.|Kom je ook spelen?|De dino rent hard.|Mijn fiets is rood.|Wat eet jij graag?`,
-    `Morgen gaan we naar Amsterdam.|Jij en Noor spelen met de bal.|In de winter valt er sneeuw.|Max heeft een nieuwe computer.|Hoe laat begint de film?|De raket vliegt naar Mars.|Oma woont in een klein huis.|Wie heeft mijn koekje gepakt?|Op zaterdag gaan we zwemmen.|Het mormel zoekt eikels.|Mijn broer bouwt een kasteel.|Zullen we naar het park gaan?|De leraar vertelt een verhaal.|Ik oefen elke dag met typen.`,
-    `Als het mooi weer is, gaan we naar het strand.|Emma, Daan en Sofie spelen samen buiten.|Heb jij Neon Dino al gespeeld?|Na school maak ik eerst mijn huiswerk.|De hond blaft, de kat schrikt en rent weg.|In Frankrijk eten ze vaak stokbrood.|Waarom is de lucht eigenlijk blauw?|Het ruimteschip schiet op de grote baas.|Vandaag heb ik Engels, Frans en gym.|Blind typen? Kijk niet naar je handen.|Koning Willem woont in Den Haag.|De ridder pakt zijn zwaard en zijn schild.`,
-    `Toen we in Parijs waren, zagen we de Eiffeltoren.|Mijn vingers liggen op de thuisrij, mijn ogen op het scherm.|Het konijntje verstopt zich, want de vos komt eraan.|Weet jij hoeveel sterren er aan de hemel staan?|Op woensdag fietsen Ruben en Fleur samen naar de bieb.|De piraten zoeken een schat, maar ze vinden niets.|Met Shift maak je hoofdletters, met Backspace haal je iets weg.|Zou een robot ooit sneller typen dan een mens?|In de zomer gaan we kamperen in Spanje, bij een groot meer.|Gisteren regende het, maar vandaag schijnt de zon weer.|Als de laatste meteoor valt, is de stad gered.`,
+    `Zeus was de oppergod.|Sparta had 2 koningen.|Er waren 12 Olympische goden.|Homeros schreef de Ilias.|Socrates leefde in Athene.|Herakles deed 12 werken.|De uil hoorde bij Athena.|Athene was een stadstaat.|Wie was de god van de zee?|Medusa had slangen als haar.|Het paard van Troje was hol.|De Spelen duurden 5 dagen.|De Odyssee telt 24 boeken.`,
+    `In 776 v.Chr. waren de eerste Spelen.|Poseidon was de god van de zee.|Een trireme had 3 rijen roeiers.|Plato was een leerling van Socrates.|Socrates stierf in 399 v.Chr.|Het Parthenon staat in Athene.|De slag bij Marathon was in 490 v.Chr.|Pythagoras was een wiskundige.|De berg Olympus is 2918 meter hoog.|Leonidas was een koning van Sparta.|Wie won er bij Marathon, in 490 v.Chr.?|Atleten deden naakt mee aan de Spelen.`,
+    `Aristoteles was de leraar van Alexander de Grote.|Bij Thermopylae vochten 300 Spartanen.|Thermopylae was in 480 v.Chr., Salamis ook.|De Trojaanse oorlog duurde 10 jaar, zegt Homeros.|Athene, Sparta en Korinthe waren stadstaten.|Hoeveel goden woonden er op de Olympus?|Spartaanse jongens begonnen op hun 7e met training.|Kleisthenes voerde in 508 v.Chr. de democratie in.|De Spelen waren elke 4 jaar, ter ere van Zeus.|Archimedes riep Eureka, toen hij in zijn bad zat.|Herodotus heet de vader van de geschiedenis.|Alexander de Grote stierf in 323 v.Chr.`,
+    `Tussen 431 en 404 v.Chr. vochten Athene en Sparta tegen elkaar.|In 480 v.Chr. versloegen de Grieken de Perzen bij Salamis.|Alexander de Grote was pas 20 jaar toen hij koning werd.|Alexander veroverde een rijk van Griekenland tot India.|De vuurtoren van Alexandria was een van de 7 wereldwonderen.|Het beeld van Zeus in Olympia was ongeveer 12 meter hoog.|In 146 v.Chr. werd Griekenland veroverd door de Romeinen.|De boodschapper van Marathon rende ongeveer 40 kilometer.|Hoeveel jaar is het geleden dat Socrates stierf in 399 v.Chr.?|Het Parthenon werd gebouwd tussen 447 en 432 v.Chr.`,
   ].map(t => t.split('|'));
   const ZINNEN_PER_NIVEAU = 3;
   const zinSoort = n => n <= 2 ? 0 : n <= 4 ? 1 : n <= 6 ? 2 : 3;
@@ -429,7 +430,7 @@
 
   // ---------- toetsenbord op het scherm ----------
   const toetsEl = {};
-  const rijEls = document.querySelectorAll('#toetsen .rij');
+  const rijEls = [...document.querySelectorAll('#toetsen .rij')].slice(1); // de eerste rij is de cijferrij (alleen bij zinnen)
   RIJEN.forEach((rij, i) => {
     for (const l of rij) {
       const d = document.createElement('div');
@@ -446,10 +447,13 @@
     d.className = 'toets extra ' + klasse;
     d.textContent = label;
     d.style.setProperty('--vinger', VINGER_KLEUR[vinger]);
-    if (ervoor) rijEls[rij].prepend(d); else rijEls[rij].append(d);
+    const el = rij < 0 ? cijferRij : rijEls[rij];
+    if (ervoor) el.prepend(d); else el.append(d);
     toetsEl[sleutel] = d;
   }
-  extraToets('backspace', '⌫ back', 'pink', 0, false, 'breed');
+  const cijferRij = document.querySelector('#toetsen .rij');
+  for (const l of '1234567890') extraToets(l, l, VINGER[l][1], -1, false);
+  extraToets('backspace', '⌫ back', 'pink', -1, false, 'breed');
   for (const l of ',./') extraToets(l, l, VINGER[l][1], 2, false);
   extraToets('shiftL', '⇧ shift', 'pink', 2, true, 'breed shift-l');
   extraToets('shiftR', '⇧ shift', 'pink', 2, false, 'breed');
@@ -1092,7 +1096,7 @@
         c = z.getypt[i] === ' ' ? '_' : z.getypt[i]; kleur = KLEUR.bg;
         ctx.fillStyle = KLEUR.pink; ctx.fillRect(cx - z.tw / 2, y - 15, z.tw, 30);
       } else if (c === ' ') { c = '·'; kleur = KLEUR.muted; }
-      else if (metShift(c) || ',.'.includes(c)) kleur = KLEUR.yellow;
+      else if (metShift(c) || ',.0123456789'.includes(c)) kleur = KLEUR.yellow;
       ctx.fillStyle = kleur;
       if (i < p) glow(KLEUR.cyan, 6);
       ctx.fillText(c, cx, y + 1);
@@ -1120,11 +1124,11 @@
 
   function tekenZinStart() {
     ctx.fillStyle = 'rgba(6,5,15,0.6)'; ctx.fillRect(0, 0, W, H);
-    tekst('ZINNEN', W / 2, 95, { font: '48px Silkscreen, monospace', kleur: KLEUR.cyan, uitlijn: 'center', gloed: 22 });
-    tekst('typ de hele zin, met hoofdletters, spaties en leestekens', W / 2, 150, { font: '28px VT323, monospace', kleur: KLEUR.fg, uitlijn: 'center' });
+    tekst('ZINNEN · OUDE GRIEKEN', W / 2, 95, { font: '48px Silkscreen, monospace', kleur: KLEUR.cyan, uitlijn: 'center', gloed: 22 });
+    tekst('typ weetjes over het oude Griekenland, met hoofdletters en cijfers', W / 2, 150, { font: '28px VT323, monospace', kleur: KLEUR.fg, uitlijn: 'center' });
     tekst('hoofdletter = Shift aan de andere kant · foutje = Backspace', W / 2, 185, { font: '26px VT323, monospace', kleur: KLEUR.muted, uitlijn: 'center' });
     tekst(`‹  STARTNIVEAU ${startNiveau}  ›`, W / 2, 245, { font: '22px Silkscreen, monospace', kleur: KLEUR.yellow, uitlijn: 'center', gloed: 10 });
-    tekst(['korte zinnen', 'korte zinnen', 'met namen en vragen', 'met namen en vragen', 'met komma\'s', 'met komma\'s'][startNiveau - 1] || 'lange zinnen', W / 2, 280, { font: '26px VT323, monospace', kleur: KLEUR.muted, uitlijn: 'center' });
+    tekst(['korte weetjes', 'korte weetjes', 'met jaartallen', 'met jaartallen', 'met komma\'s', 'met komma\'s'][startNiveau - 1] || 'lange weetjes', W / 2, 280, { font: '26px VT323, monospace', kleur: KLEUR.muted, uitlijn: 'center' });
     if (Math.floor(performance.now() / 500) % 2) tekst('DRUK OP SPATIE', W / 2, 340, { font: '22px Silkscreen, monospace', kleur: KLEUR.pink, uitlijn: 'center', gloed: 14 });
   }
 
