@@ -418,7 +418,7 @@
       <div id="rlFilter" class="chips"></div>
       <div id="rlLijst" class="lijst"></div>
       <div class="naamrij"><input id="rlNaam" maxlength="12" aria-label="Jouw naam op de ranglijst" placeholder="Jouw naam op de ranglijst" autocomplete="off"></div>
-      <button id="rlStuur">Stuur mijn scores</button>
+      <button id="rlStuur">Stuur al mijn scores</button>
       <p class="sub" id="rlStuurTekst" style="font-size:17px"></p>
       <button id="rlBeheer" hidden>Ranglijst beheren</button>
       <div class="knoprij"><button id="ranglijstTerug">Terug</button></div>
@@ -2370,8 +2370,9 @@
         if (!sp.weg) {
           const dx = g.x - schip.x, dy = g.y - schip.y, d = Math.hypot(dx, dy) || 1;
           const kracht = 150 * Math.max(0, 1 - d / 300) * Math.min(1, g.t);
-          schip.doelX = clamp(schip.doelX + dx / d * kracht * dt, 14, W - 14);
-          if (sp.arena) schip.doelY = clamp(schip.doelY + dy / d * kracht * dt, A.y0 + 14, A.y1 - 14);
+          const gr = schipGrens(); // in de open ruimte mag je overal heen, niet alleen in het eerste scherm
+          schip.doelX = clamp(schip.doelX + dx / d * kracht * dt, gr[0], gr[1]);
+          if (sp.arena) schip.doelY = clamp(schip.doelY + dy / d * kracht * dt, gr[2], gr[3]);
           if (d < 18 && g.t > 0.5) raakSchip();
         }
         g.schietT -= dt;
@@ -5821,9 +5822,20 @@
   $('rlStuur').onclick = async () => {
     audio(); $('rlStuurTekst').textContent = 'Versturen...';
     const r = await stuurScores(true);
-    $('rlStuurTekst').textContent = r === 'test' ? 'Dit is de testversie: scores worden hier niet verstuurd.'
+    const t = $('rlStuurTekst');
+    t.textContent = r === 'test' ? 'Dit is de testversie: scores worden hier niet verstuurd.'
       : r === 'ok' ? 'Verstuurd! De beheerder moet je scores nog goedkeuren en online zetten.'
       : 'De ranglijst-bewaker staat nu niet aan. Je scores worden later vanzelf verstuurd, na een potje.';
+    if (r === 'ok') {
+      // laten zien wat er allemaal in het pakketje zat
+      const d = rlSchoon(mijnRanglijstData()), delen = [];
+      for (const l of RL_LIJSTEN) if (d.records[l.id] > 0) delen.push(`${l.naam} ${d.records[l.id].toLocaleString('nl-NL')}`);
+      if (d.rush) delen.push('Bazenrush ' + tijdTekst(d.rush));
+      if (d.rushRuimte) delen.push('Rush open ruimte ' + tijdTekst(d.rushRuimte));
+      delen.push(`${(RANGEN[d.rang] || RANGEN[0]).naam} (${Math.round(d.xp).toLocaleString('nl-NL')} XP)`);
+      if (d.toernooi) delen.push(d.toernooi + 'x kampioen');
+      t.textContent += ' Verstuurd: ' + delen.join(' · ') + '.';
+    }
   };
   $('rlBeheer').onclick = () => openRlBeheer();
 
